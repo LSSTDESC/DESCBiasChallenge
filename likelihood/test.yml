@@ -29,12 +29,12 @@ params:
   h: 0.7
   n_s: 0.96
   m_nu: 0.
-  cllike_cl1_b0: 1.
-  cllike_cl2_b0: 1.
-  cllike_cl3_b0: 1.
-  cllike_cl4_b0: 1.
-  cllike_cl5_b0: 1.
-  cllike_cl6_b0: 1.
+  cllike_cl1_b0: 2.
+  cllike_cl2_b0: 2.
+  cllike_cl3_b0: 2.
+  cllike_cl4_b0: 2.
+  cllike_cl5_b0: 2.
+  cllike_cl6_b0: 2.
 
 # CCL settings
 theory:

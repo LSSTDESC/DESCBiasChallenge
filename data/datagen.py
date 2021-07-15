@@ -267,24 +267,29 @@ cospar = {'Omega_c': 0.25,
           'transfer_function': 'eisenstein_hu'}
 
 # Constant linear bias
+# Same clustering and shear bins
 config = {'ndens_sh': 27.,
+          'ndens_cl': 27.,
+          'dNdz_file': 'data/dNdz_shear_shear.npz',
           'e_rms': 0.28,
           'cosmology': cospar,
           'bias': {'model': 'constant',
-                   'constant_bias': 1.}}
-# Same clustering and shear bins
-config['dNdz_file'] = 'data/dNdz_shear_shear.npz'
-config['ndens_cl'] = 27.
-config['sacc_name'] = 'fid_shear_const.fits'
+                   'constant_bias': 1.},
+          'sacc_name': 'fid_shear_const.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
 # Red clustering
-config['dNdz_file'] = 'data/dNdz_shear_red.npz'
-config['ndens_cl'] = 4.
-config['sacc_name'] = 'fid_red_const.fits'
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'cosmology': cospar,
+          'bias': {'model': 'constant',
+                   'constant_bias': 2.},
+          'sacc_name': 'fid_red_const.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
@@ -295,13 +300,27 @@ if not os.path.isfile(config['sacc_name']):
 # Evolving linear bias (a la HSC)
 # Same clustering and shear bins
 config = {'ndens_sh': 27.,
+          'ndens_cl': 27.,
+          'dNdz_file': 'data/dNdz_shear_shear.npz',
           'e_rms': 0.28,
           'cosmology': cospar,
           'bias': {'model': 'HSC_linear',
-                   'constant_bias': 0.95}}
-config['dNdz_file'] = 'data/dNdz_shear_shear.npz'
-config['ndens_cl'] = 27.
-config['sacc_name'] = 'fid_HSC_linear.fits'
+                   'constant_bias': 0.95},
+          'sacc_name': 'fid_HSC_linear.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
+# Red clustering (2001.06018)
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'cosmology': cospar,
+          'bias': {'model': 'HSC_linear',
+                   'constant_bias': 1.5},
+          'sacc_name': 'fid_red_linear.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
@@ -312,6 +331,8 @@ if not os.path.isfile(config['sacc_name']):
 # HOD (a la HSC)
 # Same clustering and shear bins
 config = {'ndens_sh': 27.,
+          'ndens_cl': 27.,
+          'dNdz_file': 'data/dNdz_shear_shear.npz',
           'e_rms': 0.28,
           'cosmology': cospar,
           'bias': {'model': 'HOD',
@@ -323,10 +344,34 @@ config = {'ndens_sh': 27.,
                                   'lM0_p': -0.5,
                                   'lM1_0': 13.08,
                                   'lM1_p': 0.9,
-                                  'a_pivot': 1./(1+0.65)}}}
-config['dNdz_file'] = 'data/dNdz_shear_shear.npz'
-config['ndens_cl'] = 27.
-config['sacc_name'] = 'fid_HSC_HOD.fits'
+                                  'a_pivot': 1./(1+0.65)}},
+          'sacc_name': 'fid_HSC_HOD.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
+
+# HOD (LRGs from 2001.06018)
+# Red clustering
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'cosmology': cospar,
+          'bias': {'model': 'HOD',
+                   'HOD_params': {'lMmin_0': 12.95,
+                                  'lMmin_p': -2.0,
+                                  'siglM_0': 0.25,
+                                  'siglM_p': 0.,
+                                  'lM0_0': 12.3,
+                                  'lM0_p': 0.,
+                                  'lM1_0': 14.0,
+                                  'lM1_p': -1.5,
+                                  'alpha_0': 1.32,
+                                  'alpha_p': 0.,
+                                  'a_pivot': 1./(1+0.65)}},
+          'sacc_name': 'fid_red_HOD.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
