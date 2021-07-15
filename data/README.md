@@ -1,4 +1,4 @@
-Data can be downloaded from [this link](intensitymapping.physics.ox.ac.uk/Data/data_DESCBiasChallenge.tar.gz).
+Data can be downloaded from [this link](http://intensitymapping.physics.ox.ac.uk/Data/data_DESCBiasChallenge.tar.gz).
 
 E.g. run, from this folder:
 
