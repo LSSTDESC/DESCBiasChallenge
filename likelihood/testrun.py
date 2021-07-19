@@ -5,7 +5,6 @@ import os
 
 import numpy as np
 import numpy.linalg as LA 
-import numdifftools as nd
 
 # Read in the yaml file
 config_fn = 'test.yml'
@@ -39,60 +38,63 @@ print(pf)
 # remove cobaya_out directory (just for now!) to make running code easier
 os.system('rm -r cobaya_out')  
 
-h = 0.005  # stepsize
-
-def fstep(params,signs):  # Determine likelihood at new steps 
-    newp0 = pf.copy()
-    newp0[params[0]] = pf[params[0]] + signs[0]*h
-    newp0[params[1]] = pf[params[1]] + signs[1]*h
+class Fisher:
     
-    newloglike = model.loglikes(newp0)
+    def __init__(self,pf):
+        self.pf = pf
     
-    return -1*newloglike[0]
 
-def F_ij(params):  # Hessian matrix elements
-    # Diagonal elements
-    if params[0]==params[1]:  
-        f1 = fstep(params,(0,+1))
-        f2 = fstep(params,(0,0))
-        f3 = fstep(params,(0,-1))
-        F_ij = (f1-2*f2+f3)/(h**2)
+    def fstep(self,param1,param2,h1,h2,signs):  # Determine likelihood at new steps 
+        newp = self.pf.copy()
+        newp[param1] = self.pf[param1] + signs[0]*h1
+        newp[param2] = self.pf[param2] + signs[1]*h2
+    
+        newloglike = model.loglikes(newp)
+    
+        return -1*newloglike[0]
+
+    def F_ij(self,param1,param2,h1,h2):  # Hessian matrix elements
+        # Diagonal elements
+        if param1==param2:  
+            f1 = self.fstep(param1,param2,h1,h2,(0,+1))
+            f2 = self.fstep(param1,param2,h1,h2,(0,0))
+            f3 = self.fstep(param1,param2,h1,h2,(0,-1))
+            F_ij = (f1-2*f2+f3)/(h2**2)
         
-    # Off-diagonal elements     
-    else:  
-        f1 = fstep(params,(+1,+1))
-        f2 = fstep(params,(-1,+1))
-        f3 = fstep(params,(+1,-1))
-        f4 = fstep(params,(-1,-1))
-        F_ij = (f1-f2-f3+f4)/(4*h**2)
+        # Off-diagonal elements     
+        else:  
+            f1 = self.fstep(param1,param2,h1,h2,(+1,+1))
+            f2 = self.fstep(param1,param2,h1,h2,(-1,+1))
+            f3 = self.fstep(param1,param2,h1,h2,(+1,-1))
+            f4 = self.fstep(param1,param2,h1,h2,(-1,-1))
+            F_ij = (f1-f2-f3+f4)/(4*h1*h2)
+            
           
-    return F_ij[0]
+        return F_ij[0]
 
-theta = list(pf.keys())  # array containing parameter names
+    def get_err(self):
+        h_fact = 0.005  # stepsize factor
 
-# Calculate Hessian matrix
-F = np.zeros((len(theta),len(theta)))
-for i in range(0,len(theta)):
-    for j in range(0,len(theta)):
-        F[i][j] = F_ij((theta[i],theta[j]))
-       
-covar = LA.inv(F)  # covariance matrix
-err=np.sqrt(np.diag(covar))  # estimated parameter errors
-print('ERRORS: ',err)            
+        # typical variations of each parameter
+        typ_var = {"sigma8": 1,"Omega_c": 0.4,"Omega_b": 1,"h": 1,"n_s": 1,"m_nu": 1}  
+
+        theta = list(self.pf.keys())  # array containing parameter names
+
+        # Calculate Hessian matrix
+        F = np.empty((len(theta),len(theta)))
+        for i in range(0,len(theta)):
+            for j in range(0,len(theta)):
+                param1 = theta[i]
+                param2 = theta[j]
+                h1 = h_fact*typ_var[param1]
+                h2 = h_fact*typ_var[param2]
+                F[i][j] = self.F_ij(param1,param2,h1,h2)
+                
+        covar = LA.inv(F)  # covariance matrix
+        err = np.sqrt(np.diag(covar))  # estimated parameter errors
+        return err
 
 
-#========ATTEMPT AT USING ND.HESSIAN INSTEAD (IGNORE!)====================
-'''
-par_name = list(pf.keys())
-
-L = lambda theta : model.loglikes(dict(list(zip(par_name,theta))))[0][0]
-
-Hess = nd.Hessian(L)
-pf_arr = list(pf.values())
-print('pfarr',pf_arr)
-A = Hess(pf_arr)
-
-print('F1',F)
-print('F2',A)
-'''
+final_params = Fisher(pf)
+print('ERRORS: ',final_params.get_err())            
 
