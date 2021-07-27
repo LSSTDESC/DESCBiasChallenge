@@ -2,9 +2,9 @@ sampler:
   mcmc:
     learn_proposal: True
     burn_in: 10
-    oversample_power: 1
-    drag: True
-    measure_speeds: True
+    #oversample_power: 1
+    #drag: True
+    #measure_speeds: False
     max_samples: 1000
 
 params:
