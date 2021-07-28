@@ -1,0 +1,223 @@
+sampler:
+  minimize:
+    ignore_prior: True
+    max_evals: 1000
+
+params:
+  # Derived
+  sigma8:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.81
+      scale: 0.01
+    latex: \sigma_8
+    proposal: 0.001
+  Omega_c:
+    prior:
+      min: 0.05
+      max: 0.7
+    ref:
+      dist: norm
+      loc: 0.25
+      scale: 0.01
+    latex: \Omega_c
+    proposal: 0.001
+  Omega_b: 
+    prior:
+      min: 0.01
+      max: 0.2
+    ref:
+      dist: norm
+      loc: 0.05
+      scale: 0.01
+    latex: \Omega_b
+    proposal: 0.001
+  h:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.7
+      scale: 0.01
+    latex: h
+    proposal: 0.001
+  n_s:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.96
+      scale: 0.01
+    latex: n_s
+    proposal: 0.001
+  m_nu: 0.
+  cllike_cl1_b0: 
+    prior:
+      min: 0.5
+      max: 3
+    ref:
+      dist: norm
+      loc: 2.
+      scale: 0.01
+    latex: b_0\,\text{for}\,C_{l,1}
+    proposal: 0.001
+  cllike_cl2_b0:
+    prior:
+      min: 0.5
+      max: 3
+    ref:
+      dist: norm
+      loc: 2.
+      scale: 0.01
+    latex: b_0\,\text{for}\,C_{l,2}
+    proposal: 0.001
+  cllike_cl3_b0: 
+    prior:
+      min: 0.5
+      max: 3
+    ref:
+      dist: norm
+      loc: 2.
+      scale: 0.01
+    latex: b_0\,\text{for}\,C_{l,3}
+    proposal: 0.001
+  cllike_cl4_b0: 
+    prior:
+      min: 0.5
+      max: 3
+    ref:
+      dist: norm
+      loc: 2.
+      scale: 0.01
+    latex: b_0\,\text{for}\,C_{l,4}
+    proposal: 0.001
+  cllike_cl5_b0: 
+    prior:
+      min: 0.5
+      max: 3
+    ref:
+      dist: norm
+      loc: 2.
+      scale: 0.01
+    latex: b_0\,\text{for}\,C_{l,5}
+    proposal: 0.001
+  cllike_cl6_b0: 
+    prior:
+      min: 0.5
+      max: 3
+    ref:
+      dist: norm
+      loc: 2.
+      scale: 0.01
+    latex: b_0\,\text{for}\,C_{l,6}
+    proposal: 0.001
+
+# CCL settings
+theory:
+  cl_like.CCL:
+    transfer_function: eisenstein_hu
+    matter_pk: halofit
+    baryons_pk: nobaryons
+
+# Likelihood settings # TESTING
+likelihood:
+  cl_like.ClLike:
+    # Input sacc file
+    input_file: ../fid_red_const.fits
+    # List all relevant bins
+    bins:
+      - name: cl1
+      - name: cl2
+      - name: cl3
+      - name: cl4
+      - name: cl5
+      - name: cl6
+      - name: sh1
+      - name: sh2
+      - name: sh3
+      - name: sh4
+      - name: sh5
+    # List all 2-points that should go into the
+    # data vector
+    twopoints:
+      - bins: [cl1, cl1]
+      - bins: [cl2, cl2]
+      - bins: [cl3, cl3]
+      - bins: [cl4, cl4]
+      - bins: [cl5, cl5]
+      - bins: [cl6, cl6]
+      - bins: [cl1, sh1]
+      - bins: [cl1, sh2]
+      - bins: [cl1, sh3]
+      - bins: [cl1, sh4]
+      - bins: [cl1, sh5]
+      - bins: [cl2, sh1]
+      - bins: [cl2, sh2]
+      - bins: [cl2, sh3]
+      - bins: [cl2, sh4]
+      - bins: [cl2, sh5]
+      - bins: [cl3, sh1]
+      - bins: [cl3, sh2]
+      - bins: [cl3, sh3]
+      - bins: [cl3, sh4]
+      - bins: [cl3, sh5]
+      - bins: [cl4, sh1]
+      - bins: [cl4, sh2]
+      - bins: [cl4, sh3]
+      - bins: [cl4, sh4]
+      - bins: [cl4, sh5]
+      - bins: [cl5, sh1]
+      - bins: [cl5, sh2]
+      - bins: [cl5, sh3]
+      - bins: [cl5, sh4]
+      - bins: [cl5, sh5]
+      - bins: [cl6, sh1]
+      - bins: [cl6, sh2]
+      - bins: [cl6, sh3]
+      - bins: [cl6, sh4]
+      - bins: [cl6, sh5]
+      - bins: [sh1, sh1]
+      - bins: [sh1, sh2]
+      - bins: [sh1, sh3]
+      - bins: [sh1, sh4]
+      - bins: [sh1, sh5]
+      - bins: [sh2, sh2]
+      - bins: [sh2, sh3]
+      - bins: [sh2, sh4]
+      - bins: [sh2, sh5]
+      - bins: [sh3, sh3]
+      - bins: [sh3, sh4]
+      - bins: [sh3, sh5]
+      - bins: [sh4, sh4]
+      - bins: [sh4, sh5]
+      - bins: [sh5, sh5]
+
+    # Prefix associated to all nuisance params
+    input_params_prefix: cllike
+    # IADESY1, IAPerBin or IANone
+    ia_model: IANone
+    # NzShift or NzNone
+    nz_model: NzNone
+    # ShapeMultiplicative, ShapeNone
+    shape_model: ShapeNone
+    # Linear or HEFT
+    bz_model: Linear
+
+    defaults:
+      lmin: 0
+      lmax: 2000
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
