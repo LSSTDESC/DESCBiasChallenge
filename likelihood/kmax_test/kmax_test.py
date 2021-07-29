@@ -13,7 +13,7 @@ print('kmax = ',kmax)
 copyfile("kmax_test.yml", "kmax_"+kmax+".yml")
 
 new_yml = open("kmax_"+kmax+".yml", "a")
-new_yml.write("      kmax: "+kmax+"\ndebug: True\noutput: 'cobaya_out/kmax_test'")
+new_yml.write("      kmax: "+kmax+"\ndebug: True\noutput: 'cobaya_out/kmax_"+kmax+"'")
 new_yml.close()
 
 # Read in the yaml file
@@ -46,7 +46,7 @@ print(pf)
 #======================DETERMINE ERRORS ON PARAMETERS========================
 
 # remove cobaya_out directory (just for now!) to make running code easier
-os.system('rm -r cobaya_out')  
+#os.system('rm -r cobaya_out')  
 
 class Fisher:
     def __init__(self,pf):
@@ -82,11 +82,12 @@ class Fisher:
 
     # Calculate Fisher matrix
     def calc_Fisher(self):
-        h_fact = 0.005 # stepsize factor
+        h_fact = 0.01 # stepsize factor
 
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
-                   "cllike_cl1_b0": 0.1,"cllike_cl2_b0": 0.1,"cllike_cl3_b0": 0.1,"cllike_cl4_b0": 0.1,"cllike_cl5_b0": 0.1,"cllike_cl6_b0": 0.1}  
+                   "cllike_cl1_b0": 0.1,"cllike_cl2_b0": 0.1,"cllike_cl3_b0": 0.1,
+                   "cllike_cl4_b0": 0.1,"cllike_cl5_b0": 0.1,"cllike_cl6_b0": 0.1}  
 
         theta = list(self.pf.keys())  # array containing parameter names
 
