@@ -120,7 +120,7 @@ final_params = Fisher(pf)
 errs = list(final_params.get_err())
 
 data = np.column_stack([float(kmax)] + p0vals + pfvals + errs)
-head = 'PARAMETERS: \nkmax   true_params('+str(len(p0vals))+')   calc_params('+str(len(pfvals))+')   errors('+str(len(errs))+')'
+head = 'PARAMETERS: '+str(list(pf.keys()))+'\nkmax   true_params('+str(len(p0vals))+')   calc_params('+str(len(pfvals))+')   errors('+str(len(errs))+')'
 out = open('kmax_test.dat','a')
 np.savetxt(out, data, header=head)
 out.close()
