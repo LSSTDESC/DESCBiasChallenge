@@ -121,7 +121,7 @@ errs = list(final_params.get_err())
 
 data = np.column_stack([float(kmax)] + p0vals + pfvals + errs)
 head = 'PARAMETERS: '+str(list(pf.keys()))+'\nkmax   true_params('+str(len(p0vals))+')   calc_params('+str(len(pfvals))+')   errors('+str(len(errs))+')'
-out = open('kmax_test.dat','a')
+out = open('result_k'+kmax+'.dat','w')
 np.savetxt(out, data, header=head)
 out.close()
 
