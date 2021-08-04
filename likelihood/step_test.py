@@ -1,10 +1,19 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jul 22 12:21:13 2021
+
+@author: nathanfindlay
+"""
 from cobaya.model import get_model
 from cobaya.run import run
 import yaml
 import os
 
 import numpy as np
-import numpy.linalg as LA 
+import numpy.linalg as LA
+import matplotlib.pyplot as plt
+import csv
 
 # Read in the yaml file
 config_fn = 'test.yml'
@@ -39,8 +48,9 @@ print(pf)
 os.system('rm -r cobaya_out')  
 
 class Fisher:
-    def __init__(self,pf):
+    def __init__(self,pf,h):
         self.pf = pf
+        self.h_fact = h
     
     # Determine likelihood at new steps
     def fstep(self,param1,param2,h1,h2,signs):   
@@ -72,7 +82,8 @@ class Fisher:
 
     # Calculate Fisher matrix
     def calc_Fisher(self):
-        h_fact = 0.005 # stepsize factor
+        #h_fact =  0.5 # stepsize factor
+        #h_fact = array[indx]
 
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1}  
@@ -80,13 +91,13 @@ class Fisher:
         theta = list(self.pf.keys())  # array containing parameter names
 
         # Assign matrix elements
-        F = np.zeros([len(theta),len(theta)])
+        F = np.empty([len(theta),len(theta)])
         for i in range(0,len(theta)):
             for j in range(0,len(theta)):
                 param1 = theta[i]
                 param2 = theta[j]
-                h1 = h_fact*typ_var[param1]
-                h2 = h_fact*typ_var[param2]
+                h1 = self.h_fact*typ_var[param1]
+                h2 = self.h_fact*typ_var[param2]
                 F[i][j] = self.F_ij(param1,param2,h1,h2)
                 
         return F
@@ -102,10 +113,32 @@ class Fisher:
         err = np.sqrt(np.diag(covar))  # estimated parameter errors
         return err
 
+step = np.geomspace(1e-4,0.3,20)
+errs = np.zeros((len(step),len(pf)))
+C = np.zeros(len(step))
 
-final_params = Fisher(pf)
-errs = final_params.get_err()
-C = final_params.get_cond_num()
-print('PARAMETERS: ', final_params.pf)
-print('ERRORS: ',errs) 
-print('CONDITION NUMBER: ',C)   
+for i in range(0,len(step)):
+    h = step[i]
+    final_params = Fisher(pf,h)
+    errs[i] = final_params.get_err()
+    C[i] = final_params.get_cond_num()
+
+col=['b','r','g','c','m','y']
+f1, axes = plt.subplots(2,1,sharex='all',figsize=(5,6))
+f1.tight_layout()
+f1.show()
+
+axes[0].set_title('Parameter errors')
+for i in range(0,len(pf)):  
+    axes[0].plot(step,errs[:,i],color=col[i],label=list(pf.keys())[i])
+axes[0].set_ylabel('Value')
+axes[0].set_xscale('log')
+#axes[0].set_ylim((3e-4,8e-4))
+axes[0].legend()
+
+axes[1].set_title('Fisher matrix condition number')
+axes[1].plot(step,C)
+axes[1].set_xscale('log')
+axes[1].set_ylabel('Value')
+axes[1].set_xlabel('Stepsize factor (h_fact)')
+
