@@ -55,13 +55,25 @@ params:
       scale: 0.01
     latex: n_s
     proposal: 0.005
-  m_nu: 0.0
-  cllike_cl1_b0: 2.
-  cllike_cl2_b0: 2.
-  cllike_cl3_b0: 2.
-  cllike_cl4_b0: 2.
-  cllike_cl5_b0: 2.
-  cllike_cl6_b0: 2.
+  m_nu: 0.
+  cllike_cl1_b1: 2.
+  cllike_cl2_b1: 2.
+  cllike_cl3_b1: 2.
+  cllike_cl4_b1: 2.
+  cllike_cl5_b1: 2.
+  cllike_cl6_b1: 2.
+  cllike_cl1_b2: 0.
+  cllike_cl2_b2: 0.
+  cllike_cl3_b2: 0.
+  cllike_cl4_b2: 0.
+  cllike_cl5_b2: 0.
+  cllike_cl6_b2: 0.
+  cllike_cl1_bs: 0.
+  cllike_cl2_bs: 0.
+  cllike_cl3_bs: 0.
+  cllike_cl4_bs: 0.
+  cllike_cl5_bs: 0.
+  cllike_cl6_bs: 0.
 
 # CCL settings
 theory:
@@ -166,8 +178,8 @@ likelihood:
     nz_model: NzNone
     # ShapeMultiplicative, ShapeNone
     shape_model: ShapeNone
-    # Linear or HEFT
-    bz_model: Linear
+    # Linear or EulerianPT
+    bz_model: EulerianPT
 
 debug: True
-output: 'cobaya_out/test'
+output: 'cobaya_out/test_pt'
