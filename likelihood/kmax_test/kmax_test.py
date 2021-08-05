@@ -21,6 +21,11 @@ config_fn = "kmax_"+kmax+".yml"
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
+model_name = str(info['likelihood']['cl_like.ClLike']['input_file'])
+model_name = model_name.split('/')[-1]
+model_name = model_name.split('.fits')[0]
+print('MODEL: ',model_name)
+
 # Get the mean proposed in the yaml file for each parameter
 p0 = {}
 for p in info['params']:
@@ -31,11 +36,6 @@ os.system('mkdir -p ' + info['output'])
 
 print("params_dict = ", p0)
 
-# Compute the likelihood
-model = get_model(info)
-loglikes, derived = model.loglikes(p0)
-print("chi2 = ", -2 * loglikes[0])
-
 # Run minimizer
 updated_info, sampler = run(info)
 bf = sampler.products()['minimum'].bestfit()
@@ -43,10 +43,14 @@ pf = {k: bf[k] for k in p0.keys()}
 print("Final params: ")
 print(pf)
 
-#======================DETERMINE ERRORS ON PARAMETERS========================
+# Compute the likelihoods
+model = get_model(info)
+loglikes, derived = model.loglikes(p0)
+p0_chi2 = -2 * loglikes[0]
+loglikes, derived = model.loglikes(pf)
+pf_chi2 = -2 * loglikes[0]
 
-# remove cobaya_out directory (just for now!) to make running code easier
-#os.system('rm -r cobaya_out')  
+#======================DETERMINE ERRORS ON PARAMETERS========================
 
 class Fisher:
     def __init__(self,pf):
@@ -119,8 +123,8 @@ pfvals = list(pf.values())
 final_params = Fisher(pf)
 errs = list(final_params.get_err())
 
-data = np.column_stack([float(kmax)] + p0vals + pfvals + errs)
-head = 'PARAMETERS: '+str(list(pf.keys()))+'\nkmax   true_params('+str(len(p0vals))+')   calc_params('+str(len(pfvals))+')   errors('+str(len(errs))+')'
+data = np.column_stack([float(kmax)] + p0vals + pfvals + errs + [p0_chi2] + [pf_chi2])
+head = 'PARAMETERS: '+str(list(pf.keys()))+' ; MODEL: \''+ model_name +'\'\nkmax   true_params('+str(len(p0vals))+')   calc_params('+str(len(pfvals))+')   errors('+str(len(errs))+')   p0_chi2   pf_chi2'
 out = open('result_k'+kmax+'.dat','w')
 np.savetxt(out, data, header=head)
 out.close()

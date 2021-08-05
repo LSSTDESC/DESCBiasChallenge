@@ -23,10 +23,13 @@ data = data[np.argsort(data[:, 0])]
 
 # extract result data
 no_of_params = int((len(data[0,:])-1)/3)
+model_name = header.split('\'')[-2]
 kmax = data[:,0]
 true_params = data[0,1:no_of_params+1]
 calc_params = data[:,no_of_params+1:2*no_of_params+1]
 errs = data[:,2*no_of_params+1:3*no_of_params+1]
+p0_chi2 = data[:,-2]
+pf_chi2 = data[:,-1]
 
 # plot parameter variation with kmax
 def param_plt(param_no):
@@ -36,12 +39,19 @@ def param_plt(param_no):
     axes[param_no].set_ylabel(param_name,fontsize=20)
     axes[param_no].legend()    
 
-f1, axes = plt.subplots(no_of_params,1,sharex='all',figsize=(5,3*no_of_params))
-f1.tight_layout(pad=2)
+f1, axes = plt.subplots(no_of_params+1,1,sharex='all',figsize=(5,3*(no_of_params+1)))
 f1.show()
-f1.savefig('param_plot.jpg')
 
 # create plots for all parameters 
 for i in range(0,no_of_params):
     param_plt(i)
-axes[no_of_params-1].set_xlabel('kmax (1/Mpc)',fontsize=20)
+axes[0].set_title('Model: ' + str(model_name),fontsize=25,y=1.1)
+axes[no_of_params].scatter(kmax,pf_chi2,marker='x',label='calculated')
+# axes[no_of_params].scatter(kmax,p0_chi2,marker='x',color='r',label='true')
+axes[no_of_params].set_xlabel('kmax (1/Mpc)',fontsize=20)
+axes[no_of_params].set_ylabel(r'$\chi^2$',fontsize=20)
+axes[no_of_params].legend()
+
+plt.tight_layout()
+plt.savefig('param_plot.png')
+
