@@ -2,6 +2,7 @@ import time
 import numpy as np
 from scipy.interpolate import interp1d
 import pyccl as ccl
+import pyccl.nl_pt as pt
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 
@@ -205,8 +206,6 @@ class ClLike(Likelihood):
         if self.bz_model == 'Linear':
             b0 = pars[self.input_params_prefix + '_' + name + '_b0']
             bz *= b0
-        elif self.bz_model != 'BzNone':
-            raise LoggedError(self.log, "Unknown Bz model %s" % self.bz_model)
         return (z, bz)
 
     def _get_ia_bias(self, cosmo, name, **pars):
@@ -237,14 +236,26 @@ class ClLike(Likelihood):
                 nz = self._get_nz(cosmo, name, **pars)
                 bz = self._get_bz(cosmo, name, **pars)
                 t = ccl.NumberCountsTracer(cosmo, dndz=nz, bias=bz, has_rsd=False)
+                if self.bz_model == 'EulerianPT':
+                    b1 = pars[self.input_params_prefix + '_' + name + '_b1']
+                    b2 = pars[self.input_params_prefix + '_' + name + '_b2']
+                    bs = pars[self.input_params_prefix + '_' + name + '_bs']
+                    ptt = pt.PTNumberCountsTracer(b1=b1, b2=b2, bs=bs)
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
                 t = ccl.WeakLensingTracer(cosmo, nz, ia_bias=ia)
+                if self.bz_model == 'EulerianPT':
+                    ptt = pt.PTMatterTracer()
             elif q == 'cmb_convergence':
                 # B.H. TODO: pass z_source as parameter to the YAML file
                 t = ccl.CMBLensingTracer(cosmo, z_source=1100)
-            trs[name] = t
+                if self.bz_model == 'EulerianPT':
+                    ptt = pt.PTMatterTracer()
+            trs[name] = {}
+            trs[name]['ccl_tracer'] = t
+            if self.bz_model == 'EulerianPT':
+                trs[name]['PT_tracer'] = ptt
         return trs
 
     def _get_pk_data(self, cosmo):
@@ -257,10 +268,18 @@ class ClLike(Likelihood):
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             return {'pk_mm': pkmm}
+        elif self.bz_model == 'EulerianPT':
+            cosmo.compute_nonlin_power()
+            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
+            ptc = pt.PTCalculator(with_NC=True, with_IA=False,
+                                  log10k_min=-4, log10k_max=2, nk_per_decade=20)
+            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
+            ptc.update_pk(pk_lin_z0)
+            return {'ptc': ptc, 'pk_mm': pkmm}
         else:
             raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
 
-    def _get_pkxy(self, cosmo, clm, pkd, **pars):
+    def _get_pkxy(self, cosmo, clm, pkd, trs, **pars):
         """ Get the P(k) between two tracers. """
         q1 = self.used_tracers[clm['bin_1']]
         q2 = self.used_tracers[clm['bin_2']]
@@ -272,6 +291,14 @@ class ClLike(Likelihood):
                 return pkd['pk_mm']  # matter-matter
             else:
                 return pkd['pk_mm']  # galaxy-matter
+        elif (self.bz_model == 'EulerianPT'):
+            if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                return pkd['pk_mm']  # matter-matter
+            else:
+                ptt1 = trs[clm['bin_1']]['PT_tracer']
+                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                pk_pt = pt.get_pt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'])
+                return pk_pt
         else:
             raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
 
@@ -283,8 +310,10 @@ class ClLike(Likelihood):
         # Correlate all needed pairs of tracers
         cls = []
         for clm in self.cl_meta:
-            pkxy = self._get_pkxy(cosmo, clm, pk, **pars)
-            cl = ccl.angular_cl(cosmo, trs[clm['bin_1']], trs[clm['bin_2']],
+            pkxy = self._get_pkxy(cosmo, clm, pk, trs, **pars)
+            cl = ccl.angular_cl(cosmo,
+                                trs[clm['bin_1']]['ccl_tracer'],
+                                trs[clm['bin_2']]['ccl_tracer'],
                                 self.l_sample, p_of_k_a=pkxy)
             clb = self._eval_interp_cl(cl, clm['l_bpw'], clm['w_bpw'])
             cls.append(clb)
@@ -307,8 +336,7 @@ class ClLike(Likelihood):
                 prefac = (1+m1) * (1+m2)
                 cls[i] *= prefac
 
-    def _get_theory(self, **pars):
-        """ Computes theory vector."""
+    def get_cls_theory(self, **pars):
         # Get cosmological model
         res = self.provider.get_CCL()
         cosmo = res['cosmo']
@@ -321,6 +349,35 @@ class ClLike(Likelihood):
 
         # Multiplicative bias if needed
         self._apply_shape_systematics(cls, **pars)
+        return cls
+
+    def get_sacc_file(self, **pars):
+        import sacc
+
+        # Create empty file
+        s = sacc.Sacc()
+
+        # Add tracers
+        for n, p in self.bin_properties.items():
+            q = self.used_tracers[n]
+            if q != 'cmb_convergence':
+                s.add_tracer('NZ', n, quantity=q, spin=0,
+                             z=p['z_fid'], nz=p['nz_fid'])
+            else:
+                s.add_tracer('Map', n, quantity=q, spin=0,
+                             ell=np.arange(10), beam=np.ones(10))
+
+        # Calculate power spectra
+        cls = self.get_cls_theory(**pars)
+        for clm, cl in zip(self.cl_meta, cls):
+            s.add_ell_cl('cl_00', clm['bin_1'], clm['bin_2'], clm['l_eff'], cl)
+
+        s.add_covariance(self.cov)
+        return s
+
+    def _get_theory(self, **pars):
+        """ Computes theory vector."""
+        cls = self.get_cls_theory(**pars)
 
         # Flattening into a 1D array
         cl_out = np.zeros(self.ndata)
