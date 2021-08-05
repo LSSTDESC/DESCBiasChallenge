@@ -336,8 +336,7 @@ class ClLike(Likelihood):
                 prefac = (1+m1) * (1+m2)
                 cls[i] *= prefac
 
-    def _get_theory(self, **pars):
-        """ Computes theory vector."""
+    def get_cls_theory(self, **pars):
         # Get cosmological model
         res = self.provider.get_CCL()
         cosmo = res['cosmo']
@@ -350,6 +349,35 @@ class ClLike(Likelihood):
 
         # Multiplicative bias if needed
         self._apply_shape_systematics(cls, **pars)
+        return cls
+
+    def get_sacc_file(self, **pars):
+        import sacc
+
+        # Create empty file
+        s = sacc.Sacc()
+
+        # Add tracers
+        for n, p in self.bin_properties.items():
+            q = self.used_tracers[n]
+            if q != 'cmb_convergence':
+                s.add_tracer('NZ', n, quantity=q, spin=0,
+                             z=p['z_fid'], nz=p['nz_fid'])
+            else:
+                s.add_tracer('Map', n, quantity=q, spin=0,
+                             ell=np.arange(10), beam=np.ones(10))
+
+        # Calculate power spectra
+        cls = self.get_cls_theory(**pars)
+        for clm, cl in zip(self.cl_meta, cls):
+            s.add_ell_cl('cl_00', clm['bin_1'], clm['bin_2'], clm['l_eff'], cl)
+
+        s.add_covariance(self.cov)
+        return s
+
+    def _get_theory(self, **pars):
+        """ Computes theory vector."""
+        cls = self.get_cls_theory(**pars)
 
         # Flattening into a 1D array
         cl_out = np.zeros(self.ndata)
