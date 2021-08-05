@@ -1,7 +1,7 @@
 sampler:
   minimize:
     ignore_prior: True
-    max_evals: 1000
+    max_evals: 10000
 
 params:
   # Derived
@@ -58,8 +58,8 @@ params:
   m_nu: 0.
   cllike_cl1_b0: 
     prior:
-      min: 0.5
-      max: 3
+      min: 0.
+      max: 100.
     ref:
       dist: norm
       loc: 2.
@@ -68,8 +68,8 @@ params:
     proposal: 0.001
   cllike_cl2_b0:
     prior:
-      min: 0.5
-      max: 3
+      min: 0.
+      max: 100.
     ref:
       dist: norm
       loc: 2.
@@ -78,8 +78,8 @@ params:
     proposal: 0.001
   cllike_cl3_b0: 
     prior:
-      min: 0.5
-      max: 3
+      min: 0.
+      max: 100.
     ref:
       dist: norm
       loc: 2.
@@ -88,8 +88,8 @@ params:
     proposal: 0.001
   cllike_cl4_b0: 
     prior:
-      min: 0.5
-      max: 3
+      min: 0.
+      max: 100.
     ref:
       dist: norm
       loc: 2.
@@ -98,8 +98,8 @@ params:
     proposal: 0.001
   cllike_cl5_b0: 
     prior:
-      min: 0.5
-      max: 3
+      min: 0.
+      max: 100.
     ref:
       dist: norm
       loc: 2.
@@ -108,8 +108,8 @@ params:
     proposal: 0.001
   cllike_cl6_b0: 
     prior:
-      min: 0.5
-      max: 3
+      min: 0.
+      max: 100.
     ref:
       dist: norm
       loc: 2.
@@ -128,7 +128,7 @@ theory:
 likelihood:
   cl_like.ClLike:
     # Input sacc file
-    input_file: ../fid_red_const.fits
+    input_file: ../../data/fid_red_const.fits
     # List all relevant bins
     bins:
       - name: cl1
@@ -176,7 +176,6 @@ likelihood:
       - bins: [cl5, sh3]
       - bins: [cl5, sh4]
       - bins: [cl5, sh5]
-      - bins: [cl6, sh1]
       - bins: [cl6, sh2]
       - bins: [cl6, sh3]
       - bins: [cl6, sh4]
