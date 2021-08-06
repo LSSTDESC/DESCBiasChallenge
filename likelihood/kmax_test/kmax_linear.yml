@@ -128,7 +128,7 @@ theory:
 likelihood:
   cl_like.ClLike:
     # Input sacc file
-    input_file: ../../data/fid_red_const.fits
+    input_file: ../../data/fid_red_linear.fits
     # List all relevant bins
     bins:
       - name: cl1
@@ -176,6 +176,7 @@ likelihood:
       - bins: [cl5, sh3]
       - bins: [cl5, sh4]
       - bins: [cl5, sh5]
+      - bins: [cl6, sh1]
       - bins: [cl6, sh2]
       - bins: [cl6, sh3]
       - bins: [cl6, sh4]

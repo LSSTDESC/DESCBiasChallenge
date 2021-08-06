@@ -10,12 +10,13 @@ for i in os.listdir(path):
     if os.path.isfile(os.path.join(path,i)) and 'result_k' in i:
         f = open(i, "r")
         fdata = f.read()
-        res.write(fdata+'\n')  
+        res.write(fdata+'\n')
         f.close()
 res.close()
 
 f = open('results.dat')
 header = f.readline()
+subheader = f.readline()
 
 data = np.loadtxt('results.dat')
 # sort results by kmax
@@ -31,6 +32,10 @@ errs = data[:,2*no_of_params+1:3*no_of_params+1]
 p0_chi2 = data[:,-2]
 pf_chi2 = data[:,-1]
 
+# save results to file
+np.savetxt('results/'+str(model_name)+'.dat',data,header=header[2:]+subheader[2:-1])
+os.system('rm results.dat')
+
 # plot parameter variation with kmax
 def param_plt(param_no):
     param_name = header.split('\'')[2*param_no+1]
@@ -45,7 +50,7 @@ f1.show()
 # create plots for all parameters 
 for i in range(0,no_of_params):
     param_plt(i)
-axes[0].set_title('Model: ' + str(model_name),fontsize=25,y=1.1)
+axes[0].set_title(str(model_name),fontsize=25,y=1.1)
 axes[no_of_params].scatter(kmax,pf_chi2,marker='x',label='calculated')
 # axes[no_of_params].scatter(kmax,p0_chi2,marker='x',color='r',label='true')
 axes[no_of_params].set_xlabel('kmax (1/Mpc)',fontsize=20)
@@ -53,5 +58,5 @@ axes[no_of_params].set_ylabel(r'$\chi^2$',fontsize=20)
 axes[no_of_params].legend()
 
 plt.tight_layout()
-plt.savefig('param_plot.png')
+plt.savefig('results/'+str(model_name)+'.png')
 

@@ -242,6 +242,7 @@ likelihood:
       - bins: [cl5, sh3]
       - bins: [cl5, sh4]
       - bins: [cl5, sh5]
+      - bins: [cl6, sh1]
       - bins: [cl6, sh2]
       - bins: [cl6, sh3]
       - bins: [cl6, sh4]

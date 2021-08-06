@@ -10,7 +10,8 @@ import numpy.linalg as LA
 kmax = sys.argv[1]
 print('kmax = ',kmax)
 
-copyfile("kmax_test.yml", "kmax_"+kmax+".yml")
+# choose yaml file to read - kmax_linear or kmax_pt
+copyfile("kmax_pt.yml", "kmax_"+kmax+".yml")
 
 new_yml = open("kmax_"+kmax+".yml", "a")
 new_yml.write("      kmax: "+kmax+"\ndebug: True\noutput: 'cobaya_out/kmax_"+kmax+"'")
@@ -21,9 +22,11 @@ config_fn = "kmax_"+kmax+".yml"
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
-model_name = str(info['likelihood']['cl_like.ClLike']['input_file'])
-model_name = model_name.split('/')[-1]
-model_name = model_name.split('.fits')[0]
+input_name = str(info['likelihood']['cl_like.ClLike']['input_file'])
+input_name = input_name.split('/')[-1]
+input_name = input_name.split('.fits')[0]
+bz_model = str(info['likelihood']['cl_like.ClLike']['bz_model'])
+model_name = bz_model.strip() + '-' + input_name.strip()
 print('MODEL: ',model_name)
 
 # Get the mean proposed in the yaml file for each parameter
@@ -91,7 +94,13 @@ class Fisher:
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
                    "cllike_cl1_b0": 0.1,"cllike_cl2_b0": 0.1,"cllike_cl3_b0": 0.1,
-                   "cllike_cl4_b0": 0.1,"cllike_cl5_b0": 0.1,"cllike_cl6_b0": 0.1}  
+                   "cllike_cl4_b0": 0.1,"cllike_cl5_b0": 0.1,"cllike_cl6_b0": 0.1,  
+                   "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
+                   "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1, 
+                   "cllike_cl1_b2": 0.1,"cllike_cl2_b2": 0.1,"cllike_cl3_b2": 0.1,
+                   "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1, 
+                   "cllike_cl1_bs": 0.1,"cllike_cl2_bs": 0.1,"cllike_cl3_bs": 0.1,
+                   "cllike_cl4_bs": 0.1,"cllike_cl5_bs": 0.1,"cllike_cl6_bs": 0.1} 
 
         theta = list(self.pf.keys())  # array containing parameter names
 
