@@ -135,6 +135,32 @@ class DataGenerator(object):
                                        (self.z_cl, bz))
                 for n in self.nz_cl]
 
+    def get_b_effective(self, z):
+        if self.bias_model == 'constant':
+            return self.c['bias'].get('constant_bias', 1.)
+        elif self.bias_model == 'HSC_linear':
+            return self.c['bias'].get('constant_bias', 0.95)/ccl.growth_factor(self.cosmo, 1./(1+z))
+        elif self.bias_model == 'HOD':
+            md = ccl.halos.MassDef200m()
+            cm = ccl.halos.ConcentrationDuffy08(mdef=md)
+            mf = ccl.halos.MassFuncTinker08(self.cosmo, mass_def=md)
+            bm = ccl.halos.HaloBiasTinker10(self.cosmo, mass_def=md)
+            pg = ccl.halos.HaloProfileHOD(cm, **(self.c['bias']['HOD_params']))
+            hmc = ccl.halos.HMCalculator(self.cosmo, mf, bm, md)
+            b = ccl.halos.halomod_bias_1pt(self.cosmo, hmc, 1E-4, 1/(1+z), pg, normprof=True)
+            return b
+        elif self.bias_model == 'Abacus':
+            d = np.load('AbacusData/pk2d_abacus.npz')
+            gtype = self.c['bias']['galtype']
+            ids = d['k_s'] < 0.1
+            pkgg = d[f'{gtype}_{gtype}'][:, ids]
+            pkmm = d['m_m'][:, ids]
+            bz = np.mean(np.sqrt(pkgg/pkmm), axis=1)
+            zz = 1./d['a_s']-1
+            from scipy.interpolate import interp1d
+            bf = interp1d(zz[::-1], bz[::-1], fill_value='extrapolate', bounds_error=False)
+            return bf(z)
+
     def get_pks(self):
         if ((self.bias_model == 'constant') or
                 (self.bias_model == 'HSC_linear')):
@@ -265,6 +291,8 @@ class DataGenerator(object):
             s.add_tracer('NZ', f'cl{i+1}',
                          quantity='galaxy_density',
                          spin=0, z=self.z_cl, nz=n)
+            z_eff = np.sum(n*self.z_cl)/np.sum(n)
+            print(self.get_b_effective(z_eff))
         for i, n in enumerate(self.nz_sh):
             s.add_tracer('NZ', f'sh{i+1}',
                          quantity='galaxy_shear',
@@ -438,6 +466,7 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
+
 # Red (same HOD params)
 config = {'ndens_sh': 27.,
           'ndens_cl': 4.,

@@ -154,7 +154,11 @@ class ClLike(Likelihood):
         # Reorder data vector and covariance
         self.data_vec = s.mean[indices]
         self.cov = s.covariance.covmat[indices][:, indices]
-        self.inv_cov = np.linalg.inv(self.cov)
+        # Spectral decomposition to avoid negative eigenvalues
+        self.inv_cov = np.linalg.pinv(self.cov, rcond=1E-15, hermitian=True)
+        self.ic_w, self.ic_v = np.linalg.eigh(self.inv_cov)
+        self.ic_v = self.ic_v.T
+        self.ic_w[self.ic_w < 0] = 0
         self.ndata = len(self.data_vec)
 
     def _get_ell_sampling(self, nl_per_decade=30):
@@ -398,5 +402,8 @@ class ClLike(Likelihood):
         """
         t = self._get_theory(**pars)
         r = t - self.data_vec
-        chi2 = np.dot(r, self.inv_cov.dot(r))
+        # t = np.random.multivariate_normal(t, self.cov)
+        # chi2 = np.dot(r, self.inv_cov.dot(r))
+        re = np.dot(self.ic_v, r)
+        chi2 = np.sum(re**2*self.ic_w)
         return -0.5*chi2
