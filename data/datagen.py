@@ -4,6 +4,27 @@ from scipy.integrate import simps
 import os
 
 
+def get_abacus_cosmo():
+    omega_b = 0.02237
+    omega_cdm = 0.12
+    h = 0.6736
+    A_s = 2.083e-09
+    n_s = 0.9649
+    alpha_s = 0.0
+    N_ur = 2.0328
+    N_ncdm = 1.0
+    omega_ncdm = 0.0006442
+    w0_fld = -1.0
+    wa_fld = 0.0
+    cosmo = ccl.Cosmology(Omega_c=omega_cdm/h**2,
+                          Omega_b=omega_b/h**2,
+                          h=h, A_s=A_s, n_s=n_s,
+                          m_nu=0.06)
+    cosmo.compute_linear_power()
+    cosmo.compute_nonlin_power()
+    return cosmo
+
+
 class DataGenerator(object):
     lmax = 5000
 
@@ -23,7 +44,13 @@ class DataGenerator(object):
         self.n_cl = len(self.ndens_cl)
         self.n_sh = len(self.ndens_sh)
         if 'cosmology' in self.c:
-            self.cosmo = ccl.Cosmology(**(self.c['cosmology']))
+            if isinstance(self.c['cosmology'], dict):
+                self.cosmo = ccl.Cosmology(**(self.c['cosmology']))
+            else:
+                if self.c['cosmology'] == 'Abacus':
+                    self.cosmo = get_abacus_cosmo()
+                else:
+                    raise ValueError('Unknown cosmology')
         else:
             self.cosmo = ccl.CosmologyVanillaLCDM()
         ccl.sigma8(self.cosmo)
@@ -108,6 +135,32 @@ class DataGenerator(object):
                                        (self.z_cl, bz))
                 for n in self.nz_cl]
 
+    def get_b_effective(self, z):
+        if self.bias_model == 'constant':
+            return self.c['bias'].get('constant_bias', 1.)
+        elif self.bias_model == 'HSC_linear':
+            return self.c['bias'].get('constant_bias', 0.95)/ccl.growth_factor(self.cosmo, 1./(1+z))
+        elif self.bias_model == 'HOD':
+            md = ccl.halos.MassDef200m()
+            cm = ccl.halos.ConcentrationDuffy08(mdef=md)
+            mf = ccl.halos.MassFuncTinker08(self.cosmo, mass_def=md)
+            bm = ccl.halos.HaloBiasTinker10(self.cosmo, mass_def=md)
+            pg = ccl.halos.HaloProfileHOD(cm, **(self.c['bias']['HOD_params']))
+            hmc = ccl.halos.HMCalculator(self.cosmo, mf, bm, md)
+            b = ccl.halos.halomod_bias_1pt(self.cosmo, hmc, 1E-4, 1/(1+z), pg, normprof=True)
+            return b
+        elif self.bias_model == 'Abacus':
+            d = np.load('AbacusData/pk2d_abacus.npz')
+            gtype = self.c['bias']['galtype']
+            ids = d['k_s'] < 0.1
+            pkgg = d[f'{gtype}_{gtype}'][:, ids]
+            pkmm = d['m_m'][:, ids]
+            bz = np.mean(np.sqrt(pkgg/pkmm), axis=1)
+            zz = 1./d['a_s']-1
+            from scipy.interpolate import interp1d
+            bf = interp1d(zz[::-1], bz[::-1], fill_value='extrapolate', bounds_error=False)
+            return bf(z)
+
     def get_pks(self):
         if ((self.bias_model == 'constant') or
                 (self.bias_model == 'HSC_linear')):
@@ -145,6 +198,23 @@ class DataGenerator(object):
                                            lk_arr=lk_s, a_arr=a_s,
                                            smooth_transition=alpha_HMCODE,
                                            supress_1h=k_supress)
+        elif self.bias_model == 'Abacus':
+            print("Getting Abacus Pks")
+            d = np.load('AbacusData/pk2d_abacus.npz')
+            gtype = self.c['bias']['galtype']
+
+            # The red-red Pk is super noisy at z>1.7, so we remove that
+            if gtype == 'red':
+                imax = 8
+            else:
+                imax = -1
+
+            pk_gg = ccl.Pk2D(a_arr=d['a_s'][:imax], lk_arr=np.log(d['k_s']),
+                             pk_arr=np.log(d[f'{gtype}_{gtype}'][:imax, :]),
+                             is_logp=True)
+            pk_gm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
+                             pk_arr=np.log(d[f'{gtype}_m']),
+                             is_logp=True)
         else:
             raise NotImplementedError("Bias model " + self.bias_model +
                                       " not implemented.")
@@ -221,6 +291,8 @@ class DataGenerator(object):
             s.add_tracer('NZ', f'cl{i+1}',
                          quantity='galaxy_density',
                          spin=0, z=self.z_cl, nz=n)
+            z_eff = np.sum(n*self.z_cl)/np.sum(n)
+            print(self.get_b_effective(z_eff))
         for i, n in enumerate(self.nz_sh):
             s.add_tracer('NZ', f'sh{i+1}',
                          quantity='galaxy_shear',
@@ -372,6 +444,38 @@ config = {'ndens_sh': 27.,
                                   'alpha_p': 0.,
                                   'a_pivot': 1./(1+0.65)}},
           'sacc_name': 'fid_red_HOD.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
+
+
+# From Abacus
+# HSC (same HOD params)
+config = {'ndens_sh': 27.,
+          'ndens_cl': 27.,
+          'dNdz_file': 'data/dNdz_shear_shear.npz',
+          'e_rms': 0.28,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'galtype': 'all'},
+          'sacc_name': 'abacus_HSC_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
+
+# Red (same HOD params)
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'galtype': 'red'},
+          'sacc_name': 'abacus_red_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
