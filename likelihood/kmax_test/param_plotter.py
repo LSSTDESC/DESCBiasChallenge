@@ -1,24 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
 
-path = os.getcwd()  # get current working directory
+folder_name = sys.argv[1]
+path = os.getcwd()+'/'+folder_name  # get current working directory
 
 # create combined results file of all kmax
-res = open('results.dat','w') 
+res = open(folder_name+'results.dat','w') 
 for i in os.listdir(path):
-    if os.path.isfile(os.path.join(path,i)) and 'result_k' in i:
-        f = open(i, "r")
+    if os.path.isfile(os.path.join(path,i)) and 'results_k' in i:
+        f = open(folder_name+i, "r")
         fdata = f.read()
         res.write(fdata+'\n')
         f.close()
 res.close()
 
-f = open('results.dat')
+f = open(folder_name+'results.dat')
 header = f.readline()
 subheader = f.readline()
 
-data = np.loadtxt('results.dat')
+data = np.loadtxt(folder_name+'results.dat')
 # sort results by kmax
 data = data[np.argsort(data[:, 0])]
 
@@ -33,8 +35,8 @@ p0_chi2 = data[:,-2]
 pf_chi2 = data[:,-1]
 
 # save results to file
-np.savetxt('results/'+str(model_name)+'.dat',data,header=header[2:]+subheader[2:-1])
-os.system('rm results.dat')
+np.savetxt(folder_name+'/'+str(model_name)+'.dat',data,header=header[2:]+subheader[2:-1])
+os.system('rm '+folder_name+'results.dat')
 
 # plot parameter variation with kmax
 def param_plt(param_no):
@@ -58,5 +60,5 @@ axes[no_of_params].set_ylabel(r'$\chi^2$',fontsize=20)
 axes[no_of_params].legend()
 
 plt.tight_layout()
-plt.savefig('results/'+str(model_name)+'.png')
+plt.savefig(folder_name+str(model_name)+'.png')
 
