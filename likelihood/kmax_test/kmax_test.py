@@ -78,6 +78,7 @@ for i in range(0,len(bias)):
         info['params']['cllike_cl'+str(i+1)+'_b2'] = cl_param.copy()
         info['params']['cllike_cl'+str(i+1)+'_b2']['ref'] = {'dist': 'norm', 'loc': 0., 'scale': 0.01}
         info['params']['cllike_cl'+str(i+1)+'_b2']['latex'] = 'b_2\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
+        # info['params']['cllike_cl'+str(i+1)+'_bs'] = 0.
         info['params']['cllike_cl'+str(i+1)+'_bs'] = cl_param.copy()
         info['params']['cllike_cl'+str(i+1)+'_bs']['ref'] = {'dist': 'norm', 'loc': 0., 'scale': 0.01}
         info['params']['cllike_cl'+str(i+1)+'_bs']['latex'] = 'b_s\\,\\text{for}\\,C_{l,'+str(i+1)+'}'

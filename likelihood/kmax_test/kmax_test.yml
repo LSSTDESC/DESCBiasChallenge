@@ -1,7 +1,7 @@
 sampler:
   minimize:
     ignore_prior: True
-    max_evals: 1000
+    max_evals: 10000
 
 params:
   # Derived
