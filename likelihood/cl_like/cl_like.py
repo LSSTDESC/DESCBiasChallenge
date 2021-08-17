@@ -248,7 +248,7 @@ class ClLike(Likelihood):
                     zmean = self.bin_properties[name]['zmean_fid']
                     b1 = pars[self.input_params_prefix + '_' + name + '_b1']
                     b1p = pars[self.input_params_prefix + '_' + name + '_b1p']
-                    bz = b1 + bp * (z - zmean)
+                    bz = b1 + b1p * (z - zmean)
                     b2 = pars[self.input_params_prefix + '_' + name + '_b2']
                     bs = pars[self.input_params_prefix + '_' + name + '_bs']
                     ptt = pt.PTNumberCountsTracer(b1=(z,bz), b2=b2, bs=bs)
