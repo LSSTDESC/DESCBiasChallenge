@@ -27,11 +27,6 @@ config_fn = "kmax_test.yml"
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
-# Add model, input file and kmax to yaml file
-info['likelihood']['cl_like.ClLike']['bz_model'] = model
-info['likelihood']['cl_like.ClLike']['input_file'] = input_file
-info['likelihood']['cl_like.ClLike']['defaults']['kmax'] = float(kmax)
-
 # Add extra bins and two point correlations for red data
 if input_name[:3] == 'red':
     cl_bins = 6
@@ -67,27 +62,41 @@ else:
     bias = [2.,2.,2.,2.,2.,2.]
 
 # Template for bias parameters in yaml file
-cl_param = {'prior': {'min': 0.0, 'max': 100.0}, 'ref': {}, 'latex': 'blank', 'proposal': 0.001}
+cl_param = {'prior': {'min': 0.0, 'max': 100.0}, 'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
+        'latex': 'blank', 'proposal': 0.001}
 
+# Set bias parameter types used in each model
+if model_name == 'EPT':
+    bpar = ['1','2','s']
+else:
+    bpar = ['0']
+    
 # Write bias parameters into yaml file
-for i in range(0,len(bias)):
-    if model_name == 'EPT':
-        info['params']['cllike_cl'+str(i+1)+'_b1'] = cl_param.copy()
-        info['params']['cllike_cl'+str(i+1)+'_b1']['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
-        info['params']['cllike_cl'+str(i+1)+'_b1']['latex'] = 'b_1\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
-        info['params']['cllike_cl'+str(i+1)+'_b2'] = cl_param.copy()
-        info['params']['cllike_cl'+str(i+1)+'_b2']['ref'] = {'dist': 'norm', 'loc': 0., 'scale': 0.01}
-        info['params']['cllike_cl'+str(i+1)+'_b2']['latex'] = 'b_2\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
-        # info['params']['cllike_cl'+str(i+1)+'_bs'] = 0.
-        info['params']['cllike_cl'+str(i+1)+'_bs'] = cl_param.copy()
-        info['params']['cllike_cl'+str(i+1)+'_bs']['ref'] = {'dist': 'norm', 'loc': 0., 'scale': 0.01}
-        info['params']['cllike_cl'+str(i+1)+'_bs']['latex'] = 'b_s\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
+for b in bpar:
+    for i in range(0,cl_bins):
+        info['params']['cllike_cl'+str(i+1)+'_b'+b] = cl_param.copy()
+        info['params']['cllike_cl'+str(i+1)+'_b'+b]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
+        if b == '0' or b == '1':
+            info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+        # Uncomment to remove bs parameter from minimisation
+        # elif b == 's':
+            # info['params']['cllike_cl'+str(i+1)+'_bs'] = 0.
 
-    else:
-        info['params']['cllike_cl'+str(i+1)+'_b0'] = cl_param.copy()
-        info['params']['cllike_cl'+str(i+1)+'_b0']['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
-        info['params']['cllike_cl'+str(i+1)+'_b0']['latex'] = 'b_0\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
+# Add model and input file
+info['likelihood']['cl_like.ClLike']['bz_model'] = model
+info['likelihood']['cl_like.ClLike']['input_file'] = input_file
 
+# Check if directory exists, if not, make directory
+if not os.path.exists('results/'+filename):
+    os.makedirs('results/'+filename)
+    print(filename+' results directory created')
+
+# Save yaml file 
+with open('results/'+filename+'/'+filename+'.yml', 'w') as yaml_file:
+    yaml.dump(info, yaml_file, default_flow_style=False)
+
+# Add kmax and output file
+info['likelihood']['cl_like.ClLike']['defaults']['kmax'] = float(kmax)
 info['output'] = 'cobaya_out/' + filename + '_k' + kmax
 
 # Get the mean proposed in the yaml file for each parameter
@@ -192,10 +201,6 @@ p0vals = list(p0.values())
 pfvals = list(pf.values())
 final_params = Fisher(pf)
 errs = list(final_params.get_err())
-
-# Check if directory exists, if not, make directory
-if not os.path.exists('results/'+filename):
-    os.makedirs('results/'+filename)
 
 # Save data to file
 data = np.column_stack([float(kmax)] + p0vals + pfvals + errs + [p0_chi2] + [pf_chi2])
