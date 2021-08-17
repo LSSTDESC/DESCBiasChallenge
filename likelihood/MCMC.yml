@@ -1,7 +1,11 @@
 sampler:
-  minimize:
-    ignore_prior: True
-    max_evals: 1000
+  mcmc:
+    learn_proposal: True
+    burn_in: 10
+    #oversample_power: 1
+    #drag: True
+    #measure_speeds: False
+    max_samples: 1000
 
 params:
   # Derived
@@ -170,4 +174,4 @@ likelihood:
     bz_model: Linear
 
 debug: True
-output: 'cobaya_out/test'
+output: 'cobaya_out/MCMC'

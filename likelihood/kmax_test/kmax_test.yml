@@ -1,7 +1,7 @@
 sampler:
   minimize:
     ignore_prior: True
-    max_evals: 1000
+    max_evals: 10000
 
 params:
   # Derived
@@ -56,12 +56,6 @@ params:
     latex: n_s
     proposal: 0.001
   m_nu: 0.
-  cllike_cl1_b0: 2.
-  cllike_cl2_b0: 2.
-  cllike_cl3_b0: 2.
-  cllike_cl4_b0: 2.
-  cllike_cl5_b0: 2.
-  cllike_cl6_b0: 2.
 
 # CCL settings
 theory:
@@ -74,7 +68,7 @@ theory:
 likelihood:
   cl_like.ClLike:
     # Input sacc file
-    input_file: ../data/fid_red_const.fits
+    input_file: choose_input_file
     # List all relevant bins
     bins:
       - name: cl1
@@ -82,7 +76,6 @@ likelihood:
       - name: cl3
       - name: cl4
       - name: cl5
-      - name: cl6
       - name: sh1
       - name: sh2
       - name: sh3
@@ -96,7 +89,6 @@ likelihood:
       - bins: [cl3, cl3]
       - bins: [cl4, cl4]
       - bins: [cl5, cl5]
-      - bins: [cl6, cl6]
       - bins: [cl1, sh1]
       - bins: [cl1, sh2]
       - bins: [cl1, sh3]
@@ -122,11 +114,6 @@ likelihood:
       - bins: [cl5, sh3]
       - bins: [cl5, sh4]
       - bins: [cl5, sh5]
-      - bins: [cl6, sh1]
-      - bins: [cl6, sh2]
-      - bins: [cl6, sh3]
-      - bins: [cl6, sh4]
-      - bins: [cl6, sh5]
       - bins: [sh1, sh1]
       - bins: [sh1, sh2]
       - bins: [sh1, sh3]
@@ -144,7 +131,7 @@ likelihood:
       - bins: [sh5, sh5]
 
     defaults:
-      kmax: 0.15
+      kmax: choose_kmax
       lmin: 0
       lmax: 2000
       sh1:
@@ -166,8 +153,8 @@ likelihood:
     nz_model: NzNone
     # ShapeMultiplicative, ShapeNone
     shape_model: ShapeNone
-    # Linear or HEFT
-    bz_model: Linear
+    # Linear or EulerianPT
+    bz_model: choose_model
 
 debug: True
-output: 'cobaya_out/test'
+output: output
