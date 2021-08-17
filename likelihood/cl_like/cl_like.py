@@ -70,7 +70,8 @@ class ClLike(Likelihood):
                 raise LoggedError(self.log, "Unknown tracer %s" % b['name'])
             t = s.tracers[b['name']]
             self.bin_properties[b['name']] = {'z_fid': t.z,
-                    'nz_fid': t.nz,'zmean_fid': sum(t.z*t.nz)/sum(t.nz)}
+                                              'nz_fid': t.nz,
+                                              'zmean_fid': np.average(t.z, weights=t.nz)}
             # Ensure all tracers have ell_min
             if b['name'] not in self.defaults:
                 self.defaults[b['name']] = {}
@@ -211,7 +212,7 @@ class ClLike(Likelihood):
         if self.bz_model == 'Linear':
             b0 = pars[self.input_params_prefix + '_' + name + '_b0']
             bp = pars[self.input_params_prefix + '_' + name + '_bp']
-            bz *= b0 + bp * (z - zmean)
+            bz = b0 + bp * (z - zmean)
         return (z, bz)
 
     def _get_ia_bias(self, cosmo, name, **pars):
@@ -246,7 +247,7 @@ class ClLike(Likelihood):
                     z = self.bin_properties[name]['z_fid']
                     zmean = self.bin_properties[name]['zmean_fid']
                     b1 = pars[self.input_params_prefix + '_' + name + '_b1']
-                    bp = pars[self.input_params_prefix + '_' + name + '_bp']
+                    b1p = pars[self.input_params_prefix + '_' + name + '_b1p']
                     bz = b1 + bp * (z - zmean)
                     b2 = pars[self.input_params_prefix + '_' + name + '_b2']
                     bs = pars[self.input_params_prefix + '_' + name + '_bs']
