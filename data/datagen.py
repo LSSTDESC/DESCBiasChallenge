@@ -205,12 +205,12 @@ class DataGenerator(object):
 
             # The red-red Pk is super noisy at z>1.7, so we remove that
             if gtype == 'red':
-                imax = 8
+                imin = 3
             else:
-                imax = -1
+                imin = 0
 
-            pk_gg = ccl.Pk2D(a_arr=d['a_s'][:imax], lk_arr=np.log(d['k_s']),
-                             pk_arr=np.log(d[f'{gtype}_{gtype}'][:imax, :]),
+            pk_gg = ccl.Pk2D(a_arr=d['a_s'][imin:], lk_arr=np.log(d['k_s']),
+                             pk_arr=np.log(d[f'{gtype}_{gtype}'][imin:, :]),
                              is_logp=True)
             pk_gm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(d[f'{gtype}_m']),
