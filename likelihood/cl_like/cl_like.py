@@ -70,7 +70,7 @@ class ClLike(Likelihood):
                 raise LoggedError(self.log, "Unknown tracer %s" % b['name'])
             t = s.tracers[b['name']]
             self.bin_properties[b['name']] = {'z_fid': t.z,
-                                              'nz_fid': t.nz}
+                    'nz_fid': t.nz,'zmean_fid': sum(t.z*t.nz)/sum(t.nz)}
             # Ensure all tracers have ell_min
             if b['name'] not in self.defaults:
                 self.defaults[b['name']] = {}
@@ -206,10 +206,12 @@ class ClLike(Likelihood):
         """ Get linear galaxy bias. Unless we're using a linear bias,
         this should be just 1."""
         z = self.bin_properties[name]['z_fid']
+        zmean = self.bin_properties[name]['zmean_fid']
         bz = np.ones_like(z)
         if self.bz_model == 'Linear':
             b0 = pars[self.input_params_prefix + '_' + name + '_b0']
-            bz *= b0
+            bp = pars[self.input_params_prefix + '_' + name + '_bp']
+            bz *= b0 + bp * (z - zmean)
         return (z, bz)
 
     def _get_ia_bias(self, cosmo, name, **pars):
@@ -241,10 +243,14 @@ class ClLike(Likelihood):
                 bz = self._get_bz(cosmo, name, **pars)
                 t = ccl.NumberCountsTracer(cosmo, dndz=nz, bias=bz, has_rsd=False)
                 if self.bz_model == 'EulerianPT':
+                    z = self.bin_properties[name]['z_fid']
+                    zmean = self.bin_properties[name]['zmean_fid']
                     b1 = pars[self.input_params_prefix + '_' + name + '_b1']
+                    bp = pars[self.input_params_prefix + '_' + name + '_bp']
+                    bz = b1 + bp * (z - zmean)
                     b2 = pars[self.input_params_prefix + '_' + name + '_b2']
                     bs = pars[self.input_params_prefix + '_' + name + '_bs']
-                    ptt = pt.PTNumberCountsTracer(b1=b1, b2=b2, bs=bs)
+                    ptt = pt.PTNumberCountsTracer(b1=(z,bz), b2=b2, bs=bs)
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
