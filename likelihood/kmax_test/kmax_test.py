@@ -16,14 +16,18 @@ if model_name == 'EPT':
 else:
     model = 'Linear'
 
-input_file = '../../data/fid_' + str(input_name) + '.fits'
+if input_name[-6:] == 'abacus':
+    input_file = '../../data/abacus_' + str(input_name) + '.fits'
+    config_fn = "kmax_abacus.yml"
+else:
+    input_file = '../../data/fid_' + str(input_name) + '.fits'
+    config_fn = "kmax_test.yml"
 
 filename = model + '-' + input_name
 print('FILENAME: ',filename)
 print('MODEL: '+model, '| INPUT: '+input_file, '| KMAX:',kmax)
 
 # Read in the yaml file
-config_fn = "kmax_test.yml"
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
