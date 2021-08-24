@@ -40,7 +40,7 @@ for m in range(0,len(models)):
 
     # save results to file
     model_name = header[m].split('\'')[-2]
-    np.savetxt(folder_name+str(model_name)+'.dat',data[m],header=header[m][2:]+subheader[m][2:-1])
+    np.savetxt(folder_name+str(model_name)+'.dat',data,header=header[m][2:]+subheader[m][2:-1])
     print('results combined to '+folder_name+str(model_name)+'.dat')
     os.system('rm '+folder_name+'results.dat')
 

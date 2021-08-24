@@ -66,14 +66,15 @@ else:
     bias = [2.,2.,2.,2.,2.,2.]
 
 # Template for bias parameters in yaml file
-cl_param = {'prior': {'min': 0.0, 'max': 100.0}, 'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
+cl_param = {'prior': {'min': 0.0, 'max': 100.0}, 
+        'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
         'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
 if model_name == 'EPT':
-    bpar = ['1','2','s']
+    bpar = ['1','1p','2','s']
 else:
-    bpar = ['0']
+    bpar = ['0','p']
     
 # Write bias parameters into yaml file
 for b in bpar:
@@ -169,8 +170,12 @@ class Fisher:
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
                    "cllike_cl1_b0": 0.1,"cllike_cl2_b0": 0.1,"cllike_cl3_b0": 0.1,
                    "cllike_cl4_b0": 0.1,"cllike_cl5_b0": 0.1,"cllike_cl6_b0": 0.1,  
+                   "cllike_cl1_bp": 0.1,"cllike_cl2_bp": 0.1,"cllike_cl3_bp": 0.1,
+                   "cllike_cl4_bp": 0.1,"cllike_cl5_bp": 0.1,"cllike_cl6_bp": 0.1,  
                    "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
                    "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1, 
+                   "cllike_cl1_b1p": 0.1,"cllike_cl2_b1p": 0.1,"cllike_cl3_b1p": 0.1,
+                   "cllike_cl4_b1p": 0.1,"cllike_cl5_b1p": 0.1,"cllike_cl6_b1p": 0.1, 
                    "cllike_cl1_b2": 0.1,"cllike_cl2_b2": 0.1,"cllike_cl3_b2": 0.1,
                    "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1, 
                    "cllike_cl1_bs": 0.1,"cllike_cl2_bs": 0.1,"cllike_cl3_bs": 0.1,

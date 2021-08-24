@@ -308,7 +308,7 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
-                pk_pt = pt.get_pt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'])
+                pk_pt = pt.get_pt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'], sub_lowk=True)
                 return pk_pt
         else:
             raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
