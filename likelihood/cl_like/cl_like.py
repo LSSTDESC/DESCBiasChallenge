@@ -4,6 +4,7 @@ from scipy.interpolate import interp1d
 import pyccl as ccl
 import pyccl.nl_pt as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
+from .ept import EPTCalculator, get_ept_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 
@@ -30,6 +31,8 @@ class ClLike(Likelihood):
     defaults: dict = {}
     # List of two-point functions that make up the data vector
     twopoints: list = []
+    # Low-pass filter for PT
+    k_pt_filter: float = 0.01
 
     def initialize(self):
         # Read SACC file
@@ -239,12 +242,13 @@ class ClLike(Likelihood):
         """ Transforms all used tracers into CCL tracers for the
         current set of parameters."""
         trs = {}
+        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT']
         for name, q in self.used_tracers.items():
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
                 bz = self._get_bz(cosmo, name, **pars)
                 t = ccl.NumberCountsTracer(cosmo, dndz=nz, bias=bz, has_rsd=False)
-                if self.bz_model in ['LagrangianPT', 'EulerianPT']:
+                if is_PT_bias:
                     z = self.bin_properties[name]['z_fid']
                     zmean = self.bin_properties[name]['zmean_fid']
                     b1 = pars[self.input_params_prefix + '_' + name + '_b1']
@@ -257,16 +261,16 @@ class ClLike(Likelihood):
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
                 t = ccl.WeakLensingTracer(cosmo, nz, ia_bias=ia)
-                if self.bz_model == 'EulerianPT':
+                if is_PT_bias:
                     ptt = pt.PTMatterTracer()
             elif q == 'cmb_convergence':
                 # B.H. TODO: pass z_source as parameter to the YAML file
                 t = ccl.CMBLensingTracer(cosmo, z_source=1100)
-                if self.bz_model == 'EulerianPT':
+                if is_PT_bias:
                     ptt = pt.PTMatterTracer()
             trs[name] = {}
             trs[name]['ccl_tracer'] = t
-            if self.bz_model in ['EulerianPT', 'LagrangianPT']:
+            if is_PT_bias:
                 trs[name]['PT_tracer'] = ptt
         return trs
 
@@ -280,24 +284,25 @@ class ClLike(Likelihood):
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             return {'pk_mm': pkmm}
-        elif self.bz_model == 'EulerianPT':
+        elif self.bz_model in ['EulerianPT', 'LagrangianPT']:
+            a_s = 1./(1+np.linspace(0., 4., 30)[::-1])
+            if self.k_pt_filter > 0:
+                k_filter = self.k_pt_filter
+            else:
+                k_filter = None
+            if self.bz_model == 'EulerianPT':
+                ptc = EPTCalculator(with_NC=True, with_IA=False,
+                                    log10k_min=-4, log10k_max=2, nk_per_decade=20,
+                                    a_arr=a_s, k_filter=k_filter)
+            else:
+                ptc = LPTCalculator(log10k_min=-4, log10k_max=2, nk_per_decade=20,
+                                    a_arr=a_s, h=cosmo['h'], k_filter=k_filter)
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
-            ptc = pt.PTCalculator(with_NC=True, with_IA=False,
-                                  log10k_min=-4, log10k_max=2, nk_per_decade=20)
             pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
-            ptc.update_pk(pk_lin_z0)
+            Dz = ccl.growth_factor(cosmo, ptc.a_s)
+            ptc.update_pk(pk_lin_z0, Dz)
             return {'ptc': ptc, 'pk_mm': pkmm}
-        elif self.bz_model == 'LagrangianPT':
-            cosmo.compute_nonlin_power()
-            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
-            ptc = LPTCalculator()
-            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
-            z_arr = np.linspace(0., 4., 30)
-            a_arr = 1./(1+z_arr[::-1])
-            Dz = ccl.growth_factor(cosmo, a_arr)
-            ptc.update_pk(pk_lin_z0, a_arr, cosmo['h'])
-            return {'ptc': ptc, 'pk_mm': pkmm, 'a_s': a_arr}
         else:
             raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
 
@@ -319,7 +324,8 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
-                pk_pt = pt.get_pt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'], sub_lowk=False)
+                pk_pt = get_ept_pk2d(cosmo, ptt1, tracer2=ptt2,
+                                     ptc=pkd['ptc'], sub_lowk=False)
                 return pk_pt
         elif (self.bz_model == 'LagrangianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
@@ -328,7 +334,7 @@ class ClLike(Likelihood):
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     lptc=pkd['ptc'], a_arr=pkd['a_s'])
+                                     ptc=pkd['ptc'])
                 return pk_pt
         else:
             raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)

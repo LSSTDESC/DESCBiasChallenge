@@ -7,7 +7,7 @@ import numpy as np
 import numpy.linalg as LA 
 
 # Read in the yaml file
-config_fn = 'test.yml'
+config_fn = 'test_pt.yml'
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 

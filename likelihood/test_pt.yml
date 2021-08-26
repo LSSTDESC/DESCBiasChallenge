@@ -185,7 +185,7 @@ likelihood:
     # ShapeMultiplicative, ShapeNone
     shape_model: ShapeNone
     # Linear, EulerianPT or LagrangianPT
-    bz_model: LagrangianPT
+    bz_model: EulerianPT
 
 debug: True
 output: 'cobaya_out/test_pt'
