@@ -68,6 +68,12 @@ params:
   cllike_cl4_b2: 0.
   cllike_cl5_b2: 0.
   cllike_cl6_b2: 0.
+  cllike_cl1_b1p: 0.
+  cllike_cl2_b1p: 0.
+  cllike_cl3_b1p: 0.
+  cllike_cl4_b1p: 0.
+  cllike_cl5_b1p: 0.
+  cllike_cl6_b1p: 0.
   cllike_cl1_bs: 0.
   cllike_cl2_bs: 0.
   cllike_cl3_bs: 0.
@@ -178,8 +184,8 @@ likelihood:
     nz_model: NzNone
     # ShapeMultiplicative, ShapeNone
     shape_model: ShapeNone
-    # Linear or EulerianPT
-    bz_model: EulerianPT
+    # Linear, EulerianPT or LagrangianPT
+    bz_model: LagrangianPT
 
 debug: True
 output: 'cobaya_out/test_pt'
