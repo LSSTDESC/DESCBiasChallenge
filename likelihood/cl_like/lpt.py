@@ -7,7 +7,7 @@ class LPTCalculator(object):
     """ This class implements a set of methods that can be
     used to compute the various components needed to estimate
     perturbation theory correlations. These calculations are
-    currently based on velocileptorsFAST-PT
+    currently based on velocileptors
     (https://github.com/sfschen/velocileptors).
 
     Args:
