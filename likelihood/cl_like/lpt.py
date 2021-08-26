@@ -57,28 +57,57 @@ class LPTCalculator(object):
     def get_pgg(self, b11, b21, bs1, b12, b22, bs2):
         if self.lpt_table is None:
             raise ValueError("Please initialise CLEFT calculator")
+        # Clarification:
+        # CLEFT uses the followint expansion for the galaxy overdensity:
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2
+        # (see Eq. 4.4 of https://arxiv.org/pdf/2005.00523.pdf).
+        # To add to the confusion, this is different from the prescription
+        # used by EPT, where s^2 is divided by 2 :-|
+        #
+        # The LPT table below contains the following power spectra
+        # in order:
+        #  <1,1>
+        #  2*<1,d>
+        #  <d,d>
+        #  2*<1,d^2/2>
+        #  2*<d,d^2/2>
+        #  <d^2/2,d^2/2> (!)
+        #  2*<1,s^2>
+        #  2*<d,s^2>
+        #  2*<d^2/2,s^2> (!)
+        #  <s^2,s^2> (!)
+        #
+        # So:
+        #   a) The cross-correlations need to be divided by 2.
+        #   b) The spectra involving b2 are for d^2/2, NOT d^2!!
+        #   c) The spectra invoving bs are for s^2, NOT s^2/2!!
+        # Also, the spectra marked with (!) tend to a constant
+        # as k-> 0, which we can suppress with a low-pass filter.
+        #
+        # Importantly, we have corrected the spectra involving s2 to
+        # make the definition of bs equivalent in the EPT and LPT
+        # expansions.
         Pdmdm = self.lpt_table[:, :, 1]
         Pdmd1 = 0.5*self.lpt_table[:, :, 2]
-        Pdmd2 = 0.5*self.lpt_table[:, :, 4]
-        Pdmds = 0.5*self.lpt_table[:, :, 7]
         Pd1d1 = self.lpt_table[:, :, 3]
+        Pdmd2 = 0.5*self.lpt_table[:, :, 4]
         Pd1d2 = 0.5*self.lpt_table[:, :, 5]
-        Pd1ds = 0.5*self.lpt_table[:, :, 8]
-        # TODO: check normalization
         Pd2d2 = self.lpt_table[:,:,6]*self.wk_low[None, :]
-        Pd2ds = 0.5*self.lpt_table[:,:,9]*self.wk_low[None, :]
-        Pdsds = self.lpt_table[:,:,10]*self.wk_low[None, :]
+        Pdms2 = 0.25*self.lpt_table[:, :, 7]
+        Pd1s2 = 0.25*self.lpt_table[:, :, 8]
+        Pd2s2 = 0.25*self.lpt_table[:,:,9]*self.wk_low[None, :]
+        Ps2s2 = 0.25*self.lpt_table[:,:,10]*self.wk_low[None, :]
     
         pgg = (Pdmdm + 
                (b11 + b12)[:, None] * Pdmd1 +
                (b21 + b22)[:, None] * Pdmd2 +
-               (bs1 + bs2)[:, None] * Pdmds +
+               (bs1 + bs2)[:, None] * Pdms2 +
                (b11*b12)[:, None] * Pd1d1 +
                (b11*b22 + b12*b21)[:, None] * Pd1d2 +
-               (b11*bs2 + b12*bs1)[:, None] * Pd1ds +
+               (b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
                (b21*b22)[:, None] * Pd2d2 +
-               (b21*bs2 + b22*bs1)[:, None] * Pd2ds +
-               (bs1*bs2)[:, None] * Pdsds)
+               (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
+               (bs1*bs2)[:, None] * Ps2s2)
     
         return pgg
 
@@ -89,12 +118,12 @@ class LPTCalculator(object):
         Pdmdm = self.lpt_table[:,:,1]
         Pdmd1 = 0.5*self.lpt_table[:,:,2]
         Pdmd2 = 0.5*self.lpt_table[:,:,4]
-        Pdmds = 0.5*self.lpt_table[:,:,7]
+        Pdms2 = 0.25*self.lpt_table[:,:,7]
 
         pgm = (Pdmdm + 
                b1[:, None] * Pdmd1 + 
                b2[:, None] * Pdmd2 + 
-               bs[:, None] * Pdmds)
+               bs[:, None] * Pdms2)
     
         return pgm
 

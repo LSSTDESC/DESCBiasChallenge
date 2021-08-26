@@ -162,6 +162,19 @@ class EPTCalculator(object):
                 `N_z` is the size of the input redshift-dependent \
                 biases and growth factor.
         """
+        # Clarification:
+        # We are expanding the galaxy overdensity as:
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2
+        # (see cell 10 in https://github.com/JoeMcEwen/FAST-PT/blob/master/examples/fastpt_examples.ipynb).
+        # The `dd_bias` array below contains the following power spectra in order:
+        #  <d,d^2>
+        #  <d^2,d^2> (!)
+        #  <d,s^2>
+        #  <d^2,s^2> (!)
+        #  <s^2,s^2> (!)
+        # So: the d^2 and s^2 are not divided by 2
+        # Also, the spectra marked with (!) tend to a constant
+        # as k-> 0, which we can suppress with a low-pass filter.
         Pd1d2 = self.g4[:, None] * self.dd_bias[2][None, :]
         Pd2d2 = self.g4[:, None] * (self.dd_bias[3]*self.wk_low)[None, :]
         Pd1s2 = self.g4[:, None] * self.dd_bias[4][None, :]
