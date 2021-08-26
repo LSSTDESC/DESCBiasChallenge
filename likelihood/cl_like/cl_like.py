@@ -319,7 +319,7 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
-                pk_pt = pt.get_pt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'], sub_lowk=True)
+                pk_pt = pt.get_pt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'], sub_lowk=False)
                 return pk_pt
         elif (self.bz_model == 'LagrangianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
