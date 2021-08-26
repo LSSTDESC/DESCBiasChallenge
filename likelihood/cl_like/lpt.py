@@ -54,7 +54,7 @@ class LPTCalculator(object):
         self.lpt_table = np.array(self.lpt_table)
         self.lpt_table /= self.h**3
 
-    def get_pgg(self, b11, b21, bs1, b12, b22, bs2):
+    def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2):
         if self.lpt_table is None:
             raise ValueError("Please initialise CLEFT calculator")
         # Clarification:
@@ -87,9 +87,14 @@ class LPTCalculator(object):
         # Importantly, we have corrected the spectra involving s2 to
         # make the definition of bs equivalent in the EPT and LPT
         # expansions.
-        Pdmdm = self.lpt_table[:, :, 1]
-        Pdmd1 = 0.5*self.lpt_table[:, :, 2]
-        Pd1d1 = self.lpt_table[:, :, 3]
+        if Pnl is None:
+            Pdmdm = self.lpt_table[:, :, 1]
+            Pdmd1 = 0.5*self.lpt_table[:, :, 2]
+            Pd1d1 = self.lpt_table[:, :, 3]
+            pgg = (Pdmdm + (b11+b12)[:, None] * Pdmd1
+                   +(b11*b12)[:, None] * Pd1d1)
+        else:
+            pgg = ((1+b11)*(1+b12))[:, None]*Pnl
         Pdmd2 = 0.5*self.lpt_table[:, :, 4]
         Pd1d2 = 0.5*self.lpt_table[:, :, 5]
         Pd2d2 = self.lpt_table[:,:,6]*self.wk_low[None, :]
@@ -98,38 +103,36 @@ class LPTCalculator(object):
         Pd2s2 = 0.25*self.lpt_table[:,:,9]*self.wk_low[None, :]
         Ps2s2 = 0.25*self.lpt_table[:,:,10]*self.wk_low[None, :]
     
-        pgg = (Pdmdm + 
-               (b11 + b12)[:, None] * Pdmd1 +
-               (b21 + b22)[:, None] * Pdmd2 +
-               (bs1 + bs2)[:, None] * Pdms2 +
-               (b11*b12)[:, None] * Pd1d1 +
-               (b11*b22 + b12*b21)[:, None] * Pd1d2 +
-               (b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
-               (b21*b22)[:, None] * Pd2d2 +
-               (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
-               (bs1*bs2)[:, None] * Ps2s2)
+        pgg += ((b21 + b22)[:, None] * Pdmd2 +
+                (bs1 + bs2)[:, None] * Pdms2 +
+                (b11*b22 + b12*b21)[:, None] * Pd1d2 +
+                (b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
+                (b21*b22)[:, None] * Pd2d2 +
+                (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
+                (bs1*bs2)[:, None] * Ps2s2)
     
         return pgg
 
-    def get_pgm(self, b1, b2, bs):
+    def get_pgm(self, Pnl, b1, b2, bs):
         if self.lpt_table is None:
             raise ValueError("Please initialise CLEFT calculator")
-
-        Pdmdm = self.lpt_table[:,:,1]
-        Pdmd1 = 0.5*self.lpt_table[:,:,2]
+        if Pnl is None:
+            Pdmdm = self.lpt_table[:, :, 1]
+            Pdmd1 = 0.5*self.lpt_table[:, :, 2]
+            pgm = Pdmdm + b1[:, None] * Pdmd1
+        else:
+            pgm = (1+b1)[:, None]*Pnl
         Pdmd2 = 0.5*self.lpt_table[:,:,4]
         Pdms2 = 0.25*self.lpt_table[:,:,7]
 
-        pgm = (Pdmdm + 
-               b1[:, None] * Pdmd1 + 
-               b2[:, None] * Pdmd2 + 
-               bs[:, None] * Pdms2)
+        pgm += (b2[:, None] * Pdmd2 + 
+                bs[:, None] * Pdms2)
     
         return pgm
 
 
 def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
-                 #nonlin_pk_type='nonlinear', # TODO
+                 nonlin_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
@@ -174,17 +177,17 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
     # z
     z_arr = 1. / ptc.a_s - 1
 
-    '''
     if nonlin_pk_type == 'nonlinear':
-        Pd1d1 = np.array([nonlin_matter_power(cosmo, ptc.ks, a)
-                          for a in a_arr]).T
+        Pnl = np.array([ccl.nonlin_matter_power(cosmo, ptc.ks, a)
+                        for a in ptc.a_s])
     elif nonlin_pk_type == 'linear':
-        Pd1d1 = np.array([linear_matter_power(cosmo, ptc.ks, a)
-                          for a in a_arr]).T
+        Pnl = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
+                        for a in ptc.a_s])
+    elif nonlin_pk_type == 'spt':
+        Pnl = None
     else:
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))
-    '''
 
     if (tracer1.type == 'NC'):
         b11 = tracer1.b1(z_arr)
@@ -195,20 +198,20 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
 
-            p_pt = ptc.get_pgg(b11, b21, bs1, 
+            p_pt = ptc.get_pgg(Pnl,
+                               b11, b21, bs1, 
                                b12, b22, bs2)
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(b11, b21, bs1)
+            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
-
     elif (tracer1.type == 'M'):
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            p_pt = ptc.get_pgm(b12, b22, bs2)
+            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))

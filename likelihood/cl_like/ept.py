@@ -131,7 +131,7 @@ class EPTCalculator(object):
                                      P_window=self.P_window,
                                      C_window=self.C_window)
 
-    def get_pgg(self, Pd1d1,
+    def get_pgg(self, Pnl,
                 b11, b21, bs1, b12, b22, bs2,
                 sub_lowk):
         """ Get the number counts auto-spectrum at the internal
@@ -139,7 +139,7 @@ class EPTCalculator(object):
         and a number of redshift values.
 
         Args:
-            Pd1d1 (array_like): 1-loop matter power spectrum at the
+            Pnl (array_like): 1-loop matter power spectrum at the
                 wavenumber values given by this object's `ks` list.
             b11 (array_like): 1-st order bias for the first tracer
                 being correlated at the same set of input redshifts.
@@ -186,7 +186,7 @@ class EPTCalculator(object):
             s4 = self.g4 * self.dd_bias[7]
             s4 = s4[:, None]
 
-        pgg = ((b11*b12)[:, None] * Pd1d1 +
+        pgg = ((b11*b12)[:, None] * Pnl +
                0.5*(b11*b22 + b12*b21)[:, None] * Pd1d2 +
                0.25*(b21*b22)[:, None] * (Pd2d2 - 2.*s4) +
                0.5*(b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
@@ -194,7 +194,7 @@ class EPTCalculator(object):
                0.25*(bs1*bs2)[:, None] * (Ps2s2 - (8./9.)*s4))
         return pgg
 
-    def get_pgi(self, Pd1d1, b1, b2, bs, c1, c2, cd):
+    def get_pgi(self, Pnl, b1, b2, bs, c1, c2, cd):
         """ Get the number counts - IA cross-spectrum at the
         internal set of wavenumbers (given by this object's
         `ks` attribute) and a number of redshift values.
@@ -206,7 +206,7 @@ class EPTCalculator(object):
                   linearly biased number counts.
 
         Args:
-            Pd1d1 (array_like): 1-loop matter power spectrum at the
+            Pnl (array_like): 1-loop matter power spectrum at the
                 wavenumber values given by this object's `ks` list.
             b1 (array_like): 1-st order bias for the number counts
                 being correlated at the same set of input redshifts.
@@ -230,18 +230,18 @@ class EPTCalculator(object):
         a00e, c00e, a0e0e, a0b0b = self.ia_ta
         a0e2, b0e2, d0ee2, d0bb2 = self.ia_mix
 
-        pgi = b1[:, None] * (c1[:, None] * Pd1d1 +
+        pgi = b1[:, None] * (c1[:, None] * Pnl +
                              (self.g4*cd)[:, None] * (a00e + c00e)[None, :] +
                              (self.g4*c2)[:, None] * (a0e2 + b0e2)[None, :])
         return pgi
 
-    def get_pgm(self, Pd1d1, b1, b2, bs):
+    def get_pgm(self, Pnl, b1, b2, bs):
         """ Get the number counts - matter cross-spectrum at the
         internal set of wavenumbers (given by this object's `ks`
         attribute) and a number of redshift values.
 
         Args:
-            Pd1d1 (array_like): 1-loop matter power spectrum at the
+            Pnl (array_like): 1-loop matter power spectrum at the
                 wavenumber values given by this object's `ks` list.
             b1 (array_like): 1-st order bias for the number counts
                 tracer being correlated at the same set of input
@@ -262,12 +262,12 @@ class EPTCalculator(object):
         Pd1d2 = self.g4[:, None] * self.dd_bias[2][None, :]
         Pd1s2 = self.g4[:, None] * self.dd_bias[4][None, :]
 
-        pgm = (b1[:, None] * Pd1d1 +
+        pgm = (b1[:, None] * Pnl +
                0.5 * b2[:, None] * Pd1d2 +
                0.5 * bs[:, None] * Pd1s2)
         return pgm
 
-    def get_pii(self, Pd1d1, c11, c21, cd1,
+    def get_pii(self, Pnl, c11, c21, cd1,
                 c12, c22, cd2, return_bb=False,
                 return_both=False):
         """ Get the intrinsic alignment auto-spectrum at the internal
@@ -275,7 +275,7 @@ class EPTCalculator(object):
         and a number of redshift values.
 
         Args:
-            Pd1d1 (array_like): 1-loop matter power spectrum at the
+            Pnl (array_like): 1-loop matter power spectrum at the
                 wavenumber values given by this object's `ks` list.
             c11 (array_like): 1-st order bias for the first tracer
                 being correlated at the same set of input redshifts.
@@ -315,7 +315,7 @@ class EPTCalculator(object):
                 pii = pii_bb
 
         if (not return_bb) or return_both:
-            pii = ((c11*c12)[:, None] * Pd1d1 +
+            pii = ((c11*c12)[:, None] * Pnl +
                    ((c11*cd2 + c12*cd1)*self.g4)[:, None] * (a00e + c00e)[None, :] +
                    (cd1*cd2*self.g4)[:, None] * a0e0e[None, :] +
                    (c21*c22*self.g4)[:, None] * ae2e2[None, :] +
@@ -327,13 +327,13 @@ class EPTCalculator(object):
         else:
             return pii
 
-    def get_pim(self, Pd1d1, c1, c2, cd):
+    def get_pim(self, Pnl, c1, c2, cd):
         """ Get the intrinsic alignment - matter cross-spectrum at
         the internal set of wavenumbers (given by this object's `ks`
         attribute) and a number of redshift values.
 
         Args:
-            Pd1d1 (array_like): 1-loop matter power spectrum at the
+            Pnl (array_like): 1-loop matter power spectrum at the
                 wavenumber values given by this object's `ks` list.
             c1 (array_like): 1-st order bias for the IA
                 tracer being correlated at the same set of input
@@ -354,16 +354,16 @@ class EPTCalculator(object):
         a00e, c00e, a0e0e, a0b0b = self.ia_ta
         a0e2, b0e2, d0ee2, d0bb2 = self.ia_mix
 
-        pim = (c1[:, None] * Pd1d1 +
+        pim = (c1[:, None] * Pnl +
                (self.g4*cd)[:, None] * (a00e + c00e)[None, :] +
                (self.g4*c2)[:, None] * (a0e2 + b0e2)[None, :])
         return pim
 
-    def get_pmm(self, Pd1d1_lin):
+    def get_pmm(self, Pnl_lin):
         """ Get the one-loop matter power spectrum.
 
         Args:
-            Pd1d1_lin (array_like): 1-loop linear matter power spectrum
+            Pnl_lin (array_like): 1-loop linear matter power spectrum
                 at the wavenumber values given by this object's
                 `ks` list.
 
@@ -374,7 +374,7 @@ class EPTCalculator(object):
                 biases and growth factor.
         """
         P1loop = self.g4[:, None] * self.one_loop_dd[0][None, :]
-        pmm = (Pd1d1_lin + P1loop)
+        pmm = (Pnl_lin + P1loop)
         return pmm
 
 
@@ -458,15 +458,15 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
     z_arr = 1. / ptc.a_s - 1
 
     if nonlin_pk_type == 'nonlinear':
-        Pd1d1 = np.array([ccl.nonlin_matter_power(cosmo, ptc.ks, a)
-                          for a in ptc.a_s])
+        Pnl = np.array([ccl.nonlin_matter_power(cosmo, ptc.ks, a)
+                        for a in ptc.a_s])
     elif nonlin_pk_type == 'linear':
-        Pd1d1 = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
-                          for a in ptc.a_s])
+        Pnl = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
+                        for a in ptc.a_s])
     elif nonlin_pk_type == 'spt':
         pklin = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
                           for a in ptc.a_s])
-        Pd1d1 = ptc.get_pmm(pklin)
+        Pnl = ptc.get_pmm(pklin)
     else:
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))
@@ -480,17 +480,17 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
 
-            p_pt = ptc.get_pgg(Pd1d1,
+            p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1, b12, b22, bs2,
                                sub_lowk)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)
             c22 = tracer2.c2(z_arr)
             cd2 = tracer2.cdelta(z_arr)
-            p_pt = ptc.get_pgi(Pd1d1,
+            p_pt = ptc.get_pgi(Pnl,
                                b11, b21, bs1, c12, c22, cd2)
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(Pd1d1,
+            p_pt = ptc.get_pgm(Pnl,
                                b11, b21, bs1)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
@@ -503,7 +503,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             c12 = tracer2.c1(z_arr)
             c22 = tracer2.c2(z_arr)
             cd2 = tracer2.cdelta(z_arr)
-            p_pt = ptc.get_pii(Pd1d1,
+            p_pt = ptc.get_pii(Pnl,
                                c11, c21, cd1, c12, c22, cd2,
                                return_bb=return_ia_bb,
                                return_both=return_ia_ee_and_bb)
@@ -511,10 +511,10 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            p_pt = ptc.get_pgi(Pd1d1,
+            p_pt = ptc.get_pgi(Pnl,
                                b12, b22, bs2, c11, c21, cd1)
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pim(Pd1d1,
+            p_pt = ptc.get_pim(Pnl,
                                c11, c21, cd1)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
@@ -524,16 +524,16 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            p_pt = ptc.get_pgm(Pd1d1,
+            p_pt = ptc.get_pgm(Pnl,
                                b12, b22, bs2)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)
             c22 = tracer2.c2(z_arr)
             cd2 = tracer2.cdelta(z_arr)
-            p_pt = ptc.get_pim(Pd1d1,
+            p_pt = ptc.get_pim(Pnl,
                                c12, c22, cd2)
         elif (tracer2.type == 'M'):
-            p_pt = Pd1d1
+            p_pt = Pnl
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))

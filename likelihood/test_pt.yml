@@ -56,12 +56,12 @@ params:
     latex: n_s
     proposal: 0.005
   m_nu: 0.
-  cllike_cl1_b1: 2.
-  cllike_cl2_b1: 2.
-  cllike_cl3_b1: 2.
-  cllike_cl4_b1: 2.
-  cllike_cl5_b1: 2.
-  cllike_cl6_b1: 2.
+  cllike_cl1_b1: 1.
+  cllike_cl2_b1: 1.
+  cllike_cl3_b1: 1.
+  cllike_cl4_b1: 1.
+  cllike_cl5_b1: 1.
+  cllike_cl6_b1: 1.
   cllike_cl1_b2: 0.
   cllike_cl2_b2: 0.
   cllike_cl3_b2: 0.
@@ -185,7 +185,7 @@ likelihood:
     # ShapeMultiplicative, ShapeNone
     shape_model: ShapeNone
     # Linear, EulerianPT or LagrangianPT
-    bz_model: EulerianPT
+    bz_model: LagrangianPT
 
 debug: True
 output: 'cobaya_out/test_pt'
