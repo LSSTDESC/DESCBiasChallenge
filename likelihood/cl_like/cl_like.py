@@ -3,6 +3,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pyccl as ccl
 import pyccl.nl_pt as pt
+from .lpt import LPTCalculator, get_lpt_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 
@@ -243,7 +244,7 @@ class ClLike(Likelihood):
                 nz = self._get_nz(cosmo, name, **pars)
                 bz = self._get_bz(cosmo, name, **pars)
                 t = ccl.NumberCountsTracer(cosmo, dndz=nz, bias=bz, has_rsd=False)
-                if self.bz_model == 'EulerianPT':
+                if self.bz_model in ['LagrangianPT', 'EulerianPT']:
                     z = self.bin_properties[name]['z_fid']
                     zmean = self.bin_properties[name]['zmean_fid']
                     b1 = pars[self.input_params_prefix + '_' + name + '_b1']
@@ -265,7 +266,7 @@ class ClLike(Likelihood):
                     ptt = pt.PTMatterTracer()
             trs[name] = {}
             trs[name]['ccl_tracer'] = t
-            if self.bz_model == 'EulerianPT':
+            if self.bz_model in ['EulerianPT', 'LagrangianPT']:
                 trs[name]['PT_tracer'] = ptt
         return trs
 
@@ -287,6 +288,16 @@ class ClLike(Likelihood):
             pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
             ptc.update_pk(pk_lin_z0)
             return {'ptc': ptc, 'pk_mm': pkmm}
+        elif self.bz_model == 'LagrangianPT':
+            cosmo.compute_nonlin_power()
+            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
+            ptc = LPTCalculator()
+            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
+            z_arr = np.linspace(0., 4., 30)
+            a_arr = 1./(1+z_arr[::-1])
+            Dz = ccl.growth_factor(cosmo, a_arr)
+            ptc.update_pk(pk_lin_z0, a_arr, cosmo['h'])
+            return {'ptc': ptc, 'pk_mm': pkmm, 'a_s': a_arr}
         else:
             raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
 
@@ -309,6 +320,15 @@ class ClLike(Likelihood):
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
                 pk_pt = pt.get_pt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'], sub_lowk=True)
+                return pk_pt
+        elif (self.bz_model == 'LagrangianPT'):
+            if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                return pkd['pk_mm']  # matter-matter
+            else:
+                ptt1 = trs[clm['bin_1']]['PT_tracer']
+                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
+                                     lptc=pkd['ptc'], a_arr=pkd['a_s'])
                 return pk_pt
         else:
             raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
