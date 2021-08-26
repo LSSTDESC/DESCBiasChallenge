@@ -156,7 +156,7 @@ class LPTCalculator(object):
               (b21*b22)[None, :] * Pd2d2 +
               (b11*bs2 + b12*bs1)[None, :] * Pd1ds +
               (b21*bs2 + b22*bs1)[None, :] * Pd2ds +
-              (bs1*bs2)[None, :] * Ps2ds)
+              (bs1*bs2)[None, :] * Pdsds)
     
         return pgg
 
@@ -306,11 +306,16 @@ def get_pt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
     # P_lin(k) at z=0
     pk_lin_z0 = linear_matter_power(cosmo, ptc.ks, 1.)
 
-    cleft = CLEFT(ptc.ks, pz_lin_z0)
-    cleft.make_ptable(kmin=1e-3,kmax=1.0,nk=500)
+    # Linear growth factor
+    ga = growth_factor(cosmo, a_arr)
+    ga4 = ga**4
 
     # update the PTC to have the require Pk components
     ptc.update_pk(pk_lin_z0)
+    
+    cleft = CLEFT(ptc.ks, pz_lin_z0)
+    cleft.make_ptable(kmin=10**log10k_min, kmax=10**log10k_max, nk=nk_total)
+
 
     if nonlin_pk_type == 'nonlinear':
         Pd1d1 = np.array([nonlin_matter_power(cosmo, ptc.ks, a)
