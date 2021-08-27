@@ -396,6 +396,8 @@ class ClLike(Likelihood):
 
         # Add tracers
         for n, p in self.bin_properties.items():
+            if n not in self.used_tracers:
+                continue
             q = self.used_tracers[n]
             if q != 'cmb_convergence':
                 s.add_tracer('NZ', n, quantity=q, spin=0,
