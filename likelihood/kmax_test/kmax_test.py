@@ -11,10 +11,14 @@ model_name = sys.argv[1]
 input_name = sys.argv[2]
 kmax = sys.argv[3]
 
-if model_name == 'EPT':
-    model = 'EulerianPT'
-else:
+if model_name == 'LIN':
     model = 'Linear'
+elif model_name == 'EPT':
+    model = 'EulerianPT'
+elif model_name == 'LPT':
+    model = 'LagrangianPT'
+else:
+    raise ValueError("Unknown bias model")
 
 if input_name[-6:] == 'abacus':
     input_file = '../../data/abacus_' + str(input_name) + '.fits'
@@ -71,7 +75,7 @@ cl_param = {'prior': {'min': 0.0, 'max': 100.0},
         'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
-if model_name == 'EPT':
+if model_name in ['EPT','LPT']:
     bpar = ['1','1p','2','s']
 else:
     bpar = ['0','p']
@@ -127,7 +131,6 @@ loglikes, derived = model.loglikes(p0)
 p0_chi2 = -2 * loglikes[0]
 loglikes, derived = model.loglikes(pf)
 pf_chi2 = -2 * loglikes[0]
-
 #======================DETERMINE ERRORS ON PARAMETERS========================
 
 class Fisher:

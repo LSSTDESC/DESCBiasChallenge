@@ -5,7 +5,7 @@ import sys
 
 input_file = sys.argv[1]
 
-models = ['Linear','EulerianPT']
+models = ['Linear','EulerianPT','LagrangianPT']
 no_of_params = list(models)
 header = list(models)
 subheader = list(models)
@@ -62,7 +62,7 @@ no_of_cosmo = len(cosmo_params)
 # total number of parameters to be included in plots
 total_params = sum(no_of_params) - (len(models)-1)*no_of_cosmo
 
-line_colour = ['C0','C1']
+line_colour = ['C0','C1','C2']
 
 # plot parameter variation with kmax
 def param_plt(i,param_no,m):
