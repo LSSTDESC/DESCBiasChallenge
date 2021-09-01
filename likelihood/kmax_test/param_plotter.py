@@ -17,7 +17,7 @@ p0_chi2 = list(models)
 pf_chi2 = list(models)
 
 for m in range(0,len(models)):
-    folder_name = 'results/'+models[m]+'-'+input_file+'/'
+    folder_name = 'results/'+ models[m]+'-'+input_file+'/'
     path = os.getcwd()+'/'+folder_name  # get current working directory
 
     # create combined results file of all kmax
@@ -71,7 +71,8 @@ def param_plt(i,param_no,m):
             marker='o',color = line_colour[m],label=models[m])
     if i<no_of_cosmo:
         axes[i].hlines(true_params[m][param_no], min(kmax[m]), max(kmax[m]),
-                linestyles='dashed',color='r',label=['true value','_nolabel_'][m])
+                linestyles='dashed',color='r',
+                label=['true value','_nolabel_','_nolabel_'][m])
     else:
         axes[i].hlines(true_params[m][param_no], min(kmax[m]), max(kmax[m]),
                 linestyles='dashed',color='r',label='true value')
@@ -83,10 +84,17 @@ f1.show()
 
 # create plots for all parameters 
 for i in range(0,total_params):
-    if (i>=no_of_params[0]):
+# for i in range(42,43):
+    # LPT model bias parameters
+    if (i>=(no_of_params[0]+no_of_params[1]-no_of_cosmo)):
+        param_plt(i,i-(no_of_params[0]+no_of_params[1]-2*no_of_cosmo),2)
+    # EPT model bias parameters 
+    elif (i>=no_of_params[0]):
         param_plt(i,i-(no_of_params[0]-no_of_cosmo),1)
+    # linear model bias parameters
     elif (i>=no_of_cosmo):
         param_plt(i,i,0)
+    # cosmo parameters with all models
     else:
         for m in range(0,len(models)):
             param_plt(i,i,m)
@@ -101,4 +109,3 @@ axes[total_params].legend()
 plt.tight_layout()
 plt.savefig('results/'+input_file+'.png')
 print('figure saved as results/'+input_file+'.png')
-
