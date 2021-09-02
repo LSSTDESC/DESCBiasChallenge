@@ -70,7 +70,7 @@ else:
     bias = [2.,2.,2.,2.,2.,2.]
 
 # Template for bias parameters in yaml file
-cl_param = {'prior': {'min': 0.0, 'max': 100.0}, 
+cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
         'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
         'latex': 'blank', 'proposal': 0.001}
 
