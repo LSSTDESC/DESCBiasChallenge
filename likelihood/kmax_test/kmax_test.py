@@ -89,9 +89,6 @@ for b in bpar:
         info['params']['cllike_cl'+str(i+1)+'_b'+b]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
         if b == '0' or b == '1':
             info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
-        # Uncomment to remove bs parameter from minimisation
-        # elif b == 's':
-            # info['params']['cllike_cl'+str(i+1)+'_bs'] = 0.
 
 # Add model and input file
 info['likelihood']['cl_like.ClLike']['bz_model'] = model
@@ -133,8 +130,8 @@ loglikes, derived = model.loglikes(p0)
 p0_chi2 = -2 * loglikes[0]
 loglikes, derived = model.loglikes(pf)
 pf_chi2 = -2 * loglikes[0]
-#======================DETERMINE ERRORS ON PARAMETERS========================
 
+# Determine errors on parameters
 class Fisher:
     def __init__(self,pf):
         self.pf = pf
