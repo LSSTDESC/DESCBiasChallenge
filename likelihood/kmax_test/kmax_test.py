@@ -11,6 +11,7 @@ model_name = sys.argv[1]
 input_name = sys.argv[2]
 kmax = sys.argv[3]
 
+# Set model
 if model_name == 'LIN':
     model = 'Linear'
 elif model_name == 'EPT':
@@ -20,6 +21,7 @@ elif model_name == 'LPT':
 else:
     raise ValueError("Unknown bias model")
 
+# Select input and yaml files
 if input_name[-6:] == 'abacus':
     input_file = '../../data/abacus_' + str(input_name) + '.fits'
     config_fn = "kmax_abacus.yml"
@@ -70,7 +72,7 @@ else:
     bias = [2.,2.,2.,2.,2.,2.]
 
 # Template for bias parameters in yaml file
-cl_param = {'prior': {'min': 0.0, 'max': 100.0}, 
+cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
         'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
         'latex': 'blank', 'proposal': 0.001}
 
