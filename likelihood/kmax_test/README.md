@@ -2,11 +2,16 @@
 
 Perform chi^2 minimisation of cosmological and bias parameters for given models at different minimum scales (kmax).
 
+For new models: 
+- Create new command line argument option `model_name` in kmax_test.py
+- Modify bias parameters being used (if required) in kmax_test.py
+- Add new model name to `models` array in param_plotter.py 
+
 ------------------------
 ## kmax_test.py 
 To run: `python3 kmax_test.py <model> <input_data> <kmax>`
 
-`<model>`is the bias model used to fit to the input data:
+`<model>` is the bias model used to fit to the input data:
 - `LIN` uses a linear bias model
 - `EPT` uses Eulerian Perturbation Theory 
 - `LPT` uses Lagrangian Perturbation Theory
