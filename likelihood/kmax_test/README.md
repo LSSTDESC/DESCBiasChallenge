@@ -22,7 +22,7 @@ Input data files must be downloaded to `DESCBiasChallenge/data`.
 Results for each run are output to the corresponding folder in `kmax_test/results`.
 
 -------------------------
-## kmax_test.yml
+## kmax_test.yml + kmax_abacus.yml
 Contains information required for the cobaya minimiser.
 Cosmological parameter priors can be changed here.
 _________________________
