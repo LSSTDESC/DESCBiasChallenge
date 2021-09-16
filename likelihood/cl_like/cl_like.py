@@ -399,17 +399,22 @@ class ClLike(Likelihood):
             if n not in self.used_tracers:
                 continue
             q = self.used_tracers[n]
+            spin = 2 if q == 'galaxy_shear' else 0
             if q != 'cmb_convergence':
-                s.add_tracer('NZ', n, quantity=q, spin=0,
+                s.add_tracer('NZ', n, quantity=q, spin=spin,
                              z=p['z_fid'], nz=p['nz_fid'])
             else:
-                s.add_tracer('Map', n, quantity=q, spin=0,
+                s.add_tracer('Map', n, quantity=q, spin=spin,
                              ell=np.arange(10), beam=np.ones(10))
 
         # Calculate power spectra
         cls = self.get_cls_theory(**pars)
         for clm, cl in zip(self.cl_meta, cls):
-            s.add_ell_cl('cl_00', clm['bin_1'], clm['bin_2'], clm['l_eff'], cl)
+            p1 = 'e' if self.used_tracers[clm['bin_1']] == 'galaxy_shear' else '0'
+            p2 = 'e' if self.used_tracers[clm['bin_2']] == 'galaxy_shear' else '0'
+            bpw = sacc.BandpowerWindow(clm['l_bpw'], clm['w_bpw'].T)
+            s.add_ell_cl(f'cl_{p1}{p2}', clm['bin_1'], clm['bin_2'],
+                         clm['l_eff'], cl, window=bpw)
 
         s.add_covariance(self.cov)
         return s
