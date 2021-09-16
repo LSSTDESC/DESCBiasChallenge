@@ -5,7 +5,7 @@ sampler:
     #oversample_power: 1
     #drag: True
     #measure_speeds: False
-    max_samples: 1000
+    max_samples: 10000
 
 params:
   # Derived
@@ -60,12 +60,246 @@ params:
     latex: n_s
     proposal: 0.001
   m_nu: 0.
-  cllike_cl1_b0: 2.
-  cllike_cl2_b0: 2.
-  cllike_cl3_b0: 2.
-  cllike_cl4_b0: 2.
-  cllike_cl5_b0: 2.
-  cllike_cl6_b0: 2.
+  cllike_cl1_b1:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 1.5413800308327779
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,1}
+    proposal: 0.001
+  cllike_cl2_b1:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 1.710079914623926
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,2}
+    proposal: 0.001
+  cllike_cl3_b1:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 1.9648902747695882
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,3}
+    proposal: 0.001
+  cllike_cl4_b1:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 2.3268344395068925
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,4}
+    proposal: 0.001
+  cllike_cl5_b1:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 2.809230757784219
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,5}
+    proposal: 0.001
+  cllike_cl6_b1:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 3.3919171002407063
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,6}
+    proposal: 0.001
+  cllike_cl1_b1p:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b^'_1\,\text{for}\,C_{l,1}
+    proposal: 0.001
+  cllike_cl2_b1p:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b^'_1\,\text{for}\,C_{l,2}
+    proposal: 0.001
+  cllike_cl3_b1p:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b^'_1\,\text{for}\,C_{l,3}
+    proposal: 0.001
+  cllike_cl4_b1p:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b^'_1\,\text{for}\,C_{l,4}
+    proposal: 0.001
+  cllike_cl5_b1p:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b^'_1\,\text{for}\,C_{l,5}
+    proposal: 0.001
+  cllike_cl6_b1p:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b^'_1\,\text{for}\,C_{l,6}
+    proposal: 0.001
+  cllike_cl1_b2:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,1}
+    proposal: 0.001
+  cllike_cl2_b2:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,2}
+    proposal: 0.001
+  cllike_cl3_b2:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,3}
+    proposal: 0.001
+  cllike_cl4_b2:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,4}
+    proposal: 0.001
+  cllike_cl5_b2:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,5}
+    proposal: 0.001
+  cllike_cl6_b2:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,6}
+    proposal: 0.001
+  cllike_cl1_bs:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,1}
+    proposal: 0.001
+  cllike_cl2_bs:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,2}
+    proposal: 0.001
+  cllike_cl3_bs:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,3}
+    proposal: 0.001
+  cllike_cl4_bs:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,4}
+    proposal: 0.001
+  cllike_cl5_bs:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,5}
+    proposal: 0.001
+  cllike_cl6_bs:
+    prior: 
+      max: 100.0
+      min: -100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,6}
+    proposal: 0.001
 
 # CCL settings
 theory:
@@ -78,7 +312,7 @@ theory:
 likelihood:
   cl_like.ClLike:
     # Input sacc file
-    input_file: ../data/fid_red_const.fits
+    input_file: ../data/fid_red_HOD.fits
     # List all relevant bins
     bins:
       - name: cl1
@@ -170,8 +404,8 @@ likelihood:
     nz_model: NzNone
     # ShapeMultiplicative, ShapeNone
     shape_model: ShapeNone
-    # Linear or HEFT
-    bz_model: Linear
+    # Linear, EulerianPT or LagrangianPT
+    bz_model: EulerianPT
 
 debug: True
 output: 'cobaya_out/MCMC'

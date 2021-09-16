@@ -11,11 +11,17 @@ model_name = sys.argv[1]
 input_name = sys.argv[2]
 kmax = sys.argv[3]
 
-if model_name == 'EPT':
-    model = 'EulerianPT'
-else:
+# Set model
+if model_name == 'LIN':
     model = 'Linear'
+elif model_name == 'EPT':
+    model = 'EulerianPT'
+elif model_name == 'LPT':
+    model = 'LagrangianPT'
+else:
+    raise ValueError("Unknown bias model")
 
+# Select input and yaml files
 if input_name[-6:] == 'abacus':
     input_file = '../../data/abacus_' + str(input_name) + '.fits'
     config_fn = "kmax_abacus.yml"
@@ -66,12 +72,12 @@ else:
     bias = [2.,2.,2.,2.,2.,2.]
 
 # Template for bias parameters in yaml file
-cl_param = {'prior': {'min': 0.0, 'max': 100.0}, 
+cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
         'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
         'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
-if model_name == 'EPT':
+if model_name in ['EPT','LPT']:
     bpar = ['1','1p','2','s']
 else:
     bpar = ['0','p']
@@ -83,9 +89,6 @@ for b in bpar:
         info['params']['cllike_cl'+str(i+1)+'_b'+b]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
         if b == '0' or b == '1':
             info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
-        # Uncomment to remove bs parameter from minimisation
-        # elif b == 's':
-            # info['params']['cllike_cl'+str(i+1)+'_bs'] = 0.
 
 # Add model and input file
 info['likelihood']['cl_like.ClLike']['bz_model'] = model
@@ -128,8 +131,7 @@ p0_chi2 = -2 * loglikes[0]
 loglikes, derived = model.loglikes(pf)
 pf_chi2 = -2 * loglikes[0]
 
-#======================DETERMINE ERRORS ON PARAMETERS========================
-
+# Determine errors on parameters
 class Fisher:
     def __init__(self,pf):
         self.pf = pf
