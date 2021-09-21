@@ -214,9 +214,9 @@ class ClLike(Likelihood):
         zmean = self.bin_properties[name]['zmean_fid']
         bz = np.ones_like(z)
         if self.bz_model == 'Linear':
-            b0 = pars[self.input_params_prefix + '_' + name + '_b0']
-            bp = pars[self.input_params_prefix + '_' + name + '_bp']
-            bz = b0 + bp * (z - zmean)
+            b1 = pars[self.input_params_prefix + '_' + name + '_b1']
+            b1p = pars[self.input_params_prefix + '_' + name + '_b1p']
+            bz = b1 + b1p * (z - zmean)
         return (z, bz)
 
     def _get_ia_bias(self, cosmo, name, **pars):

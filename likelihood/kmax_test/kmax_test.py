@@ -170,10 +170,6 @@ class Fisher:
 
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
-                   "cllike_cl1_b0": 0.1,"cllike_cl2_b0": 0.1,"cllike_cl3_b0": 0.1,
-                   "cllike_cl4_b0": 0.1,"cllike_cl5_b0": 0.1,"cllike_cl6_b0": 0.1,  
-                   "cllike_cl1_bp": 0.1,"cllike_cl2_bp": 0.1,"cllike_cl3_bp": 0.1,
-                   "cllike_cl4_bp": 0.1,"cllike_cl5_bp": 0.1,"cllike_cl6_bp": 0.1,  
                    "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
                    "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1, 
                    "cllike_cl1_b1p": 0.1,"cllike_cl2_b1p": 0.1,"cllike_cl3_b1p": 0.1,

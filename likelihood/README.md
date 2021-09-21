@@ -6,7 +6,8 @@
 The likelihood code is contained in [cl_like](cl_like)
 - [cl_like/ccl.py](cl_like/ccl.py)` is the CCL wrapper that talks to cobaya. **You most probably do not need to touch this**.
 - [cl_like/cl_like.py](cl_like/cl_like.py) contains the actual likelihood. This is where most modifications will probably take place (+ any extra files/modules that need to be added).
-- `testrun.py` and `test.yml` show how one can run cobaya, and an example config file that links to a data file consisting of a simple linearly biased 3x2pt dataset.
+- `testrun.py` and `test.yml` show how one can run cobaya, and an example config file that links to a data file consisting of a simple linearly biased 3x2pt dataset. `test_abacus.yml` lists the fiducial cosmological parameters that should be used for the Abacus datasets.
+- [kmax_test](kmax_test) contains all the scripts used by Nathan in his initial investigations.
 
 ## Tips for adding a new bias model
 Adding a new bias model should most likely consist of adding a recipe to compute the galaxy-galaxy and galaxy-matter power spectra Pgg(k, z) and Pgm(k, z). These are the most probable steps you need to take in order to do so (all steps consist of modifications to methods in the `ClLike` class defined in [cl_like/cl_like.py](cl_like/cl_like.py):

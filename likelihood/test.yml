@@ -4,7 +4,10 @@ sampler:
     max_evals: 1000
 
 params:
-  # Derived
+  # List all the likelihood parameters here.
+  # You need to include `prior`, `ref` and
+  # `proposal` for all parameters you want
+  # to vary.
   sigma8:
     prior:
       min: 0.1
@@ -15,53 +18,46 @@ params:
       scale: 0.01
     latex: \sigma_8
     proposal: 0.001
-  Omega_c:
-    prior:
-      min: 0.05
-      max: 0.7
-    ref:
-      dist: norm
-      loc: 0.25
-      scale: 0.01
-    latex: \Omega_c
-    proposal: 0.001
-  Omega_b: 
-    prior:
-      min: 0.01
-      max: 0.2
-    ref:
-      dist: norm
-      loc: 0.05
-      scale: 0.01
-    latex: \Omega_b
-    proposal: 0.001
-  h:
-    prior:
-      min: 0.1
-      max: 1.2
-    ref:
-      dist: norm
-      loc: 0.7
-      scale: 0.01
-    latex: h
-    proposal: 0.001
-  n_s:
-    prior:
-      min: 0.1
-      max: 1.2
-    ref:
-      dist: norm
-      loc: 0.96
-      scale: 0.01
-    latex: n_s
-    proposal: 0.001
+  Omega_c: 0.25
+  Omega_b: 0.05
+  h: 0.7
+  n_s: 0.96
   m_nu: 0.
-  cllike_cl1_b0: 2.
-  cllike_cl2_b0: 2.
-  cllike_cl3_b0: 2.
-  cllike_cl4_b0: 2.
-  cllike_cl5_b0: 2.
-  cllike_cl6_b0: 2.
+  # Bias parameters. Note that you can declare
+  # all nuisance parameters as
+  # `<prefix>_param_name` where `<prefix>` is
+  # whatever you've chosen as `input_params_prefix`
+  # further down. All such parameters will
+  # automatically be understood by cobaya and
+  # assigned to your likelihood.
+  # First-order bias
+  clk_cl1_b1: 2.
+  clk_cl2_b1: 2.
+  clk_cl3_b1: 2.
+  clk_cl4_b1: 2.
+  clk_cl5_b1: 2.
+  clk_cl6_b1: 2.
+  # Derivative of 1st-order bias with z
+  clk_cl1_b1p: 0.
+  clk_cl2_b1p: 0.
+  clk_cl3_b1p: 0.
+  clk_cl4_b1p: 0.
+  clk_cl5_b1p: 0.
+  clk_cl6_b1p: 0.
+  # 2nd-order bias
+  clk_cl1_b2: 0.
+  clk_cl2_b2: 0.
+  clk_cl3_b2: 0.
+  clk_cl4_b2: 0.
+  clk_cl5_b2: 0.
+  clk_cl6_b2: 0.
+  # Tidal bias
+  clk_cl1_bs: 0.
+  clk_cl2_bs: 0.
+  clk_cl3_bs: 0.
+  clk_cl4_bs: 0.
+  clk_cl5_bs: 0.
+  clk_cl6_bs: 0.
 
 # CCL settings
 theory:
@@ -75,7 +71,8 @@ likelihood:
   cl_like.ClLike:
     # Input sacc file
     input_file: ../data/fid_red_const.fits
-    # List all relevant bins
+    # List all relevant bins. The clustering
+    # bins are clX, the shear bins are shX.
     bins:
       - name: cl1
       - name: cl2
@@ -89,7 +86,9 @@ likelihood:
       - name: sh4
       - name: sh5
     # List all 2-points that should go into the
-    # data vector
+    # data vector. For now we only include
+    # galaxy-galaxy auto-correlations, but all
+    # galaxy-shear and shear-shear correlations.
     twopoints:
       - bins: [cl1, cl1]
       - bins: [cl2, cl2]
@@ -144,7 +143,12 @@ likelihood:
       - bins: [sh5, sh5]
 
     defaults:
+      # Scale cut for galaxy clustering
+      # (ignored for shear-shear)
       kmax: 0.15
+      # These one will apply to all power
+      # spectra (unless the lmax corresponding
+      # to the chosen kmax is smaller).
       lmin: 0
       lmax: 2000
       sh1:
@@ -159,15 +163,12 @@ likelihood:
         lmin: 30
 
     # Prefix associated to all nuisance params
-    input_params_prefix: cllike
-    # IADESY1, IAPerBin or IANone
+    input_params_prefix: clk
     ia_model: IANone
-    # NzShift or NzNone
     nz_model: NzNone
-    # ShapeMultiplicative, ShapeNone
     shape_model: ShapeNone
-    # Linear or HEFT
-    bz_model: Linear
+    # Linear, EulerianPT, LagrangianPT
+    bz_model: LagrangianPT
 
 debug: True
 output: 'cobaya_out/test'
