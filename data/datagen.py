@@ -5,6 +5,8 @@ import os
 
 
 def get_abacus_cosmo():
+    """ Returns the Abacus cosmology as a CCL object
+    """
     omega_b = 0.02237
     omega_cdm = 0.12
     h = 0.6736
@@ -30,6 +32,9 @@ class DataGenerator(object):
 
     def __init__(self, config):
         self.c = config
+        print(self.c['sacc_name'])
+        # Read redshift distributions and compute number densities
+        # for all redshift bins
         d = np.load(self.c['dNdz_file'])
         self.z_cl = d['z_cl']
         self.nz_cl = d['dNdz_cl'].T
@@ -43,6 +48,8 @@ class DataGenerator(object):
         self.ndens_sh *= (180*60/np.pi)**2
         self.n_cl = len(self.ndens_cl)
         self.n_sh = len(self.ndens_sh)
+
+        # Cosmological model
         if 'cosmology' in self.c:
             if isinstance(self.c['cosmology'], dict):
                 self.cosmo = ccl.Cosmology(**(self.c['cosmology']))
@@ -54,20 +61,24 @@ class DataGenerator(object):
         else:
             self.cosmo = ccl.CosmologyVanillaLCDM()
         ccl.sigma8(self.cosmo)
+
+        # Bias model
         self.bias_model = self.c['bias']['model']
         self.ll = None
 
-    def get_covariance(self, cls, unwrap=True):
+    def _get_covariance(self, cls, unwrap=True):
+        """ Generates Gaussian covariance given power spectrum matrix
+        """
         nt, _, nl = cls.shape
-        ll = self.get_ell_sampling()
+        ll = self._get_ell_sampling()
         ls = ll['mean']
         dl = ll['d_ell']
         fsky = self.c.get('fsky', 0.4)
         ncl = (nt*(nt+1)) // 2
         cov = np.zeros([ncl, nl, ncl, nl])
         nmodes = fsky*(2*ls+1)*dl
-        for i1, i2, icl, ni1, ni2, clit in self.get_indices(nt):
-            for j1, j2, jcl, nj1, nj2, cljt in self.get_indices(nt):
+        for i1, i2, icl, ni1, ni2, clit in self._get_indices(nt):
+            for j1, j2, jcl, nj1, nj2, cljt in self._get_indices(nt):
                 cli1j1 = cls[i1, j1]
                 cli1j2 = cls[i1, j2]
                 cli2j1 = cls[i2, j1]
@@ -79,6 +90,9 @@ class DataGenerator(object):
         return cov
 
     def _get_tracer_name(self, i):
+        """ Returns tracer name given its index
+        """
+        # Clustering first, then shear
         if i < self.n_cl:
             return f'cl{i+1}'
         else:
@@ -86,6 +100,9 @@ class DataGenerator(object):
             return f'sh{j+1}'
 
     def _get_cl_type(self, i, j):
+        """ Returns power spectrum type given
+        tracer indices.
+        """
         if i < self.n_cl:
             if j < self.n_cl:
                 return 'cl_00'
@@ -97,7 +114,9 @@ class DataGenerator(object):
             else:
                 return 'cl_ee'
 
-    def get_indices(self, nt):
+    def _get_indices(self, nt):
+        """ Iterator through all bin pairs
+        """
         icl = 0
         for i1 in range(nt):
             for i2 in range(i1, nt):
@@ -107,22 +126,32 @@ class DataGenerator(object):
                        self._get_cl_type(i1, i2))
                 icl += 1
 
-    def get_nls(self):
-        ll = self.get_ell_sampling()
+    def _get_nls(self):
+        """ Computes matrix of noise power spectra
+        """
+        ll = self._get_ell_sampling()
         n_tot = self.n_cl + self.n_sh
         nls = np.zeros([n_tot, n_tot, ll['n_bpw']])
         sgamma = self.c.get('e_rms', 0.28)
+        # Clustering first
         for i in range(self.n_cl):
             nls[i, i, :] = 1./self.ndens_cl[i]
+        # Then shear
         for i in range(self.n_sh):
             nls[i+self.n_cl, i+self.n_cl, :] = sgamma**2/self.ndens_sh[i]
         return nls
 
-    def get_shear_tracers(self):
+    def _get_shear_tracers(self):
+        """ Generates all shear tracers
+        """
         return [ccl.WeakLensingTracer(self.cosmo, (self.z_sh, n))
                 for n in self.nz_sh]
 
-    def get_clustering_tracers(self):
+    def _get_clustering_tracers(self):
+        """ Generates all clustering tracers
+        """
+        # If linear bias (constant or otherwise), include linear
+        # bias as part of the tracer
         if self.bias_model == 'constant':
             bc = self.c['bias'].get('constant_bias', 1.)
             bz = np.ones_like(self.z_cl)*bc
@@ -130,12 +159,15 @@ class DataGenerator(object):
             bc = self.c['bias'].get('constant_bias', 0.95)
             bz = bc/ccl.growth_factor(self.cosmo, 1./(1+self.z_cl))
         else:
+            # Otherwise, just set b=1 (bias will be in P(k)s)
             bz = np.ones_like(self.z_cl)
         return [ccl.NumberCountsTracer(self.cosmo, False, (self.z_cl, n),
                                        (self.z_cl, bz))
                 for n in self.nz_cl]
 
     def get_b_effective(self, z):
+        """ Returns the effective bias at a given redshift
+        """
         if self.bias_model == 'constant':
             return self.c['bias'].get('constant_bias', 1.)
         elif self.bias_model == 'HSC_linear':
@@ -161,12 +193,17 @@ class DataGenerator(object):
             bf = interp1d(zz[::-1], bz[::-1], fill_value='extrapolate', bounds_error=False)
             return bf(z)
 
-    def get_pks(self):
+    def _get_pks(self):
+        """ Computes P_gg(k, z) and P_gm(k, z)
+        """
         if ((self.bias_model == 'constant') or
                 (self.bias_model == 'HSC_linear')):
+            # If linear bias, all Pks are just the matter power spectrum
+            # (by default in CCL)
             pk_gg = None
             pk_gm = None
         elif self.bias_model == 'HOD':
+            # Halo model calculation
             print("Getting HOD Pks")
             md = ccl.halos.MassDef200m()
             cm = ccl.halos.ConcentrationDuffy08(mdef=md)
@@ -199,6 +236,9 @@ class DataGenerator(object):
                                            smooth_transition=alpha_HMCODE,
                                            supress_1h=k_supress)
         elif self.bias_model == 'Abacus':
+            # If using Abacus, read all the smooth power spectra
+            # (generated in AbacusData.ipynb), and interpolate
+            # in k and a.
             print("Getting Abacus Pks")
             d = np.load('AbacusData/pk2d_abacus.npz')
             gtype = self.c['bias']['galtype']
@@ -209,6 +249,7 @@ class DataGenerator(object):
             else:
                 imin = 0
 
+            # Interpolation done internally in the Pk2D objects
             pk_gg = ccl.Pk2D(a_arr=d['a_s'][imin:], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(d[f'{gtype}_{gtype}'][imin:, :]),
                              is_logp=True)
@@ -221,14 +262,21 @@ class DataGenerator(object):
         return {'gg': pk_gg,
                 'gm': pk_gm}
 
-    def get_cls(self):
-        pks = self.get_pks()
-        t_cl = self.get_clustering_tracers()
-        t_sh = self.get_shear_tracers()
-        ll = self.get_ell_sampling()
+    def _get_cls(self):
+        """ Computes all angular power spectra
+        """
+        # Get P(k)s
+        pks = self._get_pks()
+        # Get clustering tracers
+        t_cl = self._get_clustering_tracers()
+        # Get shear tracers
+        t_sh = self._get_shear_tracers()
+        # Ell sampling
+        ll = self._get_ell_sampling()
         ts = t_cl + t_sh
         n_tot = self.n_cl + self.n_sh
 
+        # Loop over all tracer pairs
         cls = np.zeros([n_tot, n_tot, ll['n_bpw']])
         for i1, t1 in enumerate(ts):
             for i2, t2 in enumerate(ts):
@@ -237,18 +285,32 @@ class DataGenerator(object):
                 pk = None
                 if i1 < self.n_cl:
                     if i2 < self.n_cl:
-                        pk = pks['gg']
+                        pk = pks['gg']  # gg case
                     else:
-                        pk = pks['gm']
-                cl = ccl.angular_cl(self.cosmo, t1, t2, ll['ls'], p_of_k_a=pk)
+                        pk = pks['gm']  # gm case
+                # Limber integral
+                cl = ccl.angular_cl(self.cosmo, t1, t2, ll['ls'],
+                                    p_of_k_a=pk)
+                # Bandpower window convolution
                 clb = np.dot(ll['bpws'], cl)
                 cls[i1, i2, :] = clb
                 if i1 != i2:
                     cls[i2, i1, :] = clb
         return cls
 
-    def get_ell_sampling(self):
+    def _get_ell_sampling(self):
+        """ Defines the ell sampling of the data vector.
+        We use linear sampling with separation
+        `dl_linear` = 10 up to a given `ell_linear`, and
+        then switch to log spacing with `nl_per_decade`=10
+        ells per dex. The value of `ell_linear` is such that
+        the separation between adjacent ells after
+        `ell_linear` using log sampling is larger or equal
+        to `d_ell_linear`. We start at ell=2 and stop at
+        ell=5000.
+        """
         if self.ll is None:
+            # First work out the ell edges
             dl_linear = 10
             nl_per_decade = 10
             dlogl = 1./nl_per_decade
@@ -263,6 +325,8 @@ class DataGenerator(object):
                 l_edges.append(int(l_last))
             l_edges = np.array(l_edges)
 
+            # Compute bandpower window functions.
+            # Assumed top-hat weighted by 2*l+1.
             n_bpw = len(l_edges)-1
             l_all = np.arange(l_edges[-1])
             bpw_windows = np.zeros([n_bpw, l_edges[-1]])
@@ -282,6 +346,9 @@ class DataGenerator(object):
         return self.ll
 
     def get_sacc_file(self):
+        """ Generates sacc file containing full
+        data vector, N(z)s, and covariance matrix.
+        """
         import sacc
         s = sacc.Sacc()
 
@@ -300,19 +367,19 @@ class DataGenerator(object):
 
         # Bandpower windows
         print("Windows")
-        ll = self.get_ell_sampling()
+        ll = self._get_ell_sampling()
         wins = sacc.BandpowerWindow(ll['ls'], ll['bpws'].T)
 
         # Cls
         print("Cls")
-        sl = self.get_cls()
-        for i1, i2, icl, n1, n2, clt in self.get_indices(self.n_cl+self.n_sh):
+        sl = self._get_cls()
+        for i1, i2, icl, n1, n2, clt in self._get_indices(self.n_cl+self.n_sh):
             s.add_ell_cl(clt, n1, n2, ll['mean'], sl[i1, i2], window=wins)
 
         # Covariance
         print("Cov")
-        nl = self.get_nls()
-        cov = self.get_covariance(sl+nl, unwrap=True)
+        nl = self._get_nls()
+        cov = self._get_covariance(sl+nl, unwrap=True)
         s.add_covariance(cov)
 
         if self.c.get('add_noise', False):
@@ -324,12 +391,15 @@ class DataGenerator(object):
         return s
 
     def save_config(self):
+        """ Saves yaml file used to generate these data.
+        """
         import yaml
 
         with open(self.c['sacc_name']+'.yml', 'w') as outfile:
             yaml.dump(self.c, outfile, default_flow_style=False)
 
 
+# Cosmological parameters for non-Abacus datasets
 cospar = {'Omega_c': 0.25,
           'Omega_b': 0.05,
           'h': 0.7,
@@ -338,7 +408,8 @@ cospar = {'Omega_c': 0.25,
           'w0': -1,
           'transfer_function': 'eisenstein_hu'}
 
-# Constant linear bias
+###
+# 1. Constant linear bias
 # Same clustering and shear bins
 config = {'ndens_sh': 27.,
           'ndens_cl': 27.,
@@ -367,9 +438,11 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
+###
 
 
-# Evolving linear bias (a la HSC)
+###
+# 2. Evolving linear bias (a la HSC)
 # Same clustering and shear bins
 config = {'ndens_sh': 27.,
           'ndens_cl': 27.,
@@ -398,9 +471,12 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
+###
 
 
-# HOD (a la HSC)
+###
+# 3. HOD
+# HSC HOD parameters (Nicola et al.)
 # Same clustering and shear bins
 config = {'ndens_sh': 27.,
           'ndens_cl': 27.,
@@ -423,8 +499,7 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
-
-# HOD (LRGs from 2001.06018)
+# LRGs (from 2001.06018)
 # Red clustering
 config = {'ndens_sh': 27.,
           'ndens_cl': 4.,
@@ -449,9 +524,11 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
+###
 
 
-# From Abacus
+###
+# 4. From Abacus
 # HSC (same HOD params)
 config = {'ndens_sh': 27.,
           'ndens_cl': 27.,
@@ -466,7 +543,6 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
-
 # Red (same HOD params)
 config = {'ndens_sh': 27.,
           'ndens_cl': 4.,
@@ -481,8 +557,7 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
-
-# Red (assembly bias)
+# Red (with assembly bias)
 config = {'ndens_sh': 27.,
           'ndens_cl': 4.,
           'dNdz_file': 'data/dNdz_shear_red.npz',
@@ -496,3 +571,7 @@ if not os.path.isfile(config['sacc_name']):
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
+###
+
+# Tarball
+os.system('tar -cpzf data_DESCBiasChallenge.tar.gz *.fits *.fits.yml README_data.md')
