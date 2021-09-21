@@ -204,7 +204,7 @@ class DataGenerator(object):
             gtype = self.c['bias']['galtype']
 
             # The red-red Pk is super noisy at z>1.7, so we remove that
-            if gtype == 'red':
+            if gtype in ['red', 'red_AB']:
                 imin = 3
             else:
                 imin = 0
@@ -476,6 +476,21 @@ config = {'ndens_sh': 27.,
           'bias': {'model': 'Abacus',
                    'galtype': 'red'},
           'sacc_name': 'abacus_red_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
+
+# Red (assembly bias)
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'galtype': 'red_AB'},
+          'sacc_name': 'abacus_red_AB_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
