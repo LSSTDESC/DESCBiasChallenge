@@ -93,18 +93,18 @@ class LPTCalculator(object):
             Pdmdm = self.lpt_table[:, :, 1]
             Pdmd1 = 0.5*self.lpt_table[:, :, 2]
             Pd1d1 = self.lpt_table[:, :, 3]
-            pgg = (Pdmdm + (bL11+bL12)[:, None] * Pdmd1
-                   +(bL11*bL12)[:, None] * Pd1d1)
+            pgg = (Pdmdm + (bL11+bL12)[:, None] * Pdmd1 +
+                   (bL11*bL12)[:, None] * Pd1d1)
         else:
             pgg = (b11*b12)[:, None]*Pnl
         Pdmd2 = 0.5*self.lpt_table[:, :, 4]
         Pd1d2 = 0.5*self.lpt_table[:, :, 5]
-        Pd2d2 = self.lpt_table[:,:,6]*self.wk_low[None, :]
+        Pd2d2 = self.lpt_table[:, :, 6]*self.wk_low[None, :]
         Pdms2 = 0.25*self.lpt_table[:, :, 7]
         Pd1s2 = 0.25*self.lpt_table[:, :, 8]
-        Pd2s2 = 0.25*self.lpt_table[:,:,9]*self.wk_low[None, :]
-        Ps2s2 = 0.25*self.lpt_table[:,:,10]*self.wk_low[None, :]
-    
+        Pd2s2 = 0.25*self.lpt_table[:, :, 9]*self.wk_low[None, :]
+        Ps2s2 = 0.25*self.lpt_table[:, :, 10]*self.wk_low[None, :]
+
         pgg += ((b21 + b22)[:, None] * Pdmd2 +
                 (bs1 + bs2)[:, None] * Pdms2 +
                 (bL11*b22 + bL12*b21)[:, None] * Pd1d2 +
@@ -112,7 +112,7 @@ class LPTCalculator(object):
                 (b21*b22)[:, None] * Pd2d2 +
                 (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
                 (bs1*bs2)[:, None] * Ps2s2)
-    
+
         return pgg
 
     def get_pgm(self, Pnl, b1, b2, bs):
@@ -125,12 +125,12 @@ class LPTCalculator(object):
             pgm = Pdmdm + bL1[:, None] * Pdmd1
         else:
             pgm = b1[:, None]*Pnl
-        Pdmd2 = 0.5*self.lpt_table[:,:,4]
-        Pdms2 = 0.25*self.lpt_table[:,:,7]
+        Pdmd2 = 0.5*self.lpt_table[:, :, 4]
+        Pdms2 = 0.25*self.lpt_table[:, :, 7]
 
-        pgm += (b2[:, None] * Pdmd2 + 
+        pgm += (b2[:, None] * Pdmd2 +
                 bs[:, None] * Pdms2)
-    
+
         return pgm
 
 
@@ -202,7 +202,7 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             bs2 = tracer2.bs(z_arr)
 
             p_pt = ptc.get_pgg(Pnl,
-                               b11, b21, bs1, 
+                               b11, b21, bs1,
                                b12, b22, bs2)
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pgm(Pnl, b11, b21, bs1)

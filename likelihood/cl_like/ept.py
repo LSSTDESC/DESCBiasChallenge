@@ -165,8 +165,10 @@ class EPTCalculator(object):
         # Clarification:
         # We are expanding the galaxy overdensity as:
         #   d_g = b1 d + b2 d2^2/2 + bs s^2/2
-        # (see cell 10 in https://github.com/JoeMcEwen/FAST-PT/blob/master/examples/fastpt_examples.ipynb).
-        # The `dd_bias` array below contains the following power spectra in order:
+        # (see cell 10 in https://github.com/JoeMcEwen/FAST-PT/blob/
+        # master/examples/fastpt_examples.ipynb).
+        # The `dd_bias` array below contains the following power
+        # spectra in order:
         #  <d,d^2>
         #  <d^2,d^2> (!)
         #  <d,s^2>
@@ -316,11 +318,11 @@ class EPTCalculator(object):
 
         if (not return_bb) or return_both:
             pii = ((c11*c12)[:, None] * Pnl +
-                   ((c11*cd2 + c12*cd1)*self.g4)[:, None] * (a00e + c00e)[None, :] +
+                   ((c11*cd2+c12*cd1)*self.g4)[:, None]*(a00e+c00e)[None, :] +
                    (cd1*cd2*self.g4)[:, None] * a0e0e[None, :] +
                    (c21*c22*self.g4)[:, None] * ae2e2[None, :] +
-                   ((c11*c22 + c21*c12)*self.g4)[:, None] * (a0e2 + b0e2)[None, :] +
-                   ((cd1*c22 + cd2*c21)*self.g4)[:, None] * d0ee2[None, :])
+                   ((c11*c22+c21*c12)*self.g4)[:, None]*(a0e2+b0e2)[None, :] +
+                   ((cd1*c22+cd2*c21)*self.g4)[:, None]*d0ee2[None, :])
 
         if return_both:
             return pii, pii_bb

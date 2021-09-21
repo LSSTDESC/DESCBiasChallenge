@@ -1,4 +1,4 @@
-from . import cl_like, ccl
+from . import cl_like, ccl  # noqa
 
-from .cl_like import ClLike
-from .ccl import CCL
+from .cl_like import ClLike  # noqa
+from .ccl import CCL  # noqa

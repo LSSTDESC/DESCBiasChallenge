@@ -1,4 +1,3 @@
-import time
 import numpy as np
 from scipy.interpolate import interp1d
 import pyccl as ccl
@@ -73,9 +72,10 @@ class ClLike(Likelihood):
             if b['name'] not in s.tracers:
                 raise LoggedError(self.log, "Unknown tracer %s" % b['name'])
             t = s.tracers[b['name']]
+            zmean = np.average(t.z, weights=t.nz)
             self.bin_properties[b['name']] = {'z_fid': t.z,
                                               'nz_fid': t.nz,
-                                              'zmean_fid': np.average(t.z, weights=t.nz)}
+                                              'zmean_fid': zmean}
             # Ensure all tracers have ell_min
             if b['name'] not in self.defaults:
                 self.defaults[b['name']] = {}
@@ -247,7 +247,8 @@ class ClLike(Likelihood):
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
                 bz = self._get_bz(cosmo, name, **pars)
-                t = ccl.NumberCountsTracer(cosmo, dndz=nz, bias=bz, has_rsd=False)
+                t = ccl.NumberCountsTracer(cosmo, dndz=nz, bias=bz,
+                                           has_rsd=False)
                 if is_PT_bias:
                     z = self.bin_properties[name]['z_fid']
                     zmean = self.bin_properties[name]['zmean_fid']
@@ -256,7 +257,7 @@ class ClLike(Likelihood):
                     bz = b1 + b1p * (z - zmean)
                     b2 = pars[self.input_params_prefix + '_' + name + '_b2']
                     bs = pars[self.input_params_prefix + '_' + name + '_bs']
-                    ptt = pt.PTNumberCountsTracer(b1=(z,bz), b2=b2, bs=bs)
+                    ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2, bs=bs)
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
@@ -292,11 +293,13 @@ class ClLike(Likelihood):
                 k_filter = None
             if self.bz_model == 'EulerianPT':
                 ptc = EPTCalculator(with_NC=True, with_IA=False,
-                                    log10k_min=-4, log10k_max=2, nk_per_decade=20,
+                                    log10k_min=-4, log10k_max=2,
+                                    nk_per_decade=20,
                                     a_arr=a_s, k_filter=k_filter)
             else:
-                ptc = LPTCalculator(log10k_min=-4, log10k_max=2, nk_per_decade=20,
-                                    a_arr=a_s, h=cosmo['h'], k_filter=k_filter)
+                ptc = LPTCalculator(log10k_min=-4, log10k_max=2,
+                                    nk_per_decade=20, h=cosmo['h'],
+                                    a_arr=a_s, k_filter=k_filter)
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
@@ -304,7 +307,8 @@ class ClLike(Likelihood):
             ptc.update_pk(pk_lin_z0, Dz)
             return {'ptc': ptc, 'pk_mm': pkmm}
         else:
-            raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
+            raise LoggedError(self.log,
+                              "Unknown bias model %s" % self.bz_model)
 
     def _get_pkxy(self, cosmo, clm, pkd, trs, **pars):
         """ Get the P(k) between two tracers. """
@@ -337,7 +341,8 @@ class ClLike(Likelihood):
                                      ptc=pkd['ptc'])
                 return pk_pt
         else:
-            raise LoggedError(self.log, "Unknown bias model %s" % self.bz_model)
+            raise LoggedError(self.log,
+                              "Unknown bias model %s" % self.bz_model)
 
     def _get_cl_all(self, cosmo, pk, **pars):
         """ Compute all C_ells."""
@@ -363,11 +368,13 @@ class ClLike(Likelihood):
                 q1 = self.used_tracers[clm['bin_1']]
                 q2 = self.used_tracers[clm['bin_2']]
                 if q1 == 'galaxy_shear':
-                    m1 = pars[self.input_params_prefix + '_' + clm['bin_1'] + '_m']
+                    m1 = pars[self.input_params_prefix + '_' +
+                              clm['bin_1'] + '_m']
                 else:
                     m1 = 0.
                 if q2 == 'galaxy_shear':
-                    m2 = pars[self.input_params_prefix + '_' + clm['bin_2'] + '_m']
+                    m2 = pars[self.input_params_prefix + '_' +
+                              clm['bin_2'] + '_m']
                 else:
                     m2 = 0.
                 prefac = (1+m1) * (1+m2)
@@ -387,6 +394,9 @@ class ClLike(Likelihood):
         # Multiplicative bias if needed
         self._apply_shape_systematics(cls, **pars)
         return cls
+
+    def _get_spin_component(self, tr):
+        return 'e' if self.used_tracers[tr] == 'galaxy_shear' else '0'
 
     def get_sacc_file(self, **pars):
         import sacc
@@ -410,8 +420,8 @@ class ClLike(Likelihood):
         # Calculate power spectra
         cls = self.get_cls_theory(**pars)
         for clm, cl in zip(self.cl_meta, cls):
-            p1 = 'e' if self.used_tracers[clm['bin_1']] == 'galaxy_shear' else '0'
-            p2 = 'e' if self.used_tracers[clm['bin_2']] == 'galaxy_shear' else '0'
+            p1 = self._get_spin_component(clm['bin_1'])
+            p2 = self._get_spin_component(clm['bin_2'])
             bpw = sacc.BandpowerWindow(clm['l_bpw'], clm['w_bpw'].T)
             s.add_ell_cl(f'cl_{p1}{p2}', clm['bin_1'], clm['bin_2'],
                          clm['l_eff'], cl, window=bpw)
