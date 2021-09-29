@@ -2,12 +2,19 @@ from cobaya.model import get_model
 from cobaya.run import run
 import yaml
 import os
+import argparse
 
 import numpy as np
-import numpy.linalg as LA 
+import numpy.linalg as LA
+
+parser = argparse.ArgumentParser(description='Run NL bias model..')
+
+parser.add_argument('--path2config', dest='path2config', type=str, help='Path to config file.', required=True)
+
+args = parser.parse_args()
 
 # Read in the yaml file
-config_fn = 'test.yml'
+config_fn = args.path2config
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
