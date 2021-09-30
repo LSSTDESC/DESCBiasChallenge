@@ -24,7 +24,7 @@ for p in info['params']:
      if isinstance(info['params'][p], dict):
          if 'ref' in info['params'][p]:
              p0[p] = info['params'][p]['ref']['loc']
-os.system('mkdir -p ' + info['output'])
+# os.system('mkdir -p ' + info['output_dir'])
 
 print("params_dict = ", p0)
 
