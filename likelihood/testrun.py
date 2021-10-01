@@ -36,6 +36,7 @@ print("chi2 = ", -2 * loglikes[0])
 # Run the sampler
 updated_info, sampler = run(info)
 bf = sampler.products()['minimum']
+np.save(info['output_dir']+'.hessian.npy', sampler.products()['result_object'].hessian)
 # bf = sampler.products()['minimum'].bestfit()
 pf = {k: bf[k] for k in p0.keys()}
 print("Final params: ")
