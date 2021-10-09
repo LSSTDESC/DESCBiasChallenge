@@ -126,6 +126,8 @@ info['likelihood']['cl_like.ClLike']['defaults']['kmax'] = float(k_max)
 info['output'] = path2output
 
 # Save yaml file
+dir, _ = os.path.split(path2output)
+os.makedirs(dir)
 with open(path2output+'.yml', 'w') as yaml_file:
     yaml.dump(info, yaml_file, default_flow_style=False)
 
