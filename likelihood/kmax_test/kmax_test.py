@@ -24,11 +24,11 @@ parser.add_argument('--k_max', dest='k_max', type=float, help='Maximal k vector.
 parser.add_argument('--fit_params', dest='fit_params', nargs='+', help='Parameters to be fit.', required=True)
 parser.add_argument('--bins', dest='bins', nargs='+', help='Redshift bins to be fit.', required=True)
 parser.add_argument('--probes', dest='probes', nargs='+', help='Probes to be fit.', required=True)
-parser.add_argument('--sigma8', dest='sigma8', help='Fixed parameter value.', required=False)
-parser.add_argument('--Omega_c', dest='Omega_c', help='Fixed parameter value.', required=False)
-parser.add_argument('--Omega_b', dest='Omega_b', help='Fixed parameter value.', required=False)
-parser.add_argument('--h', dest='h', help='Fixed parameter value.', required=False)
-parser.add_argument('--n_s', dest='n_s', help='Fixed parameter value.', required=False)
+parser.add_argument('--sigma8', dest='sigma8', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
 
 args = parser.parse_args()
 
