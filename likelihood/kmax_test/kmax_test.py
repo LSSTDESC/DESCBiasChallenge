@@ -97,7 +97,7 @@ cl_param = {'prior': {'min': -100.0, 'max': 100.0},
         'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
-if bias_model in ['EPT','LPT']:
+if bias_model in ['EuPT','LPT']:
     bpar = ['1','1p','2','s']
 else:
     bpar = ['1','1p']
@@ -127,7 +127,7 @@ info['output'] = path2output
 
 # Save yaml file
 dir, _ = os.path.split(path2output)
-os.makedirs(dir)
+os.makedirs(dir, exist_ok=True)
 with open(path2output+'.yml', 'w') as yaml_file:
     yaml.dump(info, yaml_file, default_flow_style=False)
 
