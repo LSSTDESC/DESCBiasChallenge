@@ -24,6 +24,11 @@ parser.add_argument('--k_max', dest='k_max', type=float, help='Maximal k vector.
 parser.add_argument('--fit_params', dest='fit_params', nargs='+', help='Parameters to be fit.', required=True)
 parser.add_argument('--bins', dest='bins', nargs='+', help='Redshift bins to be fit.', required=True)
 parser.add_argument('--probes', dest='probes', nargs='+', help='Probes to be fit.', required=True)
+parser.add_argument('--sigma8', dest='sigma8', help='Fixed parameter value.', required=False)
+parser.add_argument('--Omega_c', dest='Omega_c', help='Fixed parameter value.', required=False)
+parser.add_argument('--Omega_b', dest='Omega_b', help='Fixed parameter value.', required=False)
+parser.add_argument('--h', dest='h', help='Fixed parameter value.', required=False)
+parser.add_argument('--n_s', dest='n_s', help='Fixed parameter value.', required=False)
 
 args = parser.parse_args()
 
@@ -59,30 +64,40 @@ if 'sigma8' in fit_params:
     info['params']['sigma8'] = cl_param = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.8090212289405192, 'scale': 0.01},
                                                     'latex': '\sigma_8', 'proposal': 0.001}
+elif hasattr(args, 'sigma8'):
+    info['params']['sigma8'] = args.sigma8
 else:
     info['params']['sigma8'] = 0.8090212289405192
 if 'Omega_c' in fit_params:
     info['params']['Omega_c'] = cl_param = {'prior': {'min': 0.05, 'max': 0.7},
                                                     'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
                                                     'latex': '\Omega_c', 'proposal': 0.001}
+elif hasattr(args, 'Omega_c'):
+    info['params']['Omega_c'] = args.Omega_c
 else:
     info['params']['Omega_c'] = 0.26447041034523616
 if 'Omega_b' in fit_params:
     info['params']['Omega_b'] = cl_param = {'prior': {'min': 0.01, 'max': 0.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.049301692328524445, 'scale': 0.01},
                                                     'latex': '\Omega_b', 'proposal': 0.001}
+elif hasattr(args, 'Omega_b'):
+    info['params']['Omega_b'] = args.Omega_b
 else:
     info['params']['Omega_b'] = 0.049301692328524445
 if 'h' in fit_params:
     info['params']['h'] = cl_param = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.6736, 'scale': 0.01},
                                                     'latex': 'h', 'proposal': 0.001}
+elif hasattr(args, 'h'):
+    info['params']['h'] = args.h
 else:
     info['params']['h'] = 0.6736
 if 'n_s' in fit_params:
     info['params']['n_s'] = cl_param = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.9649, 'scale': 0.01},
                                                     'latex': 'n_s', 'proposal': 0.001}
+elif hasattr(args, 'n_s'):
+    info['params']['n_s'] = args.n_s
 else:
     info['params']['n_s'] = 0.9649
 
