@@ -240,4 +240,4 @@ pfvals = list(pf.values())
 cov = list(final_params.get_cov())
 
 # Save data to file
-np.savez(info['output']+'.fisher.npy', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+np.savez(info['output']+'.fisher.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
