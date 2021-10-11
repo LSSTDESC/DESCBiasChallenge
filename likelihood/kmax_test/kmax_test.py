@@ -105,6 +105,7 @@ probes = args.probes
 info['likelihood']['cl_like.ClLike']['bins'] = [{'name': bin_name} for bin_name in args.bins]
 info['likelihood']['cl_like.ClLike']['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
 n_bin = len(args.bins)
+bin_nos = [bin_name[-1] for bin_name in args.bins if 'cl' in bin_name]
 
 # Template for bias parameters in yaml file
 cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
@@ -119,7 +120,7 @@ else:
     
 # Write bias parameters into yaml file
 for b in bpar:
-    for i in range(0, n_bin):
+    for i in bin_nos:
         param_name = 'cllike_cl'+str(i+1)+'_b'+b
         if param_name in fit_params:
             info['params'][param_name] = cl_param.copy()
