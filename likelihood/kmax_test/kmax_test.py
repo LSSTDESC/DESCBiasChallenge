@@ -61,42 +61,42 @@ with open(config_fn, "r") as fin:
 bias = [2., 2., 2., 2., 2., 2.]
 
 if 'sigma8' in fit_params:
-    info['params']['sigma8'] = cl_param = {'prior': {'min': 0.1, 'max': 1.2},
+    info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.8090212289405192, 'scale': 0.01},
                                                     'latex': '\sigma_8', 'proposal': 0.001}
-elif hasattr(args, 'sigma8'):
+elif args.sigma8 is not None:
     info['params']['sigma8'] = args.sigma8
 else:
     info['params']['sigma8'] = 0.8090212289405192
 if 'Omega_c' in fit_params:
-    info['params']['Omega_c'] = cl_param = {'prior': {'min': 0.05, 'max': 0.7},
+    info['params']['Omega_c'] = {'prior': {'min': 0.05, 'max': 0.7},
                                                     'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
                                                     'latex': '\Omega_c', 'proposal': 0.001}
-elif hasattr(args, 'Omega_c'):
+elif args.Omega_c is not None:
     info['params']['Omega_c'] = args.Omega_c
 else:
     info['params']['Omega_c'] = 0.26447041034523616
 if 'Omega_b' in fit_params:
-    info['params']['Omega_b'] = cl_param = {'prior': {'min': 0.01, 'max': 0.2},
+    info['params']['Omega_b'] = {'prior': {'min': 0.01, 'max': 0.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.049301692328524445, 'scale': 0.01},
                                                     'latex': '\Omega_b', 'proposal': 0.001}
-elif hasattr(args, 'Omega_b'):
+elif args.Omega_b is not None:
     info['params']['Omega_b'] = args.Omega_b
 else:
     info['params']['Omega_b'] = 0.049301692328524445
 if 'h' in fit_params:
-    info['params']['h'] = cl_param = {'prior': {'min': 0.1, 'max': 1.2},
+    info['params']['h'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.6736, 'scale': 0.01},
                                                     'latex': 'h', 'proposal': 0.001}
-elif hasattr(args, 'h'):
+elif args.h is not None:
     info['params']['h'] = args.h
 else:
     info['params']['h'] = 0.6736
 if 'n_s' in fit_params:
-    info['params']['n_s'] = cl_param = {'prior': {'min': 0.1, 'max': 1.2},
+    info['params']['n_s'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.9649, 'scale': 0.01},
                                                     'latex': 'n_s', 'proposal': 0.001}
-elif hasattr(args, 'n_s'):
+elif args.n_s is not None:
     info['params']['n_s'] = args.n_s
 else:
     info['params']['n_s'] = 0.9649
