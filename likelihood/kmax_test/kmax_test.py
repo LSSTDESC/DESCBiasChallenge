@@ -115,6 +115,8 @@ cl_param = {'prior': {'min': -100.0, 'max': 100.0},
 # Set bias parameter types used in each model
 if bias_model in ['EuPT','LPT']:
     bpar = ['1','1p','2','s']
+elif bias_model == '3EuPT':
+    bpar = ['1', '1p', '2', 's', '3nl', 'k2']
 else:
     bpar = ['1','1p']
     
