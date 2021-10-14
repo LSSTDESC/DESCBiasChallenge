@@ -252,12 +252,15 @@ class ClLike(Likelihood):
                 if is_PT_bias:
                     z = self.bin_properties[name]['z_fid']
                     zmean = self.bin_properties[name]['zmean_fid']
-                    b1 = pars[self.input_params_prefix + '_' + name + '_b1']
-                    b1p = pars[self.input_params_prefix + '_' + name + '_b1p']
+                    pref = self.input_params_prefix + '_' + name
+                    b1 = pars[pref + '_b1']
+                    b1p = pars[pref + '_b1p']
                     bz = b1 + b1p * (z - zmean)
-                    b2 = pars[self.input_params_prefix + '_' + name + '_b2']
-                    bs = pars[self.input_params_prefix + '_' + name + '_bs']
-                    ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2, bs=bs)
+                    b2 = pars[pref + '_b2']
+                    bs = pars[pref + '_bs']
+                    bk2 = pars.get(pref + '_bk2', None)
+                    ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                                                  bs=bs, bk2=bk2)
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)

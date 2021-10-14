@@ -43,12 +43,23 @@ class EPTCalculator(object):
         C_window (float): `C_window` parameter used by FAST-PT
             to smooth the edges and avoid ringing. See FAST-PT
             documentation for more details.
+        k_cutoff (float): exponential cutoff scale. All power
+            spectra will be multiplied by a cutoff factor of the
+            form :math:`\\exp(-(k/k_*)^n)`, where :math:`k_*` is
+            the cutoff scale. This may be useful when using the
+            resulting power spectra to compute correlation
+            functions if some of the PT contributions do not
+            fall sufficiently fast on small scales. If `None`
+            (default), no cutoff factor will be applied.
+        n_exp_cutoff (float): exponent of the cutoff factor (see
+            `k_cutoff`).
     """
     def __init__(self, with_NC=False, with_IA=False, with_dd=True,
                  log10k_min=-4, log10k_max=2, nk_per_decade=20,
                  a_arr=None, k_filter=None,
                  pad_factor=1, low_extrap=-5, high_extrap=3,
-                 P_window=None, C_window=.75):
+                 P_window=None, C_window=.75,
+                 k_cutoff=None, n_exp_cutoff=4):
         self.with_dd = with_dd
         self.with_NC = with_NC
         self.with_IA = with_IA
@@ -71,6 +82,11 @@ class EPTCalculator(object):
             self.wk_low = 1-np.exp(-(self.ks/k_filter)**2)
         else:
             self.wk_low = np.ones(nk_total)
+        if k_cutoff is not None:
+            self.exp_cutoff = np.exp(-(self.ks/k_cutoff)**n_exp_cutoff)
+            self.exp_cutoff = self.exp_cutoff[None, :]
+        else:
+            self.exp_cutoff = 1
 
         self.pt = fpt.FASTPT(self.ks, to_do=to_do,
                              low_extrap=low_extrap,
@@ -113,9 +129,9 @@ class EPTCalculator(object):
     def _get_dd_bias(self, pk):
         # Precompute quantities needed for number counts
         # power spectra.
-        self.dd_bias = self.pt.one_loop_dd_bias(pk,
-                                                P_window=self.P_window,
-                                                C_window=self.C_window)
+        self.dd_bias = self.pt.one_loop_dd_bias_b3nl(pk,
+                                                     P_window=self.P_window,
+                                                     C_window=self.C_window)
         self.one_loop_dd = self.dd_bias[0:1]
 
     def _get_ia_bias(self, pk):
@@ -133,7 +149,8 @@ class EPTCalculator(object):
 
     def get_pgg(self, Pnl,
                 b11, b21, bs1, b12, b22, bs2,
-                sub_lowk):
+                sub_lowk, b3nl1=None, b3nl2=None,
+                bk21=None, bk22=None, Pgrad=None):
         """ Get the number counts auto-spectrum at the internal
         set of wavenumbers (given by this object's `ks` attribute)
         and a number of redshift values.
@@ -155,6 +172,19 @@ class EPTCalculator(object):
                 being correlated at the same set of input redshifts.
             sub_lowk (bool): if True, the small-scale white noise
                 contribution will be subtracted.
+            b3nl1 (array_like): 3-rd order bias for the first tracer.
+                If `None`, this contribution won't be included.
+            b3nl2 (array_like): 3-rd order bias for the second tracer.
+                If `None`, this contribution won't be included.
+            bk21 (array_like): non-local bias for the first tracer.
+                If `None`, this contribution won't be included.
+            bk22 (array_like): non-local bias for the second tracer.
+                If `None`, this contribution won't be included.
+            Pgrad (array_like): cross-correlation spectrum between
+                the matter overdensity :math:`\\delta` and its
+                Laplacian (divided by :math:`-k^2`). Evaluated at
+                the wavenumber values given by this object's `ks`
+                list. If `None`, `Pnl` will be used.
 
         Returns:
             array_like: 2D array of shape `(N_k, N_z)`, where `N_k` \
@@ -182,6 +212,19 @@ class EPTCalculator(object):
         Pd1s2 = self.g4[:, None] * self.dd_bias[4][None, :]
         Pd2s2 = self.g4[:, None] * (self.dd_bias[5]*self.wk_low)[None, :]
         Ps2s2 = self.g4[:, None] * (self.dd_bias[6]*self.wk_low)[None, :]
+        Pd1d3 = self.g4[:, None] * self.dd_bias[8][None, :]
+        if Pgrad is None:
+            Pgrad = Pnl
+        Pd1k2 = Pgrad * (self.ks**2)[None, :]
+
+        if b3nl1 is None:
+            b3nl1 = np.zeros_like(self.g4)
+        if b3nl2 is None:
+            b3nl2 = np.zeros_like(self.g4)
+        if bk21 is None:
+            bk21 = np.zeros_like(self.g4)
+        if bk22 is None:
+            bk22 = np.zeros_like(self.g4)
 
         s4 = 0.
         if sub_lowk:
@@ -193,8 +236,11 @@ class EPTCalculator(object):
                0.25*(b21*b22)[:, None] * (Pd2d2 - 2.*s4) +
                0.5*(b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
                0.25*(b21*bs2 + b22*bs1)[:, None] * (Pd2s2 - (4./3.)*s4) +
-               0.25*(bs1*bs2)[:, None] * (Ps2s2 - (8./9.)*s4))
-        return pgg
+               0.25*(bs1*bs2)[:, None] * (Ps2s2 - (8./9.)*s4) +
+               0.5*(b12*b3nl1+b11*b3nl2)[:, None] * Pd1d3 +
+               0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2)
+
+        return pgg*self.exp_cutoff
 
     def get_pgi(self, Pnl, b1, b2, bs, c1, c2, cd):
         """ Get the number counts - IA cross-spectrum at the
@@ -235,9 +281,10 @@ class EPTCalculator(object):
         pgi = b1[:, None] * (c1[:, None] * Pnl +
                              (self.g4*cd)[:, None] * (a00e + c00e)[None, :] +
                              (self.g4*c2)[:, None] * (a0e2 + b0e2)[None, :])
-        return pgi
+        return pgi*self.exp_cutoff
 
-    def get_pgm(self, Pnl, b1, b2, bs):
+    def get_pgm(self, Pnl, b1, b2, bs, b3nl=None,
+                bk2=None, Pgrad=None):
         """ Get the number counts - matter cross-spectrum at the
         internal set of wavenumbers (given by this object's `ks`
         attribute) and a number of redshift values.
@@ -254,6 +301,19 @@ class EPTCalculator(object):
             bs (array_like): tidal bias for the number counts
                 tracer being correlated at the same set of input
                 redshifts.
+            b3nl (array_like): 3-rd order bias for the number counts
+                tracer being correlated at the same set of input
+                redshifts. If `None`, this contribution won't be
+                included.
+            bk2 (array_like): non-local bias for the number counts
+                tracer being correlated at the same set of input
+                redshifts. If `None`, this contribution won't be
+                included.
+            Pgrad (array_like): cross-correlation spectrum between
+                the matter overdensity :math:`\\delta` and its
+                Laplacian (divided by :math:`-k^2`). Evaluated at
+                the wavenumber values given by this object's `ks`
+                list. If `None`, `Pnl` will be used.
 
         Returns:
             array_like: 2D array of shape `(N_k, N_z)`, where `N_k` \
@@ -263,11 +323,22 @@ class EPTCalculator(object):
         """
         Pd1d2 = self.g4[:, None] * self.dd_bias[2][None, :]
         Pd1s2 = self.g4[:, None] * self.dd_bias[4][None, :]
+        Pd1d3 = self.g4[:, None] * self.dd_bias[8][None, :]
+        if Pgrad is None:
+            Pgrad = Pnl
+        Pd1k2 = Pgrad*(self.ks**2)[None, :]
+        if b3nl is None:
+            b3nl = np.zeros_like(self.g4)
+        if bk2 is None:
+            bk2 = np.zeros_like(self.g4)
 
         pgm = (b1[:, None] * Pnl +
                0.5 * b2[:, None] * Pd1d2 +
-               0.5 * bs[:, None] * Pd1s2)
-        return pgm
+               0.5 * bs[:, None] * Pd1s2 +
+               0.5 * b3nl[:, None] * Pd1d3 +
+               0.5 * bk2[:, None] * Pd1k2)
+
+        return pgm*self.exp_cutoff
 
     def get_pii(self, Pnl, c11, c21, cd1,
                 c12, c22, cd2, return_bb=False,
@@ -325,9 +396,9 @@ class EPTCalculator(object):
                    ((cd1*c22+cd2*c21)*self.g4)[:, None]*d0ee2[None, :])
 
         if return_both:
-            return pii, pii_bb
+            return pii*self.exp_cutoff, pii_bb*self.exp_cutoff
         else:
-            return pii
+            return pii*self.exp_cutoff
 
     def get_pim(self, Pnl, c1, c2, cd):
         """ Get the intrinsic alignment - matter cross-spectrum at
@@ -359,7 +430,7 @@ class EPTCalculator(object):
         pim = (c1[:, None] * Pnl +
                (self.g4*cd)[:, None] * (a00e + c00e)[None, :] +
                (self.g4*c2)[:, None] * (a0e2 + b0e2)[None, :])
-        return pim
+        return pim*self.exp_cutoff
 
     def get_pmm(self, Pnl_lin):
         """ Get the one-loop matter power spectrum.
@@ -377,11 +448,12 @@ class EPTCalculator(object):
         """
         P1loop = self.g4[:, None] * self.one_loop_dd[0][None, :]
         pmm = (Pnl_lin + P1loop)
-        return pmm
+        return pmm*self.exp_cutoff
 
 
 def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                  sub_lowk=False, nonlin_pk_type='nonlinear',
+                 nonloc_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2,
                  return_ia_bb=False, return_ia_ee_and_bb=False):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
@@ -408,6 +480,10 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             to use. 'linear' for linear P(k), 'nonlinear' for the internal
             non-linear power spectrum, 'spt' for standard perturbation
             theory power spectrum. Default: 'nonlinear'.
+        nonloc_pk_type (str): type of "non-local" matter power spectrum
+            to use (i.e. the cross-spectrum between the overdensity and
+            its Laplacian divided by :math:`k^2`). Same options as
+            `nonlin_pk_type`. Default: 'nonlinear'.
         extrap_order_lok (int): extrapolation order to be used on
             k-values below the minimum of the splines. See
             :class:`~pyccl.pk2d.Pk2D`.
@@ -472,19 +548,42 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
     else:
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))
+    Pgrad = None
+    if (((tracer1.type == 'NC') or (tracer2.type == 'NC')) and
+            (nonloc_pk_type != nonlin_pk_type)):
+        if nonloc_pk_type == 'nonlinear':
+            Pgrad = np.array([ccl.nonlin_matter_power(cosmo, ptc.ks, a)
+                              for a in ptc.a_s])
+        elif nonloc_pk_type == 'linear':
+            Pgrad = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
+                              for a in ptc.a_s])
+        elif nonloc_pk_type == 'spt':
+            pklin = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
+                              for a in ptc.a_s])
+            Pgrad = ptc.get_pmm(pklin)
+        else:
+            raise NotImplementedError("Non-local option %s "
+                                      "not implemented yet" %
+                                      (nonloc_pk_type))
 
     if (tracer1.type == 'NC'):
         b11 = tracer1.b1(z_arr)
         b21 = tracer1.b2(z_arr)
         bs1 = tracer1.bs(z_arr)
+        b31 = tracer1.b3nl(z_arr)
+        bk21 = tracer1.bk2(z_arr)
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
+            b32 = tracer2.b3nl(z_arr)
+            bk22 = tracer2.bk2(z_arr)
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1, b12, b22, bs2,
-                               sub_lowk)
+                               sub_lowk, b3nl1=b31, b3nl2=b32,
+                               bk21=bk21, bk22=bk22,
+                               Pgrad=Pgrad)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)
             c22 = tracer2.c2(z_arr)
@@ -493,7 +592,8 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                                b11, b21, bs1, c12, c22, cd2)
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pgm(Pnl,
-                               b11, b21, bs1)
+                               b11, b21, bs1, b3nl=b31, bk2=bk21,
+                               Pgrad=Pgrad)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -513,8 +613,11 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
+            b32 = tracer2.b3nl(z_arr)
+            bk22 = tracer2.bk2(z_arr)
             p_pt = ptc.get_pgi(Pnl,
-                               b12, b22, bs2, c11, c21, cd1)
+                               b12, b22, bs2, b3nl=b32, bk2=bk22,
+                               Pgrad=Pgrad)
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pim(Pnl,
                                c11, c21, cd1)
@@ -526,8 +629,11 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
+            b32 = tracer2.b3nl(z_arr)
+            bk22 = tracer2.bk2(z_arr)
             p_pt = ptc.get_pgm(Pnl,
-                               b12, b22, bs2)
+                               b12, b22, bs2, b3nl=b32, bk2=bk22,
+                               Pgrad=Pgrad)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)
             c22 = tracer2.c2(z_arr)
