@@ -41,7 +41,7 @@ fit_params = args.fit_params
 # Set model
 if bias_model == 'lin':
     model = 'Linear'
-elif bias_model == 'EuPT':
+elif bias_model == 'EuPT' or bias_model == '3EuPT':
     model = 'EulerianPT'
 elif bias_model == 'LPT':
     model = 'LagrangianPT'
