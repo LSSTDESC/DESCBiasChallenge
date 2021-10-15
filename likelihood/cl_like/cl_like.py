@@ -259,8 +259,13 @@ class ClLike(Likelihood):
                     b2 = pars[pref + '_b2']
                     bs = pars[pref + '_bs']
                     bk2 = pars.get(pref + '_bk2', None)
-                    ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
-                                                  bs=bs, bk2=bk2)
+                    b3nl = pars.get(pref + '_b3nl', None)
+                    if bk2 is not None or b3nl is not None:
+                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                                                      bs=bs, bk2=bk2, b3nl=b3nl)
+                    else:
+                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                                                      bs=bs)
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
