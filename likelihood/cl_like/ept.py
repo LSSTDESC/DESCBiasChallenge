@@ -570,14 +570,26 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
         b11 = tracer1.b1(z_arr)
         b21 = tracer1.b2(z_arr)
         bs1 = tracer1.bs(z_arr)
-        b31 = tracer1.b3nl(z_arr)
-        bk21 = tracer1.bk2(z_arr)
+        if hasattr(tracer1, 'b3nl'):
+            b31 = tracer1.b3nl(z_arr)
+        else:
+            b31 = None
+        if hasattr(tracer1, 'bk2'):
+            bk21 = tracer1.bk2(z_arr)
+        else:
+            bk21 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            b32 = tracer2.b3nl(z_arr)
-            bk22 = tracer2.bk2(z_arr)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1, b12, b22, bs2,
@@ -613,8 +625,14 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            b32 = tracer2.b3nl(z_arr)
-            bk22 = tracer2.bk2(z_arr)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
             p_pt = ptc.get_pgi(Pnl,
                                b12, b22, bs2, b3nl=b32, bk2=bk22,
                                Pgrad=Pgrad)
@@ -629,8 +647,14 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            b32 = tracer2.b3nl(z_arr)
-            bk22 = tracer2.bk2(z_arr)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
             p_pt = ptc.get_pgm(Pnl,
                                b12, b22, bs2, b3nl=b32, bk2=bk22,
                                Pgrad=Pgrad)
