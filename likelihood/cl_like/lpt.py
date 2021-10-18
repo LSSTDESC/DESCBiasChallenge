@@ -54,7 +54,8 @@ class LPTCalculator(object):
         self.lpt_table = np.array(self.lpt_table)
         self.lpt_table /= self.h**3
 
-    def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2):
+    def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2, b3nl1=None, b3nl2=None,
+                bk21=None, bk22=None, Pgrad=None):
         if self.lpt_table is None:
             raise ValueError("Please initialise CLEFT calculator")
         # Clarification:
@@ -76,6 +77,8 @@ class LPTCalculator(object):
         #  2*<d,s^2>
         #  2*<d^2/2,s^2> (!)
         #  <s^2,s^2> (!)
+        #  2*<1, O3>
+        #  2*<d, O3>
         #
         # So:
         #   a) The cross-correlations need to be divided by 2.
@@ -104,6 +107,20 @@ class LPTCalculator(object):
         Pd1s2 = 0.25*self.lpt_table[:, :, 8]
         Pd2s2 = 0.25*self.lpt_table[:, :, 9]*self.wk_low[None, :]
         Ps2s2 = 0.25*self.lpt_table[:, :, 10]*self.wk_low[None, :]
+        Pdmo3 = 0.5 * self.lpt_table[:, :, 11]
+        Pd1o3 = 0.5 * self.lpt_table[:, :, 12]
+        if Pgrad is None:
+            Pgrad = Pnl
+        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+
+        if b3nl1 is None:
+            b3nl1 = np.zeros_like(self.g4)
+        if b3nl2 is None:
+            b3nl2 = np.zeros_like(self.g4)
+        if bk21 is None:
+            bk21 = np.zeros_like(self.g4)
+        if bk22 is None:
+            bk22 = np.zeros_like(self.g4)
 
         pgg += ((b21 + b22)[:, None] * Pdmd2 +
                 (bs1 + bs2)[:, None] * Pdms2 +
@@ -111,11 +128,15 @@ class LPTCalculator(object):
                 (bL11*bs2 + bL12*bs1)[:, None] * Pd1s2 +
                 (b21*b22)[:, None] * Pd2d2 +
                 (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
-                (bs1*bs2)[:, None] * Ps2s2)
+                (bs1*bs2)[:, None] * Ps2s2 +
+                (b3nl1 + b3nl2)[:, None] * Pdmo3 +
+                (bL11*b3nl2 + bL12*b3nl1)[:, None] * Pd1o3 +
+                (b12*bk21+b11*bk22)[:, None] * Pd1k2)
 
         return pgg
 
-    def get_pgm(self, Pnl, b1, b2, bs):
+    def get_pgm(self, Pnl, b1, b2, bs, b3nl=None,
+                bk2=None, Pgrad=None):
         if self.lpt_table is None:
             raise ValueError("Please initialise CLEFT calculator")
         bL1 = b1-1
@@ -127,9 +148,15 @@ class LPTCalculator(object):
             pgm = b1[:, None]*Pnl
         Pdmd2 = 0.5*self.lpt_table[:, :, 4]
         Pdms2 = 0.25*self.lpt_table[:, :, 7]
+        Pdmo3 = 0.5 * self.lpt_table[:, :, 11]
+        if Pgrad is None:
+            Pgrad = Pnl
+        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
 
         pgm += (b2[:, None] * Pdmd2 +
-                bs[:, None] * Pdms2)
+                bs[:, None] * Pdms2 +
+                b3nl[:, None] * Pdmo3 +
+                bk2[:, None] * Pd1k2)
 
         return pgm
 
