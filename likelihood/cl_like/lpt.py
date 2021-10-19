@@ -160,9 +160,18 @@ class LPTCalculator(object):
 
         return pgm
 
+    def get_pmm(self):
+        if self.lpt_table is None:
+            raise ValueError("Please initialise CLEFT calculator")
+
+        pmm = self.lpt_table[:, :, 1]
+
+        return pmm
+
 
 def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                  nonlin_pk_type='nonlinear',
+                 nonloc_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
@@ -183,6 +192,14 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
         tracer2 (:class:`~pyccl.nl_pt.tracers.PTTracer`): the second
             tracer being correlated. If `None`, the auto-correlation
             of the first tracer will be returned.
+        nonlin_pk_type (str): type of 1-loop matter power spectrum
+            to use. 'linear' for linear P(k), 'nonlinear' for the internal
+            non-linear power spectrum, 'spt' for standard perturbation
+            theory power spectrum. Default: 'nonlinear'.
+        nonloc_pk_type (str): type of "non-local" matter power spectrum
+            to use (i.e. the cross-spectrum between the overdensity and
+            its Laplacian divided by :math:`k^2`). Same options as
+            `nonlin_pk_type`. Default: 'nonlinear'.
         extrap_order_lok (int): extrapolation order to be used on
             k-values below the minimum of the splines. See
             :class:`~pyccl.pk2d.Pk2D`.
@@ -219,20 +236,58 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))
 
+    Pgrad = None
+    if (((tracer1.type == 'NC') or (tracer2.type == 'NC')) and
+            (nonloc_pk_type != nonlin_pk_type)):
+        if nonloc_pk_type == 'nonlinear':
+            Pgrad = np.array([ccl.nonlin_matter_power(cosmo, ptc.ks, a)
+                              for a in ptc.a_s])
+        elif nonloc_pk_type == 'linear':
+            Pgrad = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
+                              for a in ptc.a_s])
+        elif nonloc_pk_type == 'spt':
+            Pgrad = None
+        elif nonloc_pk_type == 'lpt':
+            Pgrad = ptc.get_pmm()
+        else:
+            raise NotImplementedError("Non-local option %s "
+                                      "not implemented yet" %
+                                      (nonloc_pk_type))
+
     if (tracer1.type == 'NC'):
         b11 = tracer1.b1(z_arr)
         b21 = tracer1.b2(z_arr)
         bs1 = tracer1.bs(z_arr)
+        if hasattr(tracer1, 'b3nl'):
+            b31 = tracer1.b3nl(z_arr)
+        else:
+            b31 = None
+        if hasattr(tracer1, 'bk2'):
+            bk21 = tracer1.bk2(z_arr)
+        else:
+            bk21 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1,
-                               b12, b22, bs2)
+                               b12, b22, bs2,
+                               b31, b32,
+                               bk21, bk22,
+                               Pgrad)
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1)
+            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, b31,
+                bk21, Pgrad)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -241,7 +296,16 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
+            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2, b32,
+                bk22, Pgrad)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
