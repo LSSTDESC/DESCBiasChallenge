@@ -38,7 +38,9 @@ class ClLike(Likelihood):
         self._read_data()
         # Ell sampling for interpolation
         self._get_ell_sampling()
-
+        # Initialize emu to train it once
+        if self.bz_model == 'HybridEFT':
+            emu = LPTEmulator()
     def _read_data(self):
         """
         Reads sacc file
@@ -242,7 +244,7 @@ class ClLike(Likelihood):
         """ Transforms all used tracers into CCL tracers for the
         current set of parameters."""
         trs = {}
-        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT']
+        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT', 'HybridEFT']
         for name, q in self.used_tracers.items():
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
@@ -288,7 +290,7 @@ class ClLike(Likelihood):
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             return {'pk_mm': pkmm}
-        elif self.bz_model in ['EulerianPT', 'LagrangianPT']:
+        elif self.bz_model in ['EulerianPT', 'LagrangianPT','HybridEFT']:
             a_s = 1./(1+np.linspace(0., 4., 30)[::-1])
             if self.k_pt_filter > 0:
                 k_filter = self.k_pt_filter
@@ -303,11 +305,16 @@ class ClLike(Likelihood):
                 ptc = LPTCalculator(log10k_min=-4, log10k_max=2,
                                     nk_per_decade=20, h=cosmo['h'],
                                     a_arr=a_s, k_filter=k_filter)
+                
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
             Dz = ccl.growth_factor(cosmo, ptc.a_s)
             ptc.update_pk(pk_lin_z0, Dz)
+            #Have LPT prediction. Are you using HEFT?
+            if self.bz_model == 'HybridEFT':
+                ptc = HEFTCalculator(emu, cosmo)
+                ptc.update_pk(cosmo)
             return {'ptc': ptc, 'pk_mm': pkmm}
         else:
             raise LoggedError(self.log,
