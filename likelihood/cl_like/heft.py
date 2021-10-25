@@ -90,7 +90,7 @@ class HEFTCalculator(object):
         self.lpt_table /= cosmo['h']**3
         self.ks = k*cosmo['h']
 
-    def get_pgg(self, btheta):
+    def get_pgg(self, btheta1, btheta2):
         """ 
         Get P_gg between two tracer samples with sets of bias params starting from the heft component spectra
     
@@ -112,8 +112,10 @@ class HEFTCalculator(object):
             Note the term <nabla^2, nabla^2> isn't included in the prediction since it's degenerate with even higher deriv
             terms such as <nabla^4, 1> which in principle have different parameters. 
         """
+        if btheta2 is not None:
+            raise NotImplementedError("Two populations of tracers are not yet implemented for HEFT!")
         if len(btheta) == 4:
-            b1, b2, bs, sn = btheta
+            b1, b2, bs, sn = btheta1
             # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
             bterms_hh = [1,
                          2*b1, b1**2,
@@ -121,7 +123,7 @@ class HEFTCalculator(object):
                          2*bs, 2*bs*b1, bs*b2, bs**2]
             pkvec = self.lpt_table
         else:
-            b1, b2, bs, bk2, sn = btheta
+            b1, b2, bs, bk2, sn = btheta1
             # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
             bterms_hh = [1,
                          2*b1, b1**2,
@@ -149,6 +151,7 @@ class HEFTCalculator(object):
           -p_gm: tracer-matter power spectrum    
         """
         if len(btheta) == 4:
+            b1, b2, bs, sn = btheta1
             bterms_hm = [1,
                          b1, 0,
                          b2/2, 0, 0,
@@ -156,6 +159,7 @@ class HEFTCalculator(object):
            pkvec = self.lpt_table
         else:
             # hm correlations only have one kind of <1,delta_i> correlation
+            b1, b2, bs, bk2, sn = btheta1
             bterms_hm = [1,
                          b1, 0,
                          b2/2, 0, 0,
@@ -171,7 +175,7 @@ class HEFTCalculator(object):
         bterms_hm = np.array(bterms_hm)
         p_hm = np.einsum('b, bk->k', bterms_hm, pkvec)
         return p_hm
-def get_lpt_pk2d():
+def get_heft_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
         """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
         the PT power spectrum for two quantities defined by
         two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
@@ -182,11 +186,65 @@ def get_lpt_pk2d():
         tracer2 = tracer1
     if tracer2 is not None:
         raise NotImplementedError('Two-tracer correlations are not implemented yet!')
-    if not isinstance(tracer1, ccl.nl_pt.PTTracer):
-        raise TypeError("tracer1 must be of type `ccl.nl_pt.PTTracer`")
-    if not isinstance(tracer2, ccl.nl_pt.PTTracer):
-        raise TypeError("tracer2 must be of type `ccl.nl_pt.PTTracer`")
+    #Commenting the lines below because we are using custom tracer objects
+    #if not isinstance(tracer1, ccl.nl_pt.PTTracer):
+    #    raise TypeError("tracer1 must be of type `ccl.nl_pt.PTTracer`")
+    #if not isinstance(tracer2, ccl.nl_pt.PTTracer):
+    #    raise TypeError("tracer2 must be of type `ccl.nl_pt.PTTracer`")
 
     if not isinstance(ptc, LPTCalculator):
         raise TypeError("ptc should be of type `LPTCalculator`")
+    # z
+    z_arr = 1. / ptc.a_s - 1
+    if (tracer1.type == 'NC'):
+        b11 = tracer1.b1(z_arr)
+        b21 = tracer1.b2(z_arr)
+        bs1 = tracer1.bs(z_arr)
+        bk21 = tracer1.bk2(z_arr)
+        sn21 = tracer1.sn(z_arr)
 
+        btheta1 = np.array([b11, b21, bs1, bk21, sn21])
+        if (tracer2.type == 'NC'):
+            b12 = tracer2.b1(z_arr)
+            b22 = tracer2.b2(z_arr)
+            bs2 = tracer2.bs(z_arr)
+
+            bk22 = tracer2.bk2(z_arr)
+            sn22 = tracer2.sn(z_arr)
+            
+            btheta2 = np.array([b21, b22, bs2, bk22, sn22])
+            
+            #Right now get_pgg will get tracer auto-spectrum.
+            p_pt = ptc.get_pgg(btheta1)
+        elif (tracer2.type == 'M'):
+            p_pt = ptc.get_pgm(btheta1)
+        else:
+            raise NotImplementedError("Combination %s-%s not implemented yet" %
+                                      (tracer1.type, tracer2.type))
+    elif (tracer1.type == 'M'):
+        if (tracer2.type == 'NC'):
+            
+            b12 = tracer2.b1(z_arr)
+            b22 = tracer2.b2(z_arr)
+            bs2 = tracer2.bs(z_arr)
+
+            bk22 = tracer2.bk2(z_arr)
+            sn22 = tracer2.sn(z_arr)
+            
+            btheta2 = np.array([b21, b22, bs2, bk22, sn22])
+            
+            p_pt = ptc.get_pgm(btheta2)
+        elif (tracer2.type == 'M'):
+            raise NotImplementedError("Combination %s-%s not implemented yet" %
+                                      (tracer1.type, tracer2.type))
+    else:
+        raise NotImplementedError("Combination %s-%s not implemented yet" %
+                                  (tracer1.type, tracer2.type))
+
+    # Once you have created the 2-dimensional P(k) array,
+    # then generate a Pk2D object as described in pk2d.py.
+    pt_pk = ccl.Pk2D(a_arr=ptc.a_s,
+                     lk_arr=np.log(ptc.ks),
+                     pk_arr=p_pt,
+                     is_logp=False)
+    return pt_pk
