@@ -4,6 +4,7 @@ import pyccl as ccl
 import pyccl.nl_pt as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
 from .ept import EPTCalculator, get_ept_pk2d
+from .bacco import BACCOCalculator, get_bacco_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 
@@ -313,6 +314,17 @@ class ClLike(Likelihood):
             pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
             Dz = ccl.growth_factor(cosmo, ptc.a_s)
             ptc.update_pk(pk_lin_z0, Dz)
+            return {'ptc': ptc, 'pk_mm': pkmm}
+        elif self.bz_model == 'BACCO':
+            if self.k_pt_filter > 0:
+                k_filter = self.k_pt_filter
+            else:
+                k_filter = None
+            ptc = BACCOCalculator(log10k_min=1e-2/cosmo['h'], log10k_max=0.75/cosmo['h'],
+                                  nk_per_decade=20, h=cosmo['h'], k_filter=k_filter)
+            cosmo.compute_nonlin_power()
+            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
+            ptc.update_pk(cosmo)
             return {'ptc': ptc, 'pk_mm': pkmm}
         else:
             raise LoggedError(self.log,
