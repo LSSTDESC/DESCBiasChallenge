@@ -22,10 +22,10 @@ class BACCOCalculator(object):
     def __init__(self, log10k_min=-2, log10k_max=0, nk_per_decade=20, h=None, k_filter=None):
 
         self.h = h
-        if np.log10(np.exp(log10k_min)/self.h) < -2:
+        if np.log10(10**log10k_min/self.h) < -2:
             logger.info('Setting k_min to BACCO default.')
-            log10k_min = np.log10(np.exp(-2)*self.h)
-        if np.log10(np.exp(log10k_min)/self.h) > np.log10(0.75):
+            log10k_min = np.log10((1e-2)*self.h)
+        if np.log10(10**log10k_max/self.h) > np.log10(0.75):
             logger.info('Setting k_max to BACCO default.')
             log10k_max = np.log10(0.75*self.h)
         nk_total = int((log10k_max - log10k_min) * nk_per_decade)
@@ -67,7 +67,6 @@ class BACCOCalculator(object):
         # translate the pyccl cosmology parameters into bacco notation
         pars = self._cosmo_to_bacco(cosmo)
         lpt_emu = baccoemu.Lbias_expansion()
-
         # convert k_s [Mpc^-1] into h Mpc^-1 units just for the calculation
         k = self.ks / pars['hubble']
 
@@ -126,20 +125,20 @@ class BACCOCalculator(object):
         bL11 = b11-1
         bL12 = b12-1
         if Pnl is None:
-            Pdmdm = self.bacco_table[:, :, 0]
-            Pdmd1 = self.bacco_table[:, :, 1]
-            Pd1d1 = self.bacco_table[:, :, 5]
+            Pdmdm = self.bacco_table[:, 0, :]
+            Pdmd1 = self.bacco_table[:, 1, :]
+            Pd1d1 = self.bacco_table[:, 5, :]
             pgg = (Pdmdm + (bL11+bL12)[:, None] * Pdmd1 +
                    (bL11*bL12)[:, None] * Pd1d1)
         else:
             pgg = (b11*b12)[:, None]*Pnl
-        Pdmd2 = 0.5*self.bacco_table[:, :, 2]
-        Pd1d2 = 0.5*self.bacco_table[:, :, 6]
-        Pd2d2 = 0.25*self.bacco_table[:, :, 9]*self.wk_low[None, :]
-        Pdms2 = 0.5*self.bacco_table[:, :, 3]
-        Pd1s2 = 0.5*self.bacco_table[:, :, 7]
-        Pd2s2 = 0.25*self.bacco_table[:, :, 10]*self.wk_low[None, :]
-        Ps2s2 = 0.25*self.bacco_table[:, :, 12]*self.wk_low[None, :]
+        Pdmd2 = 0.5*self.bacco_table[:, 2, :]
+        Pd1d2 = 0.5*self.bacco_table[:, 6, :]
+        Pd2d2 = 0.25*self.bacco_table[:, 9, :]*self.wk_low[None, :]
+        Pdms2 = 0.5*self.bacco_table[:, 3, :]
+        Pd1s2 = 0.5*self.bacco_table[:, 7, :]
+        Pd2s2 = 0.25*self.bacco_table[:, 10, :]*self.wk_low[None, :]
+        Ps2s2 = 0.25*self.bacco_table[:, 12, :]*self.wk_low[None, :]
         #TODO: OK to use low-pass filter?
 
         #TODO: what to do with nonlocal bias?
@@ -170,13 +169,13 @@ class BACCOCalculator(object):
 
         bL1 = b1-1
         if Pnl is None:
-            Pdmdm = self.bacco_table[:, :, 1]
-            Pdmd1 = self.bacco_table[:, :, 2]
+            Pdmdm = self.bacco_table[:, 0, :]
+            Pdmd1 = self.bacco_table[:, 1, :]
             pgm = Pdmdm + bL1[:, None] * Pdmd1
         else:
             pgm = b1[:, None]*Pnl
-        Pdmd2 = 0.5*self.bacco_table[:, :, 2]
-        Pdms2 = 0.5*self.bacco_table[:, :, 3]
+        Pdmd2 = 0.5*self.bacco_table[:, 2, :]
+        Pdms2 = 0.5*self.bacco_table[:, 3, :]
         if Pgrad is None:
             Pgrad = Pnl
         Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
@@ -192,7 +191,7 @@ class BACCOCalculator(object):
         if self.bacco_table is None:
             raise ValueError("Please initialise BACCO calculator")
 
-        pmm = self.bacco_table[:, :, 0]
+        pmm = self.bacco_table[:, 0, :]
 
         return pmm
 

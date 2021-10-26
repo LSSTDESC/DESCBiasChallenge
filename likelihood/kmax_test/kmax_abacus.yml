@@ -52,3 +52,4 @@ likelihood:
 
 debug: True
 output: output
+# stop_at_error: True

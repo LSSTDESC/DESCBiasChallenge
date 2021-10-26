@@ -45,6 +45,8 @@ elif bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl']:
     model = 'EulerianPT'
 elif bias_model in ['LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl']:
     model = 'LagrangianPT'
+elif bias_model == 'BACCO':
+    model = 'BACCO'
 else:
     raise ValueError("Unknown bias model")
 
@@ -113,7 +115,7 @@ cl_param = {'prior': {'min': -100.0, 'max': 100.0},
         'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
-if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl', 'LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl']:
+if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl', 'LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl', 'BACCO']:
     bpar = ['1', '1p', '2', 's', '3nl', 'k2']
 else:
     bpar = ['1','1p']
