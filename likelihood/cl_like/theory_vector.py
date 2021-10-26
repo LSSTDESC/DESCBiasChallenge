@@ -1,3 +1,7 @@
+'''
+This script is largely based on cl_like.py with changes that help 
+extract the theory vector from likelihood calculation
+'''
 import numpy as np
 from scipy.interpolate import interp1d
 import pyccl as ccl
