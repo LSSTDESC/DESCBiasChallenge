@@ -2,12 +2,12 @@ from cobaya.model import get_model
 from cobaya.run import run
 import yaml
 import os
-
+import sys
 import numpy as np
-import numpy.linalg as LA 
+import numpy.linalg as LA
 
 # Read in the yaml file
-config_fn = 'test.yml'
+config_fn = sys.argv[1]#'test.yml'
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 

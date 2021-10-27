@@ -4,9 +4,79 @@ import pyccl as ccl
 import pyccl.nl_pt as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
 from .ept import EPTCalculator, get_ept_pk2d
+from .hzpt import HZPTCalculator, get_hzpt_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 
+#Following Nick...need a custom tracer
+class HZPTNumberCountsTracer(pt.PTTracer):
+    """:class:`PTTracer` representing number count fluctuations.
+    These are provided as floating
+    point numbers or tuples of (reshift,bias) arrays.
+    If a number is provided, a constant bias is assumed.
+    If `None`, a bias of zero is assumed.
+
+    Args:
+        b1 (float or tuple of arrays): a single number or a
+            tuple of arrays (z, b(z)) giving the first-order
+            bias.
+        sngg (float or tuple of arrays): as above for the
+            tracer shot noise.
+        A0gg (float or tuple of arrays): as above for the
+            HZPT gg BB amplitude.
+        Rgg (float or tuple of arrays): as above for the
+            HZPT gg BB compensation.
+        R1hgg (float or tuple of arrays): as above for the
+            first HZPT gg BB profile parameter.
+        A0gm (float or tuple of arrays): as above for the
+            HZPT gm BB amplitude.
+        Rgm (float or tuple of arrays): as above for the
+            HZPT gm BB compensation.
+        R1hgm (float or tuple of arrays): as above for the
+            first HZPT gm BB profile parameter.
+    """
+    def __init__(self, b1, sngg=None,A0gg=None,Rgg=None,R1hgg=None,
+                           # A0gm=None,Rgm=None,R1hgm=None
+                           ):
+        self.biases = {}
+        self.type = 'NC'
+
+        # Initialize b1
+        self.biases['b1'] = self._get_bias_function(b1)
+        self.biases['sngg'] = self._get_bias_function(sngg)
+        self.biases['A0gg'] = self._get_bias_function(A0gg)
+        self.biases['Rgg'] = self._get_bias_function(Rgg)
+        self.biases['R1hgg'] = self._get_bias_function(R1hgg)
+        # self.biases['A0gm'] = self._get_bias_function(A0gm)
+        # self.biases['Rgm'] = self._get_bias_function(Rgm)
+        # self.biases['R1hgm'] = self._get_bias_function(R1hgm)
+
+    @property
+    def b1(self):
+        """Internal first-order bias function.
+        """
+        return self.biases['b1']
+    @property
+    def sngg(self):
+        return self.biases['sngg']
+    @property
+    def A0gg(self):
+        return self.biases['A0gg']
+    @property
+    def Rgg(self):
+        return self.biases['Rgg']
+    @property
+    def R1hgg(self):
+        return self.biases['R1hgg']
+    # @property
+    # def A0gm(self):
+    #     return self.biases['A0gm']
+    # @property
+    # def Rgm(self):
+    #     return self.biases['Rgm']
+    # @property
+    # def R1hgm(self):
+    #     return self.biases['R1hgm']
 
 class ClLike(Likelihood):
     # All parameters starting with this will be
@@ -242,7 +312,7 @@ class ClLike(Likelihood):
         """ Transforms all used tracers into CCL tracers for the
         current set of parameters."""
         trs = {}
-        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT']
+        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT','HZPT']
         for name, q in self.used_tracers.items():
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
@@ -254,13 +324,30 @@ class ClLike(Likelihood):
                     zmean = self.bin_properties[name]['zmean_fid']
                     pref = self.input_params_prefix + '_' + name
                     b1 = pars[pref + '_b1']
-                    b1p = pars[pref + '_b1p']
-                    bz = b1 + b1p * (z - zmean)
-                    b2 = pars[pref + '_b2']
-                    bs = pars[pref + '_bs']
-                    bk2 = pars.get(pref + '_bk2', None)
-                    ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
-                                                  bs=bs, bk2=bk2)
+                    if(self.bz_model !='HZPT'):
+                        b1p = pars[pref + '_b1p']
+                        bz = b1 + b1p * (z - zmean)
+                        b2 = pars[pref + '_b2']
+                        bs = pars[pref + '_bs']
+                        bk2 = pars.get(pref + '_bk2', None)
+
+                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                                                      bs=bs, bk2=bk2)
+
+                    else:
+                        sngg = pars.get(pref + '_sngg', None)
+                        A0gg = pars.get(pref + '_A0gg', None)
+                        Rgg = pars.get(pref + '_Rgg', None)
+                        R1hgg = pars.get(pref + '_R1hgg', None)
+                        # A0gm = pars.get(pref + '_A0gm', None)
+                        # Rgm = pars.get(pref + '_Rgm', None)
+                        # R1hgm = pars.get(pref + '_R1hgm', None)
+
+                        ptt = HZPTNumberCountsTracer(b1 = b1, sngg = sngg,
+                                                 A0gg = A0gg, Rgg = Rgg, R1hgg = R1hgg,
+                                                 # A0gm = A0gm, Rgm = Rgm, R1hgm = R1hgm
+                                                 )
+
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
@@ -288,7 +375,7 @@ class ClLike(Likelihood):
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             return {'pk_mm': pkmm}
-        elif self.bz_model in ['EulerianPT', 'LagrangianPT']:
+        elif self.bz_model in ['EulerianPT', 'LagrangianPT','HZPT']:
             a_s = 1./(1+np.linspace(0., 4., 30)[::-1])
             if self.k_pt_filter > 0:
                 k_filter = self.k_pt_filter
@@ -299,15 +386,25 @@ class ClLike(Likelihood):
                                     log10k_min=-4, log10k_max=2,
                                     nk_per_decade=20,
                                     a_arr=a_s, k_filter=k_filter)
-            else:
+            elif self.bz_model == 'LagrangianPT':
                 ptc = LPTCalculator(log10k_min=-4, log10k_max=2,
                                     nk_per_decade=20, h=cosmo['h'],
                                     a_arr=a_s, k_filter=k_filter)
+            elif self.bz_model == "HZPT":
+                """jms - HZPT stuff goes here, match signature of E/LPT"""
+                ptc = HZPTCalculator(log10k_min=-4, log10k_max=2,
+                                    nk_per_decade=20, h=cosmo['h'],
+                                    a_arr=a_s, k_filter=k_filter)
+            else:
+                raise ValueError("Bias model not implemented")
+
+            Dz = ccl.growth_factor(cosmo, ptc.a_s)
+            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
+            ptc.update_pk(pk_lin_z0, Dz)
+
+            #mm stuff, not touching...
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
-            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
-            Dz = ccl.growth_factor(cosmo, ptc.a_s)
-            ptc.update_pk(pk_lin_z0, Dz)
             return {'ptc': ptc, 'pk_mm': pkmm}
         else:
             raise LoggedError(self.log,
@@ -341,6 +438,19 @@ class ClLike(Likelihood):
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
+                                     ptc=pkd['ptc'])
+                return pk_pt
+        elif (self.bz_model == 'HZPT'):
+            """jms - hmm this will be slightly complicated by the fact that tracers
+               own the bias parameters at diff redshifts"""
+            if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                return pkd['pk_mm']  # matter-matter
+            else:
+                """jms - these are the tracers we defined before, they hold the CONSTANT
+                   values of the input bias parameters for each redshift bin in the yaml"""
+                ptt1 = trs[clm['bin_1']]['PT_tracer']
+                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                pk_pt = get_hzpt_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
                 return pk_pt
         else:
