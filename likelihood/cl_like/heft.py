@@ -21,7 +21,8 @@ class HEFTCalculator(object):
             self.emu = LPTEmulator()
         self.cosmo = cosmo
         if a_arr is None: 
-            a_arr = 1./(1+np.linspace(0., 4., 30)[::-1])
+            self.a_arr = 1./(1+np.linspace(0., 4., 30)[::-1])
+        self.nas = len(self.a_arr)
         self.lpt_table = None
         self.ks = None
     def update_pk(self):
@@ -117,7 +118,7 @@ class HEFTCalculator(object):
         if len(btheta) == 4:
             b1, b2, bs, sn = btheta1
             # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
-            bterms_hh = [1,
+            bterms_hh = [np.ones(self.nas),
                          2*b1, b1**2,
                          b2, b2*b1, 0.25*b2**2,
                          2*bs, 2*bs*b1, bs*b2, bs**2]
@@ -125,21 +126,21 @@ class HEFTCalculator(object):
         else:
             b1, b2, bs, bk2, sn = btheta1
             # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
-            bterms_hh = [1,
+            bterms_hh = [np.ones(self.nas),
                          2*b1, b1**2,
                          b2, b2*b1, 0.25*b2**2,
                          2*bs, 2*bs*b1, bs*b2, bs**2,
                          2*bk2, 2*bk2*b1, bk2*b2, 2*bk2*bs]
-            pkvec = np.zeros(shape=(14, len(self.ks))
-            pkvec[:10] = self.lpt_table
+            pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
+            pkvec[:,:10] = self.lpt_table
             # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
             nabla_idx = [0, 1, 3, 6]
 
             # Higher derivative terms
-            pkvec[10:] = -self.ks**2 * pkvec[nabla_idx] 
+            pkvec[:,10:] = -self.ks**2 * pkvec[nabla_idx] 
         bterms_hh = np.array(bterms_hh)
 
-        p_hh = np.einsum('b, bk->k', bterms_hh, pkvec) + sn
+        p_hh = np.einsum('zb, zbk->zk', bterms_hh, pkvec) + sn
         return p_hh
     def get_pgm(self, btheta):
         """ Get P_gm for a set of bias parameters from the heft component spectra
@@ -156,7 +157,7 @@ class HEFTCalculator(object):
                          b1, 0,
                          b2/2, 0, 0,
                          bs, 0, 0, 0]
-           pkvec = self.lpt_table
+            pkvec = self.lpt_table
         else:
             # hm correlations only have one kind of <1,delta_i> correlation
             b1, b2, bs, bk2, sn = btheta1
@@ -165,23 +166,21 @@ class HEFTCalculator(object):
                          b2/2, 0, 0,
                          bs, 0, 0, 0,
                          bk2, 0, 0, 0]
-            pkvec = np.zeros(shape=(14, len(self.ks))
-            pkvec[:10] = self.lpt_table
+            pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
+            pkvec[:,:10] = self.lpt_table
             # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
             nabla_idx = [0, 1, 3, 6]
 
             # Higher derivative terms
-            pkvec[10:] = -self.ks**2 * pkvec[nabla_idx] 
+            pkvec[:,10:] = -self.ks**2 * pkvec[nabla_idx] 
         bterms_hm = np.array(bterms_hm)
-        p_hm = np.einsum('b, bk->k', bterms_hm, pkvec)
+        p_hm = np.einsum('zb, zbk->zk', bterms_hm, pkvec)
         return p_hm
 def get_heft_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
         """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
         the PT power spectrum for two quantities defined by
         two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
         """
-
-
     if tracer2 is None:
         tracer2 = tracer1
     if tracer2 is not None:
