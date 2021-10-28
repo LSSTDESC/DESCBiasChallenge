@@ -7,8 +7,10 @@ import numpy.linalg as LA
 
 class Fisher():
     
-    def __init__ (self,input_forecast_yaml):
-        self.a = posterior('forecast.yml')
+    def __init__ (self,input_info,fitted_parms):
+        self.a = posterior(input_info,fitted_parms)
+        
+        self.parms_name = [p for p in fitted_parms]
         # Fitted Cosmology parameter
         self.parms = self.a.pars
         # theory part of ccl 
@@ -58,15 +60,16 @@ class Fisher():
         '''
         
         # typical variations of each parameter
+        pref = self.a.input_params_prefix
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
-               "clk_cl1_b1": 0.1,"clk_cl2_b1": 0.1,"clk_cl3_b1": 0.1,
-               "clk_cl4_b1": 0.1,"clk_cl5_b1": 0.1,"clk_cl6_b1": 0.1, 
-               "clk_cl1_b1p": 0.1,"clk_cl2_b1p": 0.1,"clk_cl3_b1p": 0.1,
-               "clk_cl4_b1p": 0.1,"clk_cl5_b1p": 0.1,"clk_cl6_b1p": 0.1, 
-               "clk_cl1_b2": 0.1,"clk_cl2_b2": 0.1,"clk_cl3_b2": 0.1,
-               "clk_cl4_b2": 0.1,"clk_cl5_b2": 0.1,"clk_cl6_b2": 0.1, 
-               "clk_cl1_bs": 0.1,"clk_cl2_bs": 0.1,"clk_cl3_bs": 0.1,
-               "clk_cl4_bs": 0.1,"clk_cl5_bs": 0.1,"clk_cl6_bs": 0.1} 
+               pref+ "_cl1_b1": 0.1, pref+"_cl2_b1": 0.1,pref+"_cl3_b1": 0.1,
+               pref+"_cl4_b1": 0.1,pref+"_cl5_b1": 0.1,pref+"_cl6_b1": 0.1, 
+               pref+"_cl1_b1p": 0.1,pref+"_cl2_b1p": 0.1,pref+"_cl3_b1p": 0.1,
+               pref+"_cl4_b1p": 0.1,pref+"_cl5_b1p": 0.1,pref+"_cl6_b1p": 0.1, 
+               pref+"_cl1_b2": 0.1,pref+"_cl2_b2": 0.1,pref+"_cl3_b2": 0.1,
+               pref+"_cl4_b2": 0.1,pref+"_cl5_b2": 0.1,pref+"_cl6_b2": 0.1, 
+               pref+"_cl1_bs": 0.1,pref+"_cl2_bs": 0.1,pref+"_cl3_bs": 0.1,
+               pref+"_cl4_bs": 0.1,pref+"_cl5_bs": 0.1,pref+"_cl6_bs": 0.1} 
 
         step_size = typ_var[par_name]*step_factor
         # -h
@@ -100,7 +103,7 @@ class Fisher():
         return(dcl_dparam)
 
 
-    def get_fisher(self, parameters,step_factor = 0.01):
+    def get_fisher(self,step_factor = 0.01):
         '''
         Function calculate the fisher matrix
         Parameters:
@@ -112,7 +115,7 @@ class Fisher():
         verbose: bool
             For sanity check.
         '''
-        # inverse of date covariance
+        parameters = self.parms_name
         data_invc = self.data_invc
         
         F = np.empty([len(parameters),len(parameters)])

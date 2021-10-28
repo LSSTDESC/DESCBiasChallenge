@@ -1,6 +1,6 @@
 '''
-This script is largely based on cl_like.py with changes that help 
-extract the theory vector from likelihood calculation
+This script is largely based on cl_like.py with changes that generate
+the theory vector for Fisher matrix calculation
 '''
 import numpy as np
 from scipy.interpolate import interp1d
@@ -12,15 +12,20 @@ import yaml
 
 class posterior():
     
-    def __init__(self, input_yaml):
-        self.input_yaml = input_yaml
+    def __init__(self, input_info,fitted_values):
         
-        with open(input_yaml, 'r') as stream:
-            data_loaded = yaml.safe_load(stream)
-
+        data_loaded = input_info
+        
         likelihood_dir = data_loaded['likelihood']['cl_like.ClLike']
         self.theory = data_loaded['theory']['cl_like.CCL']
-        self.pars = data_loaded['params']
+        
+        self.pars = {}
+        for p in data_loaded['params']:
+            if isinstance(data_loaded['params'][p], dict):
+                self.pars[p] = fitted_values[p]
+            else:
+                self.pars[p] = data_loaded['params'][p]
+        
         self.input_params_prefix: str = likelihood_dir['input_params_prefix']
         # Input sacc file
         self.input_file: str = likelihood_dir['input_file']
@@ -42,7 +47,6 @@ class posterior():
         self.twopoints: list = likelihood_dir['twopoints']
         # Low-pass filter for PT
         self.k_pt_filter: float = 0.01
-        self.pars = data_loaded['params']
         
         self._read_data()
         self._get_ell_sampling()
@@ -216,15 +220,15 @@ class posterior():
             raise LoggedError(self.log, "Unknown Nz model %s" % self.nz_model)
         return (z, nz)    
 
-    def _get_bz(self, cosmo, name):
+    def _get_bz(self, cosmo, name,bias_pars):
         """ Get linear galaxy bias. Unless we're using a linear bias,
         this should be just 1."""
         z = self.bin_properties[name]['z_fid']
         zmean = self.bin_properties[name]['zmean_fid']
         bz = np.ones_like(z)
         if self.bz_model == 'Linear':
-            b1 = self.pars[self.input_params_prefix + '_' + name + '_b1']
-            b1p = self.pars[self.input_params_prefix + '_' + name + '_b1p']
+            b1 = bias_pars[self.input_params_prefix + '_' + name + '_b1']
+            b1p = bias_pars[self.input_params_prefix + '_' + name + '_b1p']
             bz = b1 + b1p * (z - zmean)
         return (z, bz)    
     
@@ -255,28 +259,20 @@ class posterior():
         for name, q in self.used_tracers.items():
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name)
-                bz = self._get_bz(cosmo, name)
+                bz = self._get_bz(cosmo, name, bias_pars)
                 t = ccl.NumberCountsTracer(cosmo, dndz=nz, bias=bz,
                                            has_rsd=False)
                 if is_PT_bias:
                     z = self.bin_properties[name]['z_fid']
-                    zmean = self.bin_properties[name]['zmean_fid']                    
-                    if bias_pars is None:  
-
-                        b1 = self.pars[self.input_params_prefix + '_' + name + '_b1']
-                        b1p = self.pars[self.input_params_prefix + '_' + name + '_b1p']
-                        bz = b1 + b1p * (z - zmean)
-                        b2 = self.pars[self.input_params_prefix + '_' + name + '_b2']
-                        bs = self.pars[self.input_params_prefix + '_' + name + '_bs']
-                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2, bs=bs)
-                        
-                    else:
-                        b1 = bias_pars[self.input_params_prefix + '_' + name + '_b1']
-                        b1p = bias_pars[self.input_params_prefix + '_' + name + '_b1p']
-                        bz = b1 + b1p * (z - zmean)
-                        b2 = bias_pars[self.input_params_prefix + '_' + name + '_b2']
-                        bs = bias_pars[self.input_params_prefix + '_' + name + '_bs']
-                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2, bs=bs)
+                    zmean = self.bin_properties[name]['zmean_fid']
+                    
+                    pref = self.input_params_prefix
+                    b1 = bias_pars[pref + '_' + name + '_b1']
+                    b1p = bias_pars[pref + '_' + name + '_b1p']
+                    bz = b1 + b1p * (z - zmean)
+                    b2 = bias_pars[pref + '_' + name + '_b2']
+                    bs = bias_pars[pref + '_' + name + '_bs']
+                    ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2, bs=bs)
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name)
                 ia = self._get_ia_bias(cosmo, name)
@@ -400,21 +396,8 @@ class posterior():
                 cls[i] *= prefac
                 
     def get_cls_theory(self,CCL_cosmo,bias_pars):
-        
-        if CCL_cosmo is None:
-            cosmo = ccl.Cosmology(
-                Omega_c= self.pars['Omega_c'], 
-                Omega_b=self.pars['Omega_b'], 
-                h=self.pars['h'], 
-                n_s=self.pars['n_s'],
-                sigma8= self.pars['sigma8'],
-                T_CMB=2.7255,m_nu=self.pars['m_nu'],
-                transfer_function=self.theory['transfer_function'],
-                matter_power_spectrum=self.theory['matter_pk'],
-                baryons_power_spectrum=self.theory['baryons_pk'])
-            print('No CCL cosmology provided! Using default value from input file.')
-        else:
-            cosmo = CCL_cosmo
+
+        cosmo = CCL_cosmo
         pkd = self._get_pk_data(cosmo)
         # Then pass them on to convert them into C_ells
         cls = self._get_cl_all(cosmo, pkd,bias_pars)
@@ -424,26 +407,18 @@ class posterior():
 
     def _get_theory(self,Theory):
         """ Computes theory vector."""
+        
+        # ccl cosmology object that takes in the cosmology parameters
         CCL_cosmo = Theory['Cosmo']
+        
+        # Dict stores the bias parameters
         bias_pars = Theory['bias_parms']
+        
         cls = self.get_cls_theory(CCL_cosmo,bias_pars)
 
         # Flattening into a 1D array
         cl_out = np.zeros(self.ndata)
         for clm, cl in zip(self.cl_meta, cls):
             cl_out[clm['inds']] = cl
-
         return cl_out
-    
-    def logp(self,Theory):
-        """
-        Simple Gaussian likelihood.
-        """
-        t = self._get_theory(Theory)
-        r = t - self.data_vec
-        # t = np.random.multivariate_normal(t, self.cov)
-        # chi2 = np.dot(r, self.inv_cov.dot(r))
-        re = np.dot(self.ic_v, r)
-        chi2 = np.sum(re**2*self.ic_w)
-        return -0.5*chi2
         
