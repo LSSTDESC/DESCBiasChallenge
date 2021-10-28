@@ -66,6 +66,7 @@ class BACCOCalculator(object):
 
         # translate the pyccl cosmology parameters into bacco notation
         pars = self._cosmo_to_bacco(cosmo)
+        #TODO: Do this only once?
         lpt_emu = baccoemu.Lbias_expansion()
         # convert k_s [Mpc^-1] into h Mpc^-1 units just for the calculation
         k = self.ks / pars['hubble']

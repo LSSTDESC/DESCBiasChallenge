@@ -62,10 +62,23 @@ with open(config_fn, "r") as fin:
 # Determine true bias parameters depending on input
 bias = [2., 2., 2., 2., 2., 2.]
 
+# Note: we need to hard-code the BACCO parameter bounds:
+# omega_matter: [0.23, 0.4 ]
+# sigma8: [0.73, 0.9 ]
+# omega_baryon: [0.04, 0.06]
+# ns: [0.92, 1.01]
+# hubble: [0.6, 0.8]
+# neutrino_mass: [0. , 0.4]
+# w0: [-1.15, -0.85]
+# wa: [-0.3,  0.3]
+# expfactor': [0.4, 1. ]
+
 if 'sigma8' in fit_params:
     info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.8090212289405192, 'scale': 0.01},
                                                     'latex': '\sigma_8', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['sigma8']['prior'] = {'min': 0.73, 'max': 0.9}
 elif args.sigma8 is not None:
     info['params']['sigma8'] = args.sigma8
 else:
@@ -74,6 +87,8 @@ if 'Omega_c' in fit_params:
     info['params']['Omega_c'] = {'prior': {'min': 0.05, 'max': 0.7},
                                                     'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
                                                     'latex': '\Omega_c', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['Omega_c']['prior'] = {'min': 0.17, 'max': 0.36}
 elif args.Omega_c is not None:
     info['params']['Omega_c'] = args.Omega_c
 else:
@@ -82,6 +97,8 @@ if 'Omega_b' in fit_params:
     info['params']['Omega_b'] = {'prior': {'min': 0.01, 'max': 0.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.049301692328524445, 'scale': 0.01},
                                                     'latex': '\Omega_b', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['Omega_b']['prior'] = {'min': 0.04, 'max': 0.06}
 elif args.Omega_b is not None:
     info['params']['Omega_b'] = args.Omega_b
 else:
@@ -90,6 +107,8 @@ if 'h' in fit_params:
     info['params']['h'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.6736, 'scale': 0.01},
                                                     'latex': 'h', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['h']['prior'] = {'min': 0.6, 'max': 0.8}
 elif args.h is not None:
     info['params']['h'] = args.h
 else:
@@ -98,6 +117,8 @@ if 'n_s' in fit_params:
     info['params']['n_s'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.9649, 'scale': 0.01},
                                                     'latex': 'n_s', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['n_s']['prior'] = {'min': 0.92, 'max': 1.01}
 elif args.n_s is not None:
     info['params']['n_s'] = args.n_s
 else:
