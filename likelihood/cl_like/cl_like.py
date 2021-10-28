@@ -36,7 +36,7 @@ class HZPTNumberCountsTracer(pt.PTTracer):
             first HZPT gm BB profile parameter.
     """
     def __init__(self, b1, sngg=None,A0gg=None,Rgg=None,R1hgg=None,
-                           # A0gm=None,Rgm=None,R1hgm=None
+                           A0gm=None,Rgm=None,R1hgm=None
                            ):
         self.biases = {}
         self.type = 'NC'
@@ -47,9 +47,9 @@ class HZPTNumberCountsTracer(pt.PTTracer):
         self.biases['A0gg'] = self._get_bias_function(A0gg)
         self.biases['Rgg'] = self._get_bias_function(Rgg)
         self.biases['R1hgg'] = self._get_bias_function(R1hgg)
-        # self.biases['A0gm'] = self._get_bias_function(A0gm)
-        # self.biases['Rgm'] = self._get_bias_function(Rgm)
-        # self.biases['R1hgm'] = self._get_bias_function(R1hgm)
+        self.biases['A0gm'] = self._get_bias_function(A0gm)
+        self.biases['Rgm'] = self._get_bias_function(Rgm)
+        self.biases['R1hgm'] = self._get_bias_function(R1hgm)
 
     @property
     def b1(self):
@@ -68,15 +68,15 @@ class HZPTNumberCountsTracer(pt.PTTracer):
     @property
     def R1hgg(self):
         return self.biases['R1hgg']
-    # @property
-    # def A0gm(self):
-    #     return self.biases['A0gm']
-    # @property
-    # def Rgm(self):
-    #     return self.biases['Rgm']
-    # @property
-    # def R1hgm(self):
-    #     return self.biases['R1hgm']
+    @property
+    def A0gm(self):
+        return self.biases['A0gm']
+    @property
+    def Rgm(self):
+        return self.biases['Rgm']
+    @property
+    def R1hgm(self):
+        return self.biases['R1hgm']
 
 class ClLike(Likelihood):
     # All parameters starting with this will be
@@ -339,13 +339,13 @@ class ClLike(Likelihood):
                         A0gg = pars.get(pref + '_A0gg', None)
                         Rgg = pars.get(pref + '_Rgg', None)
                         R1hgg = pars.get(pref + '_R1hgg', None)
-                        # A0gm = pars.get(pref + '_A0gm', None)
-                        # Rgm = pars.get(pref + '_Rgm', None)
-                        # R1hgm = pars.get(pref + '_R1hgm', None)
+                        A0gm = pars.get(pref + '_A0gm', None)
+                        Rgm = pars.get(pref + '_Rgm', None)
+                        R1hgm = pars.get(pref + '_R1hgm', None)
 
                         ptt = HZPTNumberCountsTracer(b1 = b1, sngg = sngg,
                                                  A0gg = A0gg, Rgg = Rgg, R1hgg = R1hgg,
-                                                 # A0gm = A0gm, Rgm = Rgm, R1hgm = R1hgm
+                                                 A0gm = A0gm, Rgm = Rgm, R1hgm = R1hgm
                                                  )
 
             elif q == 'galaxy_shear':

@@ -67,21 +67,21 @@ params:
   #clk_cl5_R1hgg: 0.
   #clk_cl6_R1hgg: 0.
   # A0gm
-  #clk_cl1_A0gm: 100.
+  clk_cl1_A0gm: 100.
   #clk_cl2_A0gm: 0.
   #clk_cl3_A0gm: 0.
   #clk_cl4_A0gm: 0.
   #clk_cl5_A0gm: 0.
   #clk_cl6_A0gm: 0.
   # Rgm
-  #clk_cl1_Rgm: 30.
+  clk_cl1_Rgm: 30.
   #clk_cl2_Rgm: 0.
   #clk_cl3_Rgm: 0.
   #clk_cl4_Rgm: 0.
   #clk_cl5_Rgm: 0.
   #clk_cl6_Rgm: 0.
   # R1hgm
-  #clk_cl1_R1hgm: 2.
+  clk_cl1_R1hgm: 2.
   #clk_cl2_R1hgm: 0.
   #clk_cl3_R1hgm: 0.
   #clk_cl4_R1hgm: 0.
@@ -110,7 +110,7 @@ likelihood:
     # - name: cl4
     # - name: cl5
     # - name: cl6
-    # - name: sh1
+      - name: sh1
     # - name: sh2
     # - name: sh3
     # - name: sh4
@@ -126,7 +126,7 @@ likelihood:
     #  - bins: [cl4, cl4]
     #  - bins: [cl5, cl5]
     #  - bins: [cl6, cl6]
-    #  - bins: [cl1, sh1]
+      - bins: [cl1, sh1]
     #  - bins: [cl1, sh2]
     #  - bins: [cl1, sh3]
     #  - bins: [cl1, sh4]
@@ -156,7 +156,7 @@ likelihood:
     #  - bins: [cl6, sh3]
     #  - bins: [cl6, sh4]
     #  - bins: [cl6, sh5]
-    #  - bins: [sh1, sh1]
+      - bins: [sh1, sh1]
     #  - bins: [sh1, sh2]
     #  - bins: [sh1, sh3]
     #  - bins: [sh1, sh4]
@@ -181,8 +181,8 @@ likelihood:
       # to the chosen kmax is smaller).
       lmin: 0
       lmax: 2000
-     # sh1:
-     #   lmin: 30
+      sh1:
+        lmin: 30
      # sh2:
      #   lmin: 30
      # sh3:

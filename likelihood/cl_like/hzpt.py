@@ -159,9 +159,6 @@ def get_hzpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
 
     # Once you have created the 2-dimensional P(k) array,
     # then generate a Pk2D object as described in pk2d.py.
-    print('a array shape',ptc.a_s.shape)
-    print('k array shape',ptc.ks.shape)
-    print('p array shape',p_pt.shape)
     pt_pk = ccl.Pk2D(a_arr=ptc.a_s,
                      lk_arr=np.log(ptc.ks),
                      pk_arr=p_pt,
