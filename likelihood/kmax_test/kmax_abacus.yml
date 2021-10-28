@@ -20,8 +20,7 @@ likelihood:
     input_file: choose_input_file
     # List all relevant bins
     bins: choose_bins
-    # List all 2-points that should go into the
-    # data vector
+    # List all 2-points that should go into the data vector
     twopoints: choose_twopoints
 
     defaults:

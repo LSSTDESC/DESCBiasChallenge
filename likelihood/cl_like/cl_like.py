@@ -4,7 +4,6 @@ import pyccl as ccl
 import pyccl.nl_pt as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
 from .ept import EPTCalculator, get_ept_pk2d
-from .bacco import BACCOCalculator, get_bacco_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 
@@ -243,7 +242,7 @@ class ClLike(Likelihood):
         """ Transforms all used tracers into CCL tracers for the
         current set of parameters."""
         trs = {}
-        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT', 'BACCO']
+        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT']
         for name, q in self.used_tracers.items():
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
@@ -260,13 +259,8 @@ class ClLike(Likelihood):
                     b2 = pars[pref + '_b2']
                     bs = pars[pref + '_bs']
                     bk2 = pars.get(pref + '_bk2', None)
-                    b3nl = pars.get(pref + '_b3nl', None)
-                    if bk2 is not None or b3nl is not None:
-                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
-                                                      bs=bs, bk2=bk2, b3nl=b3nl)
-                    else:
-                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
-                                                      bs=bs)
+                    ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                                                  bs=bs, bk2=bk2)
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
@@ -315,17 +309,6 @@ class ClLike(Likelihood):
             Dz = ccl.growth_factor(cosmo, ptc.a_s)
             ptc.update_pk(pk_lin_z0, Dz)
             return {'ptc': ptc, 'pk_mm': pkmm}
-        elif self.bz_model == 'BACCO':
-            if self.k_pt_filter > 0:
-                k_filter = self.k_pt_filter
-            else:
-                k_filter = None
-            ptc = BACCOCalculator(log10k_min=np.log10(1e-2*cosmo['h']), log10k_max=np.log10(0.75*cosmo['h']),
-                                  nk_per_decade=20, h=cosmo['h'], k_filter=k_filter)
-            cosmo.compute_nonlin_power()
-            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
-            ptc.update_pk(cosmo)
-            return {'ptc': ptc, 'pk_mm': pkmm}
         else:
             raise LoggedError(self.log,
                               "Unknown bias model %s" % self.bz_model)
@@ -358,15 +341,6 @@ class ClLike(Likelihood):
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'])
-                return pk_pt
-        elif (self.bz_model == 'BACCO'):
-            if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
-                return pkd['pk_mm']  # matter-matter
-            else:
-                ptt1 = trs[clm['bin_1']]['PT_tracer']
-                ptt2 = trs[clm['bin_2']]['PT_tracer']
-                pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
                 return pk_pt
         else:
