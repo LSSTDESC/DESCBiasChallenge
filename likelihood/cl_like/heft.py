@@ -177,10 +177,10 @@ class HEFTCalculator(object):
         p_hm = np.einsum('zb, zbk->zk', bterms_hm, pkvec)
         return p_hm
 def get_heft_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
-        """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
-        the PT power spectrum for two quantities defined by
-        two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
-        """
+    """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
+    the PT power spectrum for two quantities defined by
+    two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
+    """
     if tracer2 is None:
         tracer2 = tracer1
     if tracer2 is not None:

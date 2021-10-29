@@ -21,6 +21,7 @@ os.system('mkdir -p ' + info['output'])
 
 print("params_dict = ", p0)
 
+
 # Compute the likelihood at that point
 model = get_model(info)
 loglikes, derived = model.loglikes(p0)
@@ -28,7 +29,10 @@ print("chi2 = ", -2 * loglikes[0])
 
 # Run the sampler
 updated_info, sampler = run(info)
-bf = sampler.products()['minimum'].bestfit()
+bf = sampler.products()['minimum']
+np.save(info['output']+'.hessian.npy', sampler.products()['result_object'].hessian)
+# bf = sampler.products()['minimum'].bestfit()
 pf = {k: bf[k] for k in p0.keys()}
 print("Final params: ")
 print(pf)
+
