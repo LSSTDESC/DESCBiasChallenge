@@ -4,7 +4,7 @@ import pyccl as ccl
 import pyccl.nl_pt as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
 from .ept import EPTCalculator, get_ept_pk2d
-from .bacco import BACCOCalculator, get_bacco_pk2d
+# from .bacco import BACCOCalculator, get_bacco_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 
