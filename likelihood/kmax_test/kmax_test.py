@@ -88,7 +88,7 @@ if 'Omega_c' in fit_params:
                                                     'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
                                                     'latex': '\Omega_c', 'proposal': 0.001}
     if model == 'BACCO':
-        info['params']['Omega_c']['prior'] = {'min': 0.17, 'max': 0.36}
+        info['params']['Omega_c']['prior'] = {'min': 0.19, 'max': 0.36}
 elif args.Omega_c is not None:
     info['params']['Omega_c'] = args.Omega_c
 else:
