@@ -52,7 +52,7 @@ class LPTCalculator(object):
                               kmax=self.ks[-1]/self.h, nk=self.ks.size)
             self.lpt_table.append(cleft.pktable)
         self.lpt_table = np.array(self.lpt_table)
-        self.lpt_table /= self.h**3
+        self.lpt_table[:, :, 1:] /= self.h**3
 
     def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2, b3nl1=None, b3nl2=None,
                 bk21=None, bk22=None, Pgrad=None):
