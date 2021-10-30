@@ -30,6 +30,8 @@ class BACCOCalculator(object):
             log10k_max = np.log10(0.75*self.h)
         nk_total = int((log10k_max - log10k_min) * nk_per_decade)
         self.ks = np.logspace(log10k_min, log10k_max, nk_total)
+
+        self.bacco_emu = baccoemu.Lbias_expansion()
         self.bacco_table = None
 
         # redshifts for creating the Pk-2d object
@@ -66,8 +68,6 @@ class BACCOCalculator(object):
 
         # translate the pyccl cosmology parameters into bacco notation
         pars = self._cosmo_to_bacco(cosmo)
-        #TODO: Do this only once?
-        lpt_emu = baccoemu.Lbias_expansion()
         # convert k_s [Mpc^-1] into h Mpc^-1 units just for the calculation
         k = self.ks / pars['hubble']
 
@@ -80,7 +80,7 @@ class BACCOCalculator(object):
         for i in range(len(self.a_s)):
             pars['expfactor'] = self.a_s[i]
             # call the emulator of the nonlinear 15 lagrangian bias expansion terms, shape is (15, len(k))
-            k, pnn = lpt_emu.get_nonlinear_pnn(pars, k=k)
+            _, pnn = self.bacco_emu.get_nonlinear_pnn(pars, k=k)
             pk2d_bacco[i, :, :] = pnn
 
         # convert the spit out result from (Mpc/h)^3 to Mpc^3 (bacco uses h units, but pyccl doesn't)
@@ -120,9 +120,9 @@ class BACCOCalculator(object):
         # Also, the spectra marked with (!) tend to a constant
         # as k-> 0, which we can suppress with a low-pass filter.
         #
-        # Importantly, we have corrected the spectra involving s2 to
-        # make the definition of bs equivalent in the EPT and LPT
-        # expansions.
+        # Importantly, we have corrected the spectra involving d^2 and s2 to
+        # make the definitions of b2, bs equivalent to what we have adopted for
+        # the EPT and LPT expansions.
         bL11 = b11-1
         bL12 = b12-1
         if Pnl is None:
