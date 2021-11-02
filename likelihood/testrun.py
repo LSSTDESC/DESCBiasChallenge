@@ -7,7 +7,7 @@ import numpy as np
 import numpy.linalg as LA 
 
 # Read in the yaml file
-config_fn = 'test.yml'
+config_fn = 'test_cl1.yml'
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
@@ -25,6 +25,7 @@ print("params_dict = ", p0)
 # Compute the likelihood at that point
 model = get_model(info)
 loglikes, derived = model.loglikes(p0)
+print('HAVE I MADE IT HEEEEERE?')
 print("chi2 = ", -2 * loglikes[0])
 
 # Run the sampler

@@ -116,7 +116,8 @@ class ClLike(Likelihood):
         self._get_ell_sampling()
         # Initialize emu to train it once
         if self.bz_model == 'HybridEFT':
-            emu = LPTEmulator()
+            print('Initializing again')
+            self.emu = LPTEmulator(extrap=False)
     def _read_data(self):
         """
         Reads sacc file
@@ -369,6 +370,7 @@ class ClLike(Likelihood):
             return {'pk_mm': pkmm}
         elif self.bz_model in ['EulerianPT', 'LagrangianPT','HybridEFT']:
             a_s = 1./(1+np.linspace(0., 4., 30)[::-1])
+            self.a_arr = a_s
             if self.k_pt_filter > 0:
                 k_filter = self.k_pt_filter
             else:
@@ -378,20 +380,23 @@ class ClLike(Likelihood):
                                     log10k_min=-4, log10k_max=2,
                                     nk_per_decade=20,
                                     a_arr=a_s, k_filter=k_filter)
-            else:
+            elif self.bz_model=='LagrangianPT':
                 ptc = LPTCalculator(log10k_min=-4, log10k_max=2,
                                     nk_per_decade=20, h=cosmo['h'],
-                                    a_arr=a_s, k_filter=k_filter)
-                
+                                    a_arr=a_s, k_filter=k_filter)     
+            if self.bz_model in ['EulerianPT', 'LagrangianPT']:
+
+                pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
+                Dz = ccl.growth_factor(cosmo, ptc.a_s)
+                ptc.update_pk(pk_lin_z0, Dz)
+
+            elif self.bz_model == 'HybridEFT':
+                ptc = HEFTCalculator(self.emu, cosmo, a_arr=a_s)
+                ptc.update_pk(cosmo)
+            
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
-            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
-            Dz = ccl.growth_factor(cosmo, ptc.a_s)
-            ptc.update_pk(pk_lin_z0, Dz)
             #Have LPT prediction. Are you using HEFT?
-            if self.bz_model == 'HybridEFT':
-                ptc = HEFTCalculator(emu, cosmo)
-                ptc.update_pk(cosmo)
             return {'ptc': ptc, 'pk_mm': pkmm}
         else:
             raise LoggedError(self.log,
@@ -401,7 +406,6 @@ class ClLike(Likelihood):
         """ Get the P(k) between two tracers. """
         q1 = self.used_tracers[clm['bin_1']]
         q2 = self.used_tracers[clm['bin_2']]
-
         if (self.bz_model == 'Linear') or (self.bz_model == 'BzNone'):
             if (q1 == 'galaxy_density') and (q2 == 'galaxy_density'):
                 return pkd['pk_mm']  # galaxy-galaxy
@@ -436,7 +440,6 @@ class ClLike(Likelihood):
                 pk_pt = get_heft_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
                 return pk_pt
-        else:
             raise LoggedError(self.log,
                               "Unknown bias model %s" % self.bz_model)
 
