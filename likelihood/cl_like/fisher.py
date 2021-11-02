@@ -5,7 +5,7 @@ from numpy.linalg import multi_dot
 
 class Fisher_first_deri():
     
-    def __init__ (self,model,fitted_parms,method = 'five_stencil'):
+    def __init__ (self,model,fitted_parms,method = 'five-stencil'):
         '''
         This Class implement the fisher matrix calculation based on first derivative expression
         Parameters:
@@ -140,5 +140,5 @@ class Fisher_first_deri():
             for j,par2 in enumerate(self.parms_name):
                     de_par1 = dcl_dparm[par1]
                     de_par2 = dcl_dparm[par2]
-                    F[i,j] =  multi_dot([de_par1.T,self.data_invc,de_par2])
+                    F[i,j] =  multi_dot([de_par1,self.data_invc,de_par2])
         return(F)
