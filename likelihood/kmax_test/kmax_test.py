@@ -1,11 +1,13 @@
 from cobaya.model import get_model
 from cobaya.run import run
+from cl_like import fisher
 from shutil import copyfile
 import yaml
 import os
 import sys
 import numpy as np
 import numpy.linalg as LA 
+
 
 model_name = sys.argv[1]
 input_name = sys.argv[2]
@@ -131,83 +133,24 @@ p0_chi2 = -2 * loglikes[0]
 loglikes, derived = model.loglikes(pf)
 pf_chi2 = -2 * loglikes[0]
 
-# Determine errors on parameters
-class Fisher:
-    def __init__(self,pf):
-        self.pf = pf
+# Run error estimation fisher code
+Fisher_method = 'first_derivative'
+
+if Fisher_method = 'first_derivative':
+    F = Fisher.Fisher_first_deri(model=model,fitted_parms=pf)
+    FisherM = F.get_fisher(step_factor = 0.01)
+    covar = LA.inv(FisherM)
+    errs = np.sqrt(np.diag(covar))
     
-    # Determine likelihood at new steps
-    def fstep(self,param1,param2,h1,h2,signs):   
-        newp = self.pf.copy()
-        newp[param1] = self.pf[param1] + signs[0]*h1
-        newp[param2] = self.pf[param2] + signs[1]*h2
-    
-        newloglike = model.loglikes(newp)
-    
-        return -1*newloglike[0]
-
-    # Fisher matrix elements
-    def F_ij(self,param1,param2,h1,h2):  
-        # Diagonal elements
-        if param1==param2:  
-            f1 = self.fstep(param1,param2,h1,h2,(0,+1))
-            f2 = self.fstep(param1,param2,h1,h2,(0,0))
-            f3 = self.fstep(param1,param2,h1,h2,(0,-1))
-            F_ij = (f1-2*f2+f3)/(h2**2)
-        # Off-diagonal elements     
-        else:  
-            f1 = self.fstep(param1,param2,h1,h2,(+1,+1))
-            f2 = self.fstep(param1,param2,h1,h2,(-1,+1))
-            f3 = self.fstep(param1,param2,h1,h2,(+1,-1))
-            f4 = self.fstep(param1,param2,h1,h2,(-1,-1))
-            F_ij = (f1-f2-f3+f4)/(4*h1*h2)
-            
-        return F_ij[0]
-
-    # Calculate Fisher matrix
-    def calc_Fisher(self):
-        h_fact = 0.01 # stepsize factor
-
-        # typical variations of each parameter
-        typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
-                   "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
-                   "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1, 
-                   "cllike_cl1_b1p": 0.1,"cllike_cl2_b1p": 0.1,"cllike_cl3_b1p": 0.1,
-                   "cllike_cl4_b1p": 0.1,"cllike_cl5_b1p": 0.1,"cllike_cl6_b1p": 0.1, 
-                   "cllike_cl1_b2": 0.1,"cllike_cl2_b2": 0.1,"cllike_cl3_b2": 0.1,
-                   "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1, 
-                   "cllike_cl1_bs": 0.1,"cllike_cl2_bs": 0.1,"cllike_cl3_bs": 0.1,
-                   "cllike_cl4_bs": 0.1,"cllike_cl5_bs": 0.1,"cllike_cl6_bs": 0.1} 
-
-        theta = list(self.pf.keys())  # array containing parameter names
-
-        # Assign matrix elements
-        F = np.zeros([len(theta),len(theta)])
-        for i in range(0,len(theta)):
-            for j in range(0,len(theta)):
-                param1 = theta[i]
-                param2 = theta[j]
-                h1 = h_fact*typ_var[param1]
-                h2 = h_fact*typ_var[param2]
-                F[i][j] = self.F_ij(param1,param2,h1,h2)
-                
-        return F
-    
-    # Determine condition number of Fisher matrix
-    def get_cond_num(self):
-        cond_num = LA.cond(self.calc_Fisher())
-        return cond_num
-        
-    # Get errors on parameters
-    def get_err(self):
-        covar = LA.inv(self.calc_Fisher())  # covariance matrix
-        err = np.sqrt(np.diag(covar))  # estimated parameter errors
-        return err
+elif: Fisher_method = 'second_derivative':
+    F = Fisher_second_deri(model=model,pf=pf,h= 0.01)
+    FisherM = F.calc_Fisher()
+    covar = LA.inv(FisherM)
+    errs = np.sqrt(np.diag(covar))
 
 p0vals = list(p0.values())
 pfvals = list(pf.values())
-final_params = Fisher(pf)
-errs = list(final_params.get_err())
+
 
 # Save data to file
 data = np.column_stack([float(kmax)] + p0vals + pfvals + errs + [p0_chi2] + [pf_chi2])
