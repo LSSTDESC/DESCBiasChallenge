@@ -1,0 +1,55 @@
+sampler:
+  minimize:
+    ignore_prior: True
+    max_evals: 10000
+
+params:
+  m_nu: 0.0
+
+# CCL settings
+theory:
+  cl_like.CCL:
+    transfer_function: eisenstein_hu
+    matter_pk: halofit
+    baryons_pk: nobaryons
+
+# Likelihood settings # TESTING
+likelihood:
+  cl_like.ClLike:
+    # Input sacc file
+    input_file: choose_input_file
+    # List all relevant bins
+    bins: choose_bins
+    # List all 2-points that should go into the
+    # data vector
+    twopoints: choose_twopoints
+
+    defaults:
+      kmax: choose_kmax
+      lmin: 0
+      lmax: 2000
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+
+    # Prefix associated to all nuisance params
+    input_params_prefix: cllike
+    # IADESY1, IAPerBin or IANone
+    ia_model: IANone
+    # NzShift or NzNone
+    nz_model: NzNone
+    # ShapeMultiplicative, ShapeNone
+    shape_model: ShapeNone
+    # Linear, EulerianPT or LagrangianPT
+    bz_model: choose_model
+
+debug: True
+output: output
+# stop_at_error: True

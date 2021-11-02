@@ -80,8 +80,14 @@ class BACCOCalculator(object):
         for i in range(len(self.a_s)):
             pars['expfactor'] = self.a_s[i]
             # call the emulator of the nonlinear 15 lagrangian bias expansion terms, shape is (15, len(k))
-            _, pnn = self.bacco_emu.get_nonlinear_pnn(pars, k=k)
-            pk2d_bacco[i, :, :] = pnn
+            # Use BACCO for z<=1.5
+            if self.a_s[i] >= 0.4:
+                _, pnn = self.bacco_emu.get_nonlinear_pnn(pars, k=k)
+                pk2d_bacco[i, :, :] = pnn
+            # Use LPT emulator for z>1.5
+            else:
+                plpt = self.bacco_emu.get_lpt_pk(pars, k=k)
+                pk2d_bacco[i, :, :] = plpt
 
         # convert the spit out result from (Mpc/h)^3 to Mpc^3 (bacco uses h units, but pyccl doesn't)
         pk2d_bacco /= pars['hubble'] ** 3
