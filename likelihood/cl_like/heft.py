@@ -159,40 +159,43 @@ class HEFTCalculator(object):
           -p_gm: tracer-matter power spectrum    
         """
         if len(btheta) == 4:
-            b1, b2, bs, sn = btheta1
-            bterms_hm = [1,
-                         b1, 0,
-                         b2/2, 0, 0,
-                         bs, 0, 0, 0]
+            b1, b2, bs, sn = btheta
+            bterms_hm = [np.ones(self.nas),
+                         b1, np.zeros(self.nas),
+                         b2/2, np.zeros(self.nas), np.zeros(self.nas),
+                         bs, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas)]
             pkvec = self.lpt_table
         else:
             # hm correlations only have one kind of <1,delta_i> correlation
-            b1, b2, bs, bk2, sn = btheta1
-            bterms_hm = [1,
-                         b1, 0,
-                         b2/2, 0, 0,
-                         bs, 0, 0, 0,
-                         bk2, 0, 0, 0]
+            b1, b2, bs, bk2, sn = btheta
+            bterms_hm = [np.ones(self.nas),
+                         b1, np.zeros(self.nas),
+                         b2/2, np.zeros(self.nas), np.zeros(self.nas),
+                         bs, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas),
+                         bk2, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas)]
             pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
             pkvec[:,:10] = self.lpt_table
             # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
             nabla_idx = [0, 1, 3, 6]
 
             # Higher derivative terms
-            pkvec[:,10:] = -self.ks**2 * pkvec[nabla_idx] 
+            pkvec[:,10:] = -self.ks**2 * pkvec[:,nabla_idx] 
         bterms_hm = np.array(bterms_hm)
-        p_hm = np.einsum('zb, zbk->zk', bterms_hm, pkvec)
+        p_hm = np.einsum('bz, zbk->zk', bterms_hm, pkvec)
         return p_hm
 def get_heft_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
     two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
     """
+    print('TRACERS:', tracer1, tracer2)
     if tracer2 is None:
         tracer2 = tracer1
     if tracer2 is not None:
         if tracer2 is tracer1:
             pass 
+        elif tracer2.type == 'M' or tracer1.type == 'M':
+            pass
         else:
             raise NotImplementedError('Two-tracer correlations are not implemented yet!')
     #Commenting the lines below because we are using custom tracer objects
