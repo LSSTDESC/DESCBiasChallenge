@@ -235,7 +235,7 @@ class DataGenerator(object):
                                            lk_arr=lk_s, a_arr=a_s,
                                            smooth_transition=alpha_HMCODE,
                                            supress_1h=k_supress)
-        elif self.bias_model == 'Abacus':
+        elif self.bias_model == 'Abacus' or self.bias_model == 'Abacus_unnorm':
             # If using Abacus, read all the smooth power spectra
             # (generated in AbacusData.ipynb), and interpolate
             # in k and a.
@@ -256,11 +256,19 @@ class DataGenerator(object):
             pk_gm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(d[f'{gtype}_m']),
                              is_logp=True)
+            pk_mm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
+                             pk_arr=np.log(d[f'm_m']),
+                             is_logp=True)
         else:
             raise NotImplementedError("Bias model " + self.bias_model +
                                       " not implemented.")
-        return {'gg': pk_gg,
-                'gm': pk_gm}
+        if 'Abacus' not in self.bias_model:
+            return {'gg': pk_gg,
+                    'gm': pk_gm}
+        else:
+            return {'gg': pk_gg,
+                    'gm': pk_gm,
+                    'mm': pk_mm}
 
     def _get_cls(self):
         """ Computes all angular power spectra
@@ -282,7 +290,10 @@ class DataGenerator(object):
             for i2, t2 in enumerate(ts):
                 if i2 < i1:
                     continue
-                pk = None
+                if self.bias_model != 'Abacus_unnorm':
+                    pk = None
+                else:
+                    pk = pks['mm']
                 if i1 < self.n_cl:
                     if i2 < self.n_cl:
                         pk = pks['gg']  # gg case
@@ -408,170 +419,184 @@ cospar = {'Omega_c': 0.25,
           'w0': -1,
           'transfer_function': 'eisenstein_hu'}
 
-###
-# 1. Constant linear bias
-# Same clustering and shear bins
-config = {'ndens_sh': 27.,
-          'ndens_cl': 27.,
-          'dNdz_file': 'data/dNdz_shear_shear.npz',
-          'e_rms': 0.28,
-          'cosmology': cospar,
-          'bias': {'model': 'constant',
-                   'constant_bias': 1.},
-          'sacc_name': 'fid_shear_const.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-# Red clustering
+# ###
+# # 1. Constant linear bias
+# # Same clustering and shear bins
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 27.,
+#           'dNdz_file': 'data/dNdz_shear_shear.npz',
+#           'e_rms': 0.28,
+#           'cosmology': cospar,
+#           'bias': {'model': 'constant',
+#                    'constant_bias': 1.},
+#           'sacc_name': 'fid_shear_const.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# # Red clustering
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': cospar,
+#           'bias': {'model': 'constant',
+#                    'constant_bias': 2.},
+#           'sacc_name': 'fid_red_const.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# ###
+#
+#
+# ###
+# # 2. Evolving linear bias (a la HSC)
+# # Same clustering and shear bins
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 27.,
+#           'dNdz_file': 'data/dNdz_shear_shear.npz',
+#           'e_rms': 0.28,
+#           'cosmology': cospar,
+#           'bias': {'model': 'HSC_linear',
+#                    'constant_bias': 0.95},
+#           'sacc_name': 'fid_HSC_linear.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# # Red clustering (2001.06018)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': cospar,
+#           'bias': {'model': 'HSC_linear',
+#                    'constant_bias': 1.5},
+#           'sacc_name': 'fid_red_linear.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# ###
+#
+#
+# ###
+# # 3. HOD
+# # HSC HOD parameters (Nicola et al.)
+# # Same clustering and shear bins
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 27.,
+#           'dNdz_file': 'data/dNdz_shear_shear.npz',
+#           'e_rms': 0.28,
+#           'cosmology': cospar,
+#           'bias': {'model': 'HOD',
+#                    'HOD_params': {'lMmin_0': 11.88,
+#                                   'lMmin_p': -0.5,
+#                                   'siglM_0': 0.4,
+#                                   'siglM_p': 0.,
+#                                   'lM0_0': 11.88,
+#                                   'lM0_p': -0.5,
+#                                   'lM1_0': 13.08,
+#                                   'lM1_p': 0.9,
+#                                   'a_pivot': 1./(1+0.65)}},
+#           'sacc_name': 'fid_HSC_HOD.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# # LRGs (from 2001.06018)
+# # Red clustering
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': cospar,
+#           'bias': {'model': 'HOD',
+#                    'HOD_params': {'lMmin_0': 12.95,
+#                                   'lMmin_p': -2.0,
+#                                   'siglM_0': 0.25,
+#                                   'siglM_p': 0.,
+#                                   'lM0_0': 12.3,
+#                                   'lM0_p': 0.,
+#                                   'lM1_0': 14.0,
+#                                   'lM1_p': -1.5,
+#                                   'alpha_0': 1.32,
+#                                   'alpha_p': 0.,
+#                                   'a_pivot': 1./(1+0.65)}},
+#           'sacc_name': 'fid_red_HOD.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# ###
+#
+#
+# ###
+# # 4. From Abacus
+# # HSC (same HOD params)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 27.,
+#           'dNdz_file': 'data/dNdz_shear_shear.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus',
+#                    'galtype': 'all'},
+#           'sacc_name': 'abacus_HSC_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# # Red (same HOD params)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# Red unnorm (same HOD params)
 config = {'ndens_sh': 27.,
           'ndens_cl': 4.,
           'dNdz_file': 'data/dNdz_shear_red.npz',
-          'e_rms': 0.28,
-          'cosmology': cospar,
-          'bias': {'model': 'constant',
-                   'constant_bias': 2.},
-          'sacc_name': 'fid_red_const.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-###
-
-
-###
-# 2. Evolving linear bias (a la HSC)
-# Same clustering and shear bins
-config = {'ndens_sh': 27.,
-          'ndens_cl': 27.,
-          'dNdz_file': 'data/dNdz_shear_shear.npz',
-          'e_rms': 0.28,
-          'cosmology': cospar,
-          'bias': {'model': 'HSC_linear',
-                   'constant_bias': 0.95},
-          'sacc_name': 'fid_HSC_linear.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-# Red clustering (2001.06018)
-config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_shear_red.npz',
-          'e_rms': 0.28,
-          'cosmology': cospar,
-          'bias': {'model': 'HSC_linear',
-                   'constant_bias': 1.5},
-          'sacc_name': 'fid_red_linear.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-###
-
-
-###
-# 3. HOD
-# HSC HOD parameters (Nicola et al.)
-# Same clustering and shear bins
-config = {'ndens_sh': 27.,
-          'ndens_cl': 27.,
-          'dNdz_file': 'data/dNdz_shear_shear.npz',
-          'e_rms': 0.28,
-          'cosmology': cospar,
-          'bias': {'model': 'HOD',
-                   'HOD_params': {'lMmin_0': 11.88,
-                                  'lMmin_p': -0.5,
-                                  'siglM_0': 0.4,
-                                  'siglM_p': 0.,
-                                  'lM0_0': 11.88,
-                                  'lM0_p': -0.5,
-                                  'lM1_0': 13.08,
-                                  'lM1_p': 0.9,
-                                  'a_pivot': 1./(1+0.65)}},
-          'sacc_name': 'fid_HSC_HOD.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-# LRGs (from 2001.06018)
-# Red clustering
-config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_shear_red.npz',
-          'e_rms': 0.28,
-          'cosmology': cospar,
-          'bias': {'model': 'HOD',
-                   'HOD_params': {'lMmin_0': 12.95,
-                                  'lMmin_p': -2.0,
-                                  'siglM_0': 0.25,
-                                  'siglM_p': 0.,
-                                  'lM0_0': 12.3,
-                                  'lM0_p': 0.,
-                                  'lM1_0': 14.0,
-                                  'lM1_p': -1.5,
-                                  'alpha_0': 1.32,
-                                  'alpha_p': 0.,
-                                  'a_pivot': 1./(1+0.65)}},
-          'sacc_name': 'fid_red_HOD.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-###
-
-
-###
-# 4. From Abacus
-# HSC (same HOD params)
-config = {'ndens_sh': 27.,
-          'ndens_cl': 27.,
-          'dNdz_file': 'data/dNdz_shear_shear.npz',
           'e_rms': 0.28,
           'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus',
-                   'galtype': 'all'},
-          'sacc_name': 'abacus_HSC_abacus.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-# Red (same HOD params)
-config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_shear_red.npz',
-          'e_rms': 0.28,
-          'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus',
+          'bias': {'model': 'Abacus_unnorm',
                    'galtype': 'red'},
-          'sacc_name': 'abacus_red_abacus.fits'}
+          'sacc_name': 'abacus_red_unnorm_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
-# Red (with assembly bias)
-config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_shear_red.npz',
-          'e_rms': 0.28,
-          'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus',
-                   'galtype': 'red_AB'},
-          'sacc_name': 'abacus_red_AB_abacus.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
-###
+# # Red (with assembly bias)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus',
+#                    'galtype': 'red_AB'},
+#           'sacc_name': 'abacus_red_AB_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# ###
 
 # Tarball
 os.system('tar -cpzf data_DESCBiasChallenge.tar.gz *.fits *.fits.yml README_data.md')
