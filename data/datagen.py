@@ -554,6 +554,20 @@ cospar = {'Omega_c': 0.25,
 #     s = d.get_sacc_file()
 #     d.save_config()
 #     print(" ")
+# HSC, red nzs (same HOD params)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus',
+#                    'galtype': 'all'},
+#           'sacc_name': 'abacus_HSC_abacus_bins=red_nd=red.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # # Red (same HOD params)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
