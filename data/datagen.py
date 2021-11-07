@@ -258,7 +258,7 @@ class DataGenerator(object):
                 phf = np.array([ccl.nonlin_matter_power(self.cosmo, d['k_s'], a)
                           for a in d['a_s']])
                 pmm = d[f'm_m']
-                pgm *= phf/pmm
+                pgm *= np.sqrt(phf/pmm)
             pk_gm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(pgm),
                              is_logp=True)
