@@ -255,7 +255,7 @@ class DataGenerator(object):
                              is_logp=True)
             pgm = d[f'{gtype}_m']
             if self.bias_model == 'Abacus_ggl+wl=norm':
-                phf = np.array([ccl.nonlin_matter_power(self.cosmo, d['ks'], a)
+                phf = np.array([ccl.nonlin_matter_power(self.cosmo, d['k_s'], a)
                           for a in d['a_s']])
                 pmm = d[f'm_m']
                 pgm *= phf/pmm
