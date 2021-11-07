@@ -235,7 +235,7 @@ class DataGenerator(object):
                                            lk_arr=lk_s, a_arr=a_s,
                                            smooth_transition=alpha_HMCODE,
                                            supress_1h=k_supress)
-        elif self.bias_model == 'Abacus' or self.bias_model == 'Abacus_unnorm':
+        elif self.bias_model == 'Abacus' or self.bias_model == 'Abacus_unnorm' or self.bias_model == 'Abacus_ggl+wl=norm':
             # If using Abacus, read all the smooth power spectra
             # (generated in AbacusData.ipynb), and interpolate
             # in k and a.
@@ -253,8 +253,14 @@ class DataGenerator(object):
             pk_gg = ccl.Pk2D(a_arr=d['a_s'][imin:], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(d[f'{gtype}_{gtype}'][imin:, :]),
                              is_logp=True)
+            pgm = d[f'{gtype}_m']
+            if self.bias_model == 'Abacus_ggl+wl=norm':
+                phf = np.array([ccl.nonlin_matter_power(self.cosmo, d['ks'], a)
+                          for a in d['a_s']])
+                pmm = d[f'm_m']
+                pgm *= phf/pmm
             pk_gm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
-                             pk_arr=np.log(d[f'{gtype}_m']),
+                             pk_arr=np.log(pgm),
                              is_logp=True)
             pk_mm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(d[f'm_m']),
@@ -554,7 +560,7 @@ cospar = {'Omega_c': 0.25,
 #     s = d.get_sacc_file()
 #     d.save_config()
 #     print(" ")
-# HSC, red nzs (same HOD params)
+# # HSC, red nzs (same HOD params)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
 #           'dNdz_file': 'data/dNdz_shear_red.npz',
@@ -582,21 +588,35 @@ cospar = {'Omega_c': 0.25,
 #     s = d.get_sacc_file()
 #     d.save_config()
 #     print(" ")
-# Red unnorm (same HOD params)
+# # Red unnorm (same HOD params)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red_unnorm_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# Red all norm (same HOD params)
 config = {'ndens_sh': 27.,
           'ndens_cl': 4.,
           'dNdz_file': 'data/dNdz_shear_red.npz',
           'e_rms': 0.28,
           'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus_unnorm',
+          'bias': {'model': 'Abacus_ggl+wl=norm',
                    'galtype': 'red'},
-          'sacc_name': 'abacus_red_unnorm_abacus.fits'}
+          'sacc_name': 'abacus_red_ggl+wl=norm_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
-# # Red (with assembly bias)
+# Red (with assembly bias)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
 #           'dNdz_file': 'data/dNdz_shear_red.npz',
@@ -611,6 +631,6 @@ if not os.path.isfile(config['sacc_name']):
 #     d.save_config()
 #     print(" ")
 # ###
-
-# Tarball
-os.system('tar -cpzf data_DESCBiasChallenge.tar.gz *.fits *.fits.yml README_data.md')
+#
+# # Tarball
+# os.system('tar -cpzf data_DESCBiasChallenge.tar.gz *.fits *.fits.yml README_data.md')
