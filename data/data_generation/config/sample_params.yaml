@@ -1,0 +1,21 @@
+all_sample:
+    logMmin_0: 11.88
+    logMmin_p: -0.5
+    logM0_0: 11.88
+    logM0_p: -0.5
+    logM1_0: 13.08
+    logM1_p: 0.9
+    alpha: 1.
+    sigma_lnM: 0.4
+    z_pivot: 0.65
+    
+red_sample:
+    logMmin_0: 12.95
+    logMmin_p: -2.0
+    logM0_0: 12.3
+    logM0_p: 0.0
+    logM1_0: 14.0
+    logM1_p: -1.5
+    alpha: 1.32
+    sigma_lnM: 0.25
+    z_pivot: 0.65
