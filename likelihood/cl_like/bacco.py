@@ -200,17 +200,17 @@ class BACCOCalculator(object):
         Pdmd2 = 0.5*self.bacco_table[:, 2, :]
         Pdms2 = 0.5*self.bacco_table[:, 3, :]
         if Pgrad is None:
-            Pd1k2 = 0.5*Pnl * (self.ks**2)[None, :]
+            Pdmn2 = 0.5 * self.bacco_table[:, 4, :]
         else:
-            Pdmn2 = 0.5*self.bacco_table[:, 4, :]
+            Pd1k2 = 0.5 * Pnl * (self.ks ** 2)[None, :]
 
         pgm += (b2[:, None] * Pdmd2 +
                 bs[:, None] * Pdms2)
 
         if Pgrad is None:
-            pgm += bk2[:, None] * Pd1k2
-        else:
             pgm += bk2[:, None] * Pdmn2
+        else:
+            pgm += bk2[:, None] * Pd1k2
 
         return pgm
 
