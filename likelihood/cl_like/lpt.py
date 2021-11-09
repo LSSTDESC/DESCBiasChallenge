@@ -80,10 +80,14 @@ class LPTCalculator(object):
         #  2*<1, O3>
         #  2*<d, O3>
         #
+        # EPT uses:
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2 + b3 psi/2 + bnabla nablad/2
         # So:
         #   a) The cross-correlations need to be divided by 2.
         #   b) The spectra involving b2 are for d^2/2, NOT d^2!!
         #   c) The spectra invoving bs are for s^2, NOT s^2/2!!
+        #   d) The spectra involving b3 are for O3 - convert to O3/2
+        #   e) The spectra involving bnabla are for nablad - convert to nablad/2
         # Also, the spectra marked with (!) tend to a constant
         # as k-> 0, which we can suppress with a low-pass filter.
         #
@@ -107,8 +111,8 @@ class LPTCalculator(object):
         Pd1s2 = 0.25*self.lpt_table[:, :, 8]
         Pd2s2 = 0.25*self.lpt_table[:, :, 9]*self.wk_low[None, :]
         Ps2s2 = 0.25*self.lpt_table[:, :, 10]*self.wk_low[None, :]
-        Pdmo3 = 0.5 * self.lpt_table[:, :, 11]
-        Pd1o3 = 0.5 * self.lpt_table[:, :, 12]
+        Pdmo3 = 0.25 * self.lpt_table[:, :, 11]
+        Pd1o3 = 0.25 * self.lpt_table[:, :, 12]
         if Pgrad is None:
             Pgrad = Pnl
         Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]

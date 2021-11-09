@@ -49,6 +49,11 @@ likelihood:
     shape_model: ShapeNone
     # Linear, EulerianPT or LagrangianPT
     bz_model: choose_model
+    # TODO: Add these paerameters if they become necessary
+#    # type of 1-loop matter power spectrum to use
+#    nonlin_pk_type: nonlinear
+#    # type of "non-local" matter power spectrum to use
+#    nonloc_pk_type: nonlinear
 
 debug: True
 output: output

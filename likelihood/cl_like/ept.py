@@ -194,7 +194,7 @@ class EPTCalculator(object):
         """
         # Clarification:
         # We are expanding the galaxy overdensity as:
-        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2 + b3 psi/2
         # (see cell 10 in https://github.com/JoeMcEwen/FAST-PT/blob/
         # master/examples/fastpt_examples.ipynb).
         # The `dd_bias` array below contains the following power

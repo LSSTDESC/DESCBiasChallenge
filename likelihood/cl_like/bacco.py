@@ -120,9 +120,12 @@ class BACCOCalculator(object):
         # <s^2,nabla^2 d>
         # <nabla^2 d,nabla^2 d>
         #
+        # EPT uses:
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2 + b3 psi/2 + bnabla nablad/2
         # So:
         #   a) The spectra involving b2 are for d^2 - convert to d^2/2
         #   b) The spectra involving bs are for s^2 - convert to s^2/2
+        #   c) The spectra involving bnabla are for nablad - convert to nablad/2
         # Also, the spectra marked with (!) tend to a constant
         # as k-> 0, which we can suppress with a low-pass filter.
         #
@@ -150,8 +153,13 @@ class BACCOCalculator(object):
 
         #TODO: what to do with nonlocal bias?
         if Pgrad is None:
-            Pgrad = Pnl
-        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+            Pd1k2 = 0.5 * Pnl * (self.ks ** 2)[None, :]
+        else:
+            Pdmn2 = 0.5*self.bacco_table[:, 4, :]
+            Pd1n2 = 0.5*self.bacco_table[:, 8, :]
+            Pd2n2 = 0.25*self.bacco_table[:, 11, :]
+            Ps2n2 = 0.25*self.bacco_table[:, 13, :]
+            Pn2n2 = 0.5*self.bacco_table[:, 14, :]
 
         if bk21 is None:
             bk21 = np.zeros_like(self.a_s)
@@ -164,8 +172,16 @@ class BACCOCalculator(object):
                 (bL11*bs2 + bL12*bs1)[:, None] * Pd1s2 +
                 (b21*b22)[:, None] * Pd2d2 +
                 (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
-                (bs1*bs2)[:, None] * Ps2s2 +
-                (b12*bk21+b11*bk22)[:, None] * Pd1k2)
+                (bs1*bs2)[:, None] * Ps2s2)
+
+        if Pgrad is None:
+            pgg += (b12*bk21+b11*bk22)[:, None] * Pd1k2
+        else:
+            pgg += ((bk21+bk22)[:, None] * Pdmn2 +
+                    (bL12 * bk21 + bL11 * bk22)[:, None] * Pd1n2 +
+                    (b22 * bk21 + b21 * bk22)[:, None] * Pd2n2 +
+                    (bs2 * bk21 + bs1 * bk22)[:, None] * Ps2n2 +
+                    (bk21 * bk22)[:, None] * Pn2n2)
 
         return pgg
 
@@ -184,12 +200,17 @@ class BACCOCalculator(object):
         Pdmd2 = 0.5*self.bacco_table[:, 2, :]
         Pdms2 = 0.5*self.bacco_table[:, 3, :]
         if Pgrad is None:
-            Pgrad = Pnl
-        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+            Pd1k2 = 0.5*Pnl * (self.ks**2)[None, :]
+        else:
+            Pdmn2 = 0.5*self.bacco_table[:, 4, :]
 
         pgm += (b2[:, None] * Pdmd2 +
-                bs[:, None] * Pdms2 +
-                bk2[:, None] * Pd1k2)
+                bs[:, None] * Pdms2)
+
+        if Pgrad is None:
+            pgm += bk2[:, None] * Pd1k2
+        else:
+            pgm += bk2[:, None] * Pdmn2
 
         return pgm
 
@@ -204,8 +225,8 @@ class BACCOCalculator(object):
 
 
 def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
-                 nonlin_pk_type='nonlinear',
-                 nonloc_pk_type='nonlinear',
+                 nonlin_pk_type='spt',
+                 nonloc_pk_type='spt',
                  extrap_order_lok=1, extrap_order_hik=2):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
