@@ -175,13 +175,13 @@ class BACCOCalculator(object):
                 (bs1*bs2)[:, None] * Ps2s2)
 
         if Pgrad is None:
-            pgg += (b12*bk21+b11*bk22)[:, None] * Pd1k2
-        else:
-            pgg += ((bk21+bk22)[:, None] * Pdmn2 +
+            pgg += ((bk21 + bk22)[:, None] * Pdmn2 +
                     (bL12 * bk21 + bL11 * bk22)[:, None] * Pd1n2 +
                     (b22 * bk21 + b21 * bk22)[:, None] * Pd2n2 +
                     (bs2 * bk21 + bs1 * bk22)[:, None] * Ps2n2 +
                     (bk21 * bk22)[:, None] * Pn2n2)
+        else:
+            pgg += (b12 * bk21 + b11 * bk22)[:, None] * Pd1k2
 
         return pgg
 
