@@ -4,108 +4,162 @@ from shutil import copyfile
 import yaml
 import os
 import sys
+sys.path.append('../likelihood')
 import numpy as np
-import numpy.linalg as LA 
+import numpy.linalg as LA
+import argparse
+import logging
 
-model_name = sys.argv[1]
-input_name = sys.argv[2]
-kmax = sys.argv[3]
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+parser = argparse.ArgumentParser(description='Run NL bias model..')
+
+parser.add_argument('--path2defaultconfig', dest='path2defaultconfig', type=str, help='Path to default config file.', \
+                    required=True)
+parser.add_argument('--path2data', dest='path2data', type=str, help='Path to data sacc.', required=True)
+parser.add_argument('--path2output', dest='path2output', type=str, help='Path to output directory.', required=True)
+parser.add_argument('--bias_model', dest='bias_model', type=str, help='Name of bias model.', required=True)
+parser.add_argument('--k_max', dest='k_max', type=float, help='Maximal k vector.', required=True)
+parser.add_argument('--fit_params', dest='fit_params', nargs='+', help='Parameters to be fit.', required=True)
+parser.add_argument('--bins', dest='bins', nargs='+', help='Redshift bins to be fit.', required=True)
+parser.add_argument('--probes', dest='probes', nargs='+', help='Probes to be fit.', required=True)
+parser.add_argument('--sigma8', dest='sigma8', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
+
+args = parser.parse_args()
+
+path2output = args.path2output
+
+bias_model = args.bias_model
+k_max = args.k_max
+fit_params = args.fit_params
 
 # Set model
-if model_name == 'LIN':
+if bias_model == 'lin':
     model = 'Linear'
-elif model_name == 'EPT':
+elif bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl']:
     model = 'EulerianPT'
-elif model_name == 'LPT':
+elif bias_model in ['LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl']:
     model = 'LagrangianPT'
+elif bias_model in ['BACCO', '3BACCO_bk2']:
+    model = 'BACCO'
 else:
     raise ValueError("Unknown bias model")
 
-# Select input and yaml files
-if input_name[-6:] == 'abacus':
-    input_file = '../../data/abacus_' + str(input_name) + '.fits'
-    config_fn = "kmax_abacus.yml"
-else:
-    input_file = '../../data/fid_' + str(input_name) + '.fits'
-    config_fn = "kmax_test.yml"
-
-filename = model + '-' + input_name
-print('FILENAME: ',filename)
-print('MODEL: '+model, '| INPUT: '+input_file, '| KMAX:',kmax)
+logger.info('Running analysis for:')
+logger.info('Bias model: {}.'.format(bias_model))
+logger.info('k_max: {}.'.format(k_max))
 
 # Read in the yaml file
+config_fn = args.path2defaultconfig
 with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
-# Add extra bins and two point correlations for red data
-if input_name[:3] == 'red':
-    cl_bins = 6
-    info['likelihood']['cl_like.ClLike']['bins'].append({'name': 'cl6'})
-    info['likelihood']['cl_like.ClLike']['twopoints'].extend(({'bins': ['cl6', 'cl6']},
-        {'bins': ['cl6', 'sh1']},{'bins': ['cl6', 'sh2']},{'bins': ['cl6', 'sh3']},
-        {'bins': ['cl6', 'sh4']},{'bins': ['cl6', 'sh5']}))
-else:
-    cl_bins = 5
-
 # Determine true bias parameters depending on input
-if input_name == 'red_linear':
-    bias = [1.6998365377850582,1.8363120052596336,2.0014068547587547,
-            2.194876151495485,2.4117020813162657,2.635943465441963]
-elif input_name == 'red_HOD':
-    bias = [1.5413800308327779,1.710079914623926,1.9648902747695882,
-            2.3268344395068925,2.8092307577842197,3.3919171002407063]
-elif input_name == 'red_abacus':
-    bias = [1.5775086056861591,1.7976528872203488,2.1061869787273917,
-            2.506907955836085,3.047912489134238,3.668692156124596]
-elif input_name == 'HSC_linear':
-    bias = [1.1216110790228042,1.3134406743963547,1.5150686625494223,
-            1.788118723644769,2.3806048995796845]
-elif input_name == 'HSC_HOD':
-    bias = [1.1312074353454078,1.352198442467068,1.597874186348844,
-            1.9672143112386806,2.952692757277202]
-elif input_name == 'HSC_abacus':
-    bias = [1.1588002687074057,1.3828823439943814,1.6308366946984219,
-            1.9964258372379027,2.9145030702514796]
-elif input_name == 'shear_const':
-    bias = [1.,1.,1.,1.,1.]
-else:
-    bias = [2.,2.,2.,2.,2.,2.]
+bias = [2., 2., 2., 2., 2., 2.]
+#^what is this?
 
+#go through all the parameters, if we want to fit it use these priors, if one of them is not specified then adopt a default fixed value
+if 'sigma8' in fit_params:
+    info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2},
+                                                    'ref': {'dist': 'norm', 'loc': 0.8090212289405192, 'scale': 0.01},
+                                                    'latex': '\sigma_8', 'proposal': 0.001}
+elif args.sigma8 is not None:
+    info['params']['sigma8'] = args.sigma8
+else:
+    info['params']['sigma8'] = 0.8090212289405192
+
+if 'Omega_c' in fit_params:
+    info['params']['Omega_c'] = {'prior': {'min': 0.05, 'max': 0.7},
+                                                    'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
+                                                    'latex': '\Omega_c', 'proposal': 0.001}
+elif args.Omega_c is not None:
+    info['params']['Omega_c'] = args.Omega_c
+else:
+    info['params']['Omega_c'] = 0.26447041034523616
+
+if 'Omega_b' in fit_params:
+    info['params']['Omega_b'] = {'prior': {'min': 0.01, 'max': 0.2},
+                                                    'ref': {'dist': 'norm', 'loc': 0.049301692328524445, 'scale': 0.01},
+                                                    'latex': '\Omega_b', 'proposal': 0.001}
+elif args.Omega_b is not None:
+    info['params']['Omega_b'] = args.Omega_b
+else:
+    info['params']['Omega_b'] = 0.049301692328524445
+
+if 'h' in fit_params:
+    info['params']['h'] = {'prior': {'min': 0.1, 'max': 1.2},
+                                                    'ref': {'dist': 'norm', 'loc': 0.6736, 'scale': 0.01},
+                                                    'latex': 'h', 'proposal': 0.001}
+elif args.h is not None:
+    info['params']['h'] = args.h
+else:
+    info['params']['h'] = 0.6736
+
+if 'n_s' in fit_params:
+    info['params']['n_s'] = {'prior': {'min': 0.1, 'max': 1.2},
+                                                    'ref': {'dist': 'norm', 'loc': 0.9649, 'scale': 0.01},
+                                                    'latex': 'n_s', 'proposal': 0.001}
+elif args.n_s is not None:
+    info['params']['n_s'] = args.n_s
+else:
+    info['params']['n_s'] = 0.9649
+
+#which bins to use, which 2pt combos to use
+probes = args.probes
+print(probes)
+info['likelihood']['cl_like.ClLike']['bins'] = [{'name': bin_name} for bin_name in args.bins]
+info['likelihood']['cl_like.ClLike']['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
+print( info['likelihood']['cl_like.ClLike']['twopoints'])
+n_bin = len(args.bins)
+bin_nos = [int(bin_name[-1])-1 for bin_name in args.bins if 'cl' in bin_name]
+
+#why do we need this?
 # Template for bias parameters in yaml file
-cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
-        'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
+cl_param = {'prior': {'min': -100.0, 'max': 100.0},
+        'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
         'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
-if model_name in ['EPT','LPT']:
-    bpar = ['1','1p','2','s']
+if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl',
+                  'LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl',
+                  'BACCO', '3BACCO_bk2']:
+    bpar = ['1', '1p', '2', 's', '3nl', 'k2']
 else:
-    bpar = ['0','p']
-    
+    bpar = ['1','1p']
+
 # Write bias parameters into yaml file
 for b in bpar:
-    for i in range(0,cl_bins):
-        info['params']['cllike_cl'+str(i+1)+'_b'+b] = cl_param.copy()
-        info['params']['cllike_cl'+str(i+1)+'_b'+b]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
-        if b == '0' or b == '1':
-            info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+    for i in bin_nos:
+        param_name = 'cllike_cl'+str(i+1)+'_b'+b
+        if param_name in fit_params:
+            info['params'][param_name] = cl_param.copy()
+            info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
+            if b == '0' or b == '1':
+                info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+        else:
+            if b == '0' or b == '1':
+                info['params']['cllike_cl'+str(i+1)+'_b'+b] = bias[i]
+            else:
+                info['params']['cllike_cl' + str(i + 1) + '_b' + b] = 0.
 
 # Add model and input file
 info['likelihood']['cl_like.ClLike']['bz_model'] = model
-info['likelihood']['cl_like.ClLike']['input_file'] = input_file
-
-# Check if directory exists, if not, make directory
-if not os.path.exists('results/'+filename):
-    os.makedirs('results/'+filename)
-    print(filename+' results directory created')
-
-# Save yaml file 
-with open('results/'+filename+'/'+filename+'.yml', 'w') as yaml_file:
-    yaml.dump(info, yaml_file, default_flow_style=False)
+info['likelihood']['cl_like.ClLike']['input_file'] = args.path2data
 
 # Add kmax and output file
-info['likelihood']['cl_like.ClLike']['defaults']['kmax'] = float(kmax)
-info['output'] = 'cobaya_out/' + filename + '_k' + kmax
+info['likelihood']['cl_like.ClLike']['defaults']['kmax'] = float(k_max)
+info['output'] = path2output
+
+# Save yaml file
+dir, _ = os.path.split(path2output)
+os.makedirs(dir, exist_ok=True)
+with open(path2output+'.yml', 'w') as yaml_file:
+    yaml.dump(info, yaml_file, default_flow_style=False)
 
 # Get the mean proposed in the yaml file for each parameter
 p0 = {}
@@ -113,13 +167,13 @@ for p in info['params']:
      if isinstance(info['params'][p], dict):
          if 'ref' in info['params'][p]:
              p0[p] = info['params'][p]['ref']['loc']
-os.system('mkdir -p ' + info['output'])
 
 print("params_dict = ", p0)
 
 # Run minimizer
 updated_info, sampler = run(info)
-bf = sampler.products()['minimum'].bestfit()
+bf = sampler.products()['minimum']
+np.save(info['output']+'.hessian.npy', sampler.products()['result_object'].hessian)
 pf = {k: bf[k] for k in p0.keys()}
 print("Final params: ")
 print(pf)
@@ -135,33 +189,33 @@ pf_chi2 = -2 * loglikes[0]
 class Fisher:
     def __init__(self,pf):
         self.pf = pf
-    
+
     # Determine likelihood at new steps
-    def fstep(self,param1,param2,h1,h2,signs):   
+    def fstep(self,param1,param2,h1,h2,signs):
         newp = self.pf.copy()
         newp[param1] = self.pf[param1] + signs[0]*h1
         newp[param2] = self.pf[param2] + signs[1]*h2
-    
+
         newloglike = model.loglikes(newp)
-    
+
         return -1*newloglike[0]
 
     # Fisher matrix elements
-    def F_ij(self,param1,param2,h1,h2):  
+    def F_ij(self,param1,param2,h1,h2):
         # Diagonal elements
-        if param1==param2:  
+        if param1==param2:
             f1 = self.fstep(param1,param2,h1,h2,(0,+1))
             f2 = self.fstep(param1,param2,h1,h2,(0,0))
             f3 = self.fstep(param1,param2,h1,h2,(0,-1))
             F_ij = (f1-2*f2+f3)/(h2**2)
-        # Off-diagonal elements     
-        else:  
+        # Off-diagonal elements
+        else:
             f1 = self.fstep(param1,param2,h1,h2,(+1,+1))
             f2 = self.fstep(param1,param2,h1,h2,(-1,+1))
             f3 = self.fstep(param1,param2,h1,h2,(+1,-1))
             f4 = self.fstep(param1,param2,h1,h2,(-1,-1))
             F_ij = (f1-f2-f3+f4)/(4*h1*h2)
-            
+
         return F_ij[0]
 
     # Calculate Fisher matrix
@@ -171,13 +225,17 @@ class Fisher:
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
                    "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
-                   "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1, 
+                   "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1,
                    "cllike_cl1_b1p": 0.1,"cllike_cl2_b1p": 0.1,"cllike_cl3_b1p": 0.1,
-                   "cllike_cl4_b1p": 0.1,"cllike_cl5_b1p": 0.1,"cllike_cl6_b1p": 0.1, 
+                   "cllike_cl4_b1p": 0.1,"cllike_cl5_b1p": 0.1,"cllike_cl6_b1p": 0.1,
                    "cllike_cl1_b2": 0.1,"cllike_cl2_b2": 0.1,"cllike_cl3_b2": 0.1,
-                   "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1, 
+                   "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1,
                    "cllike_cl1_bs": 0.1,"cllike_cl2_bs": 0.1,"cllike_cl3_bs": 0.1,
-                   "cllike_cl4_bs": 0.1,"cllike_cl5_bs": 0.1,"cllike_cl6_bs": 0.1} 
+                   "cllike_cl4_bs": 0.1,"cllike_cl5_bs": 0.1,"cllike_cl6_bs": 0.1,
+                   "cllike_cl1_bk2": 0.1,"cllike_cl2_bk2": 0.1,"cllike_cl3_bk2": 0.1,
+                   "cllike_cl4_bk2": 0.1,"cllike_cl5_bk2": 0.1,"cllike_cl6_bk2": 0.1,
+                   "cllike_cl1_b3nl": 0.1,"cllike_cl2_b3nl": 0.1,"cllike_cl3_b3nl": 0.1,
+                   "cllike_cl4_b3nl": 0.1,"cllike_cl5_b3nl": 0.1,"cllike_cl6_b3nl": 0.1}
 
         theta = list(self.pf.keys())  # array containing parameter names
 
@@ -190,29 +248,30 @@ class Fisher:
                 h1 = h_fact*typ_var[param1]
                 h2 = h_fact*typ_var[param2]
                 F[i][j] = self.F_ij(param1,param2,h1,h2)
-                
+
         return F
-    
+
     # Determine condition number of Fisher matrix
     def get_cond_num(self):
         cond_num = LA.cond(self.calc_Fisher())
         return cond_num
-        
+
     # Get errors on parameters
     def get_err(self):
         covar = LA.inv(self.calc_Fisher())  # covariance matrix
         err = np.sqrt(np.diag(covar))  # estimated parameter errors
         return err
 
+    # Get errors on parameters
+    def get_cov(self):
+        covar = LA.inv(self.calc_Fisher())  # covariance matrix
+        return covar
+
+final_params = Fisher(pf)
+# errs = list(final_params.get_err())
 p0vals = list(p0.values())
 pfvals = list(pf.values())
-final_params = Fisher(pf)
-errs = list(final_params.get_err())
+cov = list(final_params.get_cov())
 
 # Save data to file
-data = np.column_stack([float(kmax)] + p0vals + pfvals + errs + [p0_chi2] + [pf_chi2])
-head = 'PARAMETERS: '+str(list(pf.keys()))+' ; MODEL: \''+ filename +'\'\nkmax   true_params('+str(len(p0vals))+')   calc_params('+str(len(pfvals))+')   errors('+str(len(errs))+')   p0_chi2   pf_chi2'
-out = open('results/'+filename+'/results_k'+kmax+'.dat','w')
-np.savetxt(out, data, header=head)
-out.close()
-
+np.savez(info['output']+'.fisher.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
