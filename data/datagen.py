@@ -603,14 +603,28 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # Red all norm (same HOD params)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_ggl+wl=norm',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red_ggl+wl=norm_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# Red spectro (same HOD params)
 config = {'ndens_sh': 27.,
           'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'dNdz_file': 'data/dNdz_spectro_red.npz',
           'e_rms': 0.28,
           'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus_ggl+wl=norm',
+          'bias': {'model': 'Abacus_unnorm',
                    'galtype': 'red'},
-          'sacc_name': 'abacus_red_ggl+wl=norm_abacus.fits'}
+          'sacc_name': 'abacus_red_spectro_unnorm_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
