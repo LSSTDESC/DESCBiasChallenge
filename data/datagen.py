@@ -1,5 +1,7 @@
 import numpy as np
 import pyccl as ccl
+import pyccl.nl_pt as pt
+from .bacco import BACCOCalculator
 from scipy.integrate import simps
 import os
 
@@ -7,24 +9,26 @@ import os
 def get_abacus_cosmo():
     """ Returns the Abacus cosmology as a CCL object
     """
-    omega_b = 0.02237
-    omega_cdm = 0.12
-    h = 0.6736
-    A_s = 2.083e-09
-    n_s = 0.9649
-    alpha_s = 0.0
-    N_ur = 2.0328
-    N_ncdm = 1.0
-    omega_ncdm = 0.0006442
-    w0_fld = -1.0
-    wa_fld = 0.0
-    cosmo = ccl.Cosmology(Omega_c=omega_cdm/h**2,
-                          Omega_b=omega_b/h**2,
-                          h=h, A_s=A_s, n_s=n_s,
+
+    cosmology = {'omega_b': 0.02237,
+                 'omega_cdm': 0.12,
+                 'h': 0.6736,
+                 'A_s': 2.083e-09,
+                 'n_s': 0.9649,
+                 'alpha_s': 0.0,
+                 'N_ur': 2.0328,
+                 'N_ncdm': 1.0,
+                 'omega_ncdm': 0.0006442,
+                 'w0_fld': -1.0,
+                 'wa_fld': 0.0
+                 }
+    cosmo = ccl.Cosmology(Omega_c=cosmology['omega_cdm']/cosmology['h']**2,
+                          Omega_b=cosmology['omega_b']/cosmology['h']**2,
+                          h=cosmology['h'], A_s=cosmology['A_s'], n_s=cosmology['n_s'],
                           m_nu=0.06)
     cosmo.compute_linear_power()
     cosmo.compute_nonlin_power()
-    return cosmo
+    return cosmo, cosmology
 
 
 class DataGenerator(object):
@@ -55,7 +59,8 @@ class DataGenerator(object):
                 self.cosmo = ccl.Cosmology(**(self.c['cosmology']))
             else:
                 if self.c['cosmology'] == 'Abacus':
-                    self.cosmo = get_abacus_cosmo()
+                    self.cosmo, cosmo_dict = get_abacus_cosmo()
+                    self.c['cosmology'] = cosmo_dict
                 else:
                     raise ValueError('Unknown cosmology')
         else:
@@ -144,8 +149,13 @@ class DataGenerator(object):
     def _get_shear_tracers(self):
         """ Generates all shear tracers
         """
-        return [ccl.WeakLensingTracer(self.cosmo, (self.z_sh, n))
+        wl_tracers = [ccl.WeakLensingTracer(self.cosmo, (self.z_sh, n))
                 for n in self.nz_sh]
+        if self.bias_model != 'BACCO':
+            return wl_tracers
+        else:
+            pt_tracers = [pt.PTMatterTracer() for i in range(self.n_sh)]
+            return wl_tracers, pt_tracers
 
     def _get_clustering_tracers(self):
         """ Generates all clustering tracers
@@ -158,12 +168,29 @@ class DataGenerator(object):
         elif self.bias_model == 'HSC_linear':
             bc = self.c['bias'].get('constant_bias', 0.95)
             bz = bc/ccl.growth_factor(self.cosmo, 1./(1+self.z_cl))
+        # For BACCO we need to create PT tracers with bias information for each tracer
+        elif self.bias_model == 'BACCO':
+            pt_tracers = []
+            for i in range(self.n_cl):
+                zmean = np.average(self.z_cl, weights=self.nz_cl[i, :])
+                b1 = self.c['cl{}_b1'.format(i)]
+                b1p = self.c['cl{}_b1p'.format(i)]
+                bz = b1 + b1p * (self.z_cl - zmean)
+                b2 = self.c['cl{}_b2'.format(i)]
+                bs = self.c['cl{}_bs'.format(i)]
+                bk2 = self.c.get('cl{}_bk2.format(i)', None)
+                b3nl = self.c.get('cl{}_b3nl'.format(i), None)
+                pt_tracers.append(pt.PTNumberCountsTracer(b1=(self.z_cl, bz), b2=b2,
+                                                          bs=bs, bk2=bk2, b3nl=b3nl))
         else:
             # Otherwise, just set b=1 (bias will be in P(k)s)
             bz = np.ones_like(self.z_cl)
-        return [ccl.NumberCountsTracer(self.cosmo, False, (self.z_cl, n),
-                                       (self.z_cl, bz))
-                for n in self.nz_cl]
+        nc_tracers = [ccl.NumberCountsTracer(self.cosmo, False, (self.z_cl, n),
+                                (self.z_cl, bz)) for n in self.nz_cl]
+        if self.bias_model != 'BACCO':
+            return nc_tracers
+        else:
+            return nc_tracers, pt_tracers
 
     def get_b_effective(self, z):
         """ Returns the effective bias at a given redshift
@@ -279,15 +306,26 @@ class DataGenerator(object):
     def _get_cls(self):
         """ Computes all angular power spectra
         """
-        # Get P(k)s
-        pks = self._get_pks()
-        # Get clustering tracers
-        t_cl = self._get_clustering_tracers()
-        # Get shear tracers
-        t_sh = self._get_shear_tracers()
+        if self.bias_model != 'BACCO':
+            # Get P(k)s
+            pks = self._get_pks()
+            # Get clustering tracers
+            t_cl = self._get_clustering_tracers()
+            # Get shear tracers
+            t_sh = self._get_shear_tracers()
+        else:
+            # Get clustering and PT tracers
+            t_cl, pt_cl = self._get_clustering_tracers()
+            # Get shear tracers
+            t_sh, pt_sh = self._get_shear_tracers()
+            ptc = BACCOCalculator(log10k_min=np.log10(1e-2 * self.c['cosmology']['h']),
+                                  log10k_max=np.log10(0.75 * self.c['cosmology']['h']),
+                                  nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=k_filter)
+            ptc.update_pk(self.c['cosmology'])
         # Ell sampling
         ll = self._get_ell_sampling()
         ts = t_cl + t_sh
+        pts = pt_cl + pt_sh
         n_tot = self.n_cl + self.n_sh
 
         # Loop over all tracer pairs
@@ -296,15 +334,18 @@ class DataGenerator(object):
             for i2, t2 in enumerate(ts):
                 if i2 < i1:
                     continue
-                if self.bias_model != 'Abacus_unnorm':
-                    pk = None
-                else:
-                    pk = pks['mm']
-                if i1 < self.n_cl:
-                    if i2 < self.n_cl:
-                        pk = pks['gg']  # gg case
+                if self.bias_model != 'BACCO':
+                    if self.bias_model != 'Abacus_unnorm':
+                        pk = None
                     else:
-                        pk = pks['gm']  # gm case
+                        pk = pks['mm']
+                    if i1 < self.n_cl:
+                        if i2 < self.n_cl:
+                            pk = pks['gg']  # gg case
+                        else:
+                            pk = pks['gm']  # gm case
+                else:
+                    pk = ptc.get_bacco_pk2d(self.cosmo, pts[i1], tracer2=pts[i2], ptc=ptc)
                 # Limber integral
                 cl = ccl.angular_cl(self.cosmo, t1, t2, ll['ls'],
                                     p_of_k_a=pk)
@@ -645,6 +686,45 @@ if not os.path.isfile(config['sacc_name']):
 #     d.save_config()
 #     print(" ")
 # ###
+# 5. From BACCO
+# Red spectro (same HOD params)
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'BACCO',
+                   'bias_params': {'cl1_b1': None,
+                                   'cl1_b1p': None,
+                                   'cl1_b2': None,
+                                   'cl1_bk2': None,
+                                   'cl2_b1': None,
+                                   'cl2_b1p': None,
+                                   'cl2_b2': None,
+                                   'cl2_bk2': None,
+                                   'cl3_b1': None,
+                                   'cl3_b1p': None,
+                                   'cl3_b2': None,
+                                   'cl3_bk2': None,
+                                   'cl4_b1': None,
+                                   'cl4_b1p': None,
+                                   'cl4_b2': None,
+                                   'cl4_bk2': None,
+                                   'cl5_b1': None,
+                                   'cl5_b1p': None,
+                                   'cl5_b2': None,
+                                   'cl5_bk2': None,
+                                   'cl6_b1': None,
+                                   'cl6_b1p': None,
+                                   'cl6_b2': None,
+                                   'cl6_bk2': None
+                   }},
+          'sacc_name': 'abacus_red_spectro_unnorm_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
 #
 # # Tarball
 # os.system('tar -cpzf data_DESCBiasChallenge.tar.gz *.fits *.fits.yml README_data.md')
