@@ -28,7 +28,11 @@ def get_abacus_cosmo():
                           Omega_b=cosmology['omega_b']/cosmology['h']**2,
                           h=cosmology['h'], A_s=cosmology['A_s'], n_s=cosmology['n_s'],
                           m_nu=0.06)
-    ccl.sigma8(cosmo)
+    sigma8 = ccl.sigma8(cosmo)
+    cosmo = ccl.Cosmology(Omega_c=cosmology['omega_cdm']/cosmology['h']**2,
+                          Omega_b=cosmology['omega_b']/cosmology['h']**2,
+                          h=cosmology['h'], sigma8=sigma8, n_s=cosmology['n_s'],
+                          m_nu=0.06)
     cosmo.compute_linear_power()
     cosmo.compute_nonlin_power()
     return cosmo, cosmology
