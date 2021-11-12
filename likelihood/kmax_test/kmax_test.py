@@ -4,7 +4,7 @@ from shutil import copyfile
 import yaml
 import os
 import sys
-sys.path.append('../likelihood')
+sys.path.append('../../likelihood')
 import numpy as np
 import numpy.linalg as LA
 import argparse
@@ -47,8 +47,11 @@ elif bias_model in ['LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl']:
     model = 'LagrangianPT'
 elif bias_model in ['BACCO', '3BACCO_bk2']:
     model = 'BACCO'
+elif bias_model == 'HZPT':
+    print('using hzpt')
+    model = 'HZPT'
 else:
-    raise ValueError("Unknown bias model")
+    raise ValueError("py Unknown bias model")
 
 logger.info('Running analysis for:')
 logger.info('Bias model: {}.'.format(bias_model))
@@ -111,10 +114,8 @@ else:
 
 #which bins to use, which 2pt combos to use
 probes = args.probes
-print(probes)
 info['likelihood']['cl_like.ClLike']['bins'] = [{'name': bin_name} for bin_name in args.bins]
 info['likelihood']['cl_like.ClLike']['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
-print( info['likelihood']['cl_like.ClLike']['twopoints'])
 n_bin = len(args.bins)
 bin_nos = [int(bin_name[-1])-1 for bin_name in args.bins if 'cl' in bin_name]
 
@@ -129,26 +130,35 @@ if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl',
                   'LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl',
                   'BACCO', '3BACCO_bk2']:
     bpar = ['1', '1p', '2', 's', '3nl', 'k2']
+    bpar = ['_b'+bp for bp in bpar]
+elif bias_model =='HZPT':
+    print('using hzpt bpar')
+    bpar = ['_b1', '_sngg',
+                '_A0gg','_Rgg','_R1hgg',
+                '_A0gm','_Rgm','_R1hgm']
 else:
     bpar = ['1','1p']
+    bpar = ['_b'+bp for bp in bpar]
 
 # Write bias parameters into yaml file
 for b in bpar:
     for i in bin_nos:
-        param_name = 'cllike_cl'+str(i+1)+'_b'+b
+        #param_name = 'cllike_cl'+str(i+1)+'_b'+b
+        param_name = 'cllike_cl'+str(i+1)+b
         if param_name in fit_params:
             info['params'][param_name] = cl_param.copy()
             info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
-            if b == '0' or b == '1':
-                info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+            if b == '_b0' or b == '_b1':
+                info['params']['cllike_cl'+str(i+1)+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
         else:
-            if b == '0' or b == '1':
-                info['params']['cllike_cl'+str(i+1)+'_b'+b] = bias[i]
+            if b == '_b0' or b == '_b1':
+                info['params']['cllike_cl'+str(i+1)+b] = bias[i]
             else:
-                info['params']['cllike_cl' + str(i + 1) + '_b' + b] = 0.
+                info['params']['cllike_cl' + str(i + 1) + b] = 0.
 
 # Add model and input file
 info['likelihood']['cl_like.ClLike']['bz_model'] = model
+print('info model', model)
 info['likelihood']['cl_like.ClLike']['input_file'] = args.path2data
 
 # Add kmax and output file
@@ -171,7 +181,10 @@ for p in info['params']:
 print("params_dict = ", p0)
 
 # Run minimizer
+#jms breaks at the top here...
+print("RUN INFO: ", info)
 updated_info, sampler = run(info)
+print("UPDATED RUN INFO: ", updated_info)
 bf = sampler.products()['minimum']
 np.save(info['output']+'.hessian.npy', sampler.products()['result_object'].hessian)
 pf = {k: bf[k] for k in p0.keys()}
@@ -184,7 +197,6 @@ loglikes, derived = model.loglikes(p0)
 p0_chi2 = -2 * loglikes[0]
 loglikes, derived = model.loglikes(pf)
 pf_chi2 = -2 * loglikes[0]
-
 # Determine errors on parameters
 class Fisher:
     def __init__(self,pf):
@@ -222,6 +234,7 @@ class Fisher:
     def calc_Fisher(self):
         h_fact = 0.01 # stepsize factor
 
+        #Are these relative? Where did you get them?
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
                    "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
@@ -235,7 +248,15 @@ class Fisher:
                    "cllike_cl1_bk2": 0.1,"cllike_cl2_bk2": 0.1,"cllike_cl3_bk2": 0.1,
                    "cllike_cl4_bk2": 0.1,"cllike_cl5_bk2": 0.1,"cllike_cl6_bk2": 0.1,
                    "cllike_cl1_b3nl": 0.1,"cllike_cl2_b3nl": 0.1,"cllike_cl3_b3nl": 0.1,
-                   "cllike_cl4_b3nl": 0.1,"cllike_cl5_b3nl": 0.1,"cllike_cl6_b3nl": 0.1}
+                   "cllike_cl4_b3nl": 0.1,"cllike_cl5_b3nl": 0.1,"cllike_cl6_b3nl": 0.1,
+                   "cllike_cl1_sngg":0.1, "cllike_cl2_sngg":0.1,"cllike_cl3_sngg":0.1,"cllike_cl4_sngg":0.1,"cllike_cl5_sngg":0.1,"cllike_cl6_sngg":0.1,
+                   "cllike_cl1_A0gg":0.1, "cllike_cl2_A0gg":0.1,"cllike_cl3_A0gg":0.1,"cllike_cl4_A0gg":0.1,"cllike_cl5_A0gg":0.1,"cllike_cl6_A0gg":0.1,
+                   "cllike_cl1_Rgg":0.1, "cllike_cl2_Rgg":0.1,"cllike_cl3_Rgg":0.1,"cllike_cl4_Rgg":0.1,"cllike_cl5_Rgg":0.1,"cllike_cl6_Rgg":0.1,
+                   "cllike_cl1_R1hgg":0.1, "cllike_cl2_R1hgg":0.1,"cllike_cl3_R1hgg":0.1,"cllike_cl4_R1hgg":0.1,"cllike_cl5_R1hgg":0.1,"cllike_cl6_R1hgg":0.1,
+                   "cllike_cl1_A0gm":0.1, "cllike_cl2_A0gm":0.1,"cllike_cl3_A0gm":0.1,"cllike_cl4_A0gm":0.1,"cllike_cl5_A0gm":0.1,"cllike_cl6_A0gm":0.1,
+                   "cllike_cl1_Rgm":0.1, "cllike_cl2_Rgm":0.1,"cllike_cl3_Rgm":0.1,"cllike_cl4_Rgm":0.1,"cllike_cl5_Rgm":0.1,"cllike_cl6_Rgm":0.1,
+                   "cllike_cl1_R1hgm":0.1, "cllike_cl2_R1hgm":0.1,"cllike_cl3_R1hgm":0.1,"cllike_cl4_R1hgm":0.1,"cllike_cl5_R1hgm":0.1,"cllike_cl6_R1hgm":0.1
+                   }
 
         theta = list(self.pf.keys())  # array containing parameter names
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-BMs='lin EuPT LPT'
+BMs='lin EuPT LPT HZPT'
 for BM in $BMs
 do
     for kind in {1..8}

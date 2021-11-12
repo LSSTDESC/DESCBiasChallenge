@@ -5,7 +5,7 @@ import yaml
 import os
 import sys
 import numpy as np
-import numpy.linalg as LA 
+import numpy.linalg as LA
 
 model_name = sys.argv[1]
 input_name = sys.argv[2]
@@ -19,7 +19,7 @@ elif model_name == 'EPT':
 elif model_name == 'LPT':
     model = 'LagrangianPT'
 else:
-    raise ValueError("Unknown bias model")
+    raise ValueError("old Unknown bias model")
 
 # Select input and yaml files
 if input_name[-6:] == 'abacus':
@@ -72,8 +72,8 @@ else:
     bias = [2.,2.,2.,2.,2.,2.]
 
 # Template for bias parameters in yaml file
-cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
-        'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
+cl_param = {'prior': {'min': -100.0, 'max': 100.0},
+        'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
         'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
@@ -81,7 +81,7 @@ if model_name in ['EPT','LPT']:
     bpar = ['1','1p','2','s']
 else:
     bpar = ['0','p']
-    
+
 # Write bias parameters into yaml file
 for b in bpar:
     for i in range(0,cl_bins):
@@ -99,7 +99,7 @@ if not os.path.exists('results/'+filename):
     os.makedirs('results/'+filename)
     print(filename+' results directory created')
 
-# Save yaml file 
+# Save yaml file
 with open('results/'+filename+'/'+filename+'.yml', 'w') as yaml_file:
     yaml.dump(info, yaml_file, default_flow_style=False)
 
@@ -135,33 +135,33 @@ pf_chi2 = -2 * loglikes[0]
 class Fisher:
     def __init__(self,pf):
         self.pf = pf
-    
+
     # Determine likelihood at new steps
-    def fstep(self,param1,param2,h1,h2,signs):   
+    def fstep(self,param1,param2,h1,h2,signs):
         newp = self.pf.copy()
         newp[param1] = self.pf[param1] + signs[0]*h1
         newp[param2] = self.pf[param2] + signs[1]*h2
-    
+
         newloglike = model.loglikes(newp)
-    
+
         return -1*newloglike[0]
 
     # Fisher matrix elements
-    def F_ij(self,param1,param2,h1,h2):  
+    def F_ij(self,param1,param2,h1,h2):
         # Diagonal elements
-        if param1==param2:  
+        if param1==param2:
             f1 = self.fstep(param1,param2,h1,h2,(0,+1))
             f2 = self.fstep(param1,param2,h1,h2,(0,0))
             f3 = self.fstep(param1,param2,h1,h2,(0,-1))
             F_ij = (f1-2*f2+f3)/(h2**2)
-        # Off-diagonal elements     
-        else:  
+        # Off-diagonal elements
+        else:
             f1 = self.fstep(param1,param2,h1,h2,(+1,+1))
             f2 = self.fstep(param1,param2,h1,h2,(-1,+1))
             f3 = self.fstep(param1,param2,h1,h2,(+1,-1))
             f4 = self.fstep(param1,param2,h1,h2,(-1,-1))
             F_ij = (f1-f2-f3+f4)/(4*h1*h2)
-            
+
         return F_ij[0]
 
     # Calculate Fisher matrix
@@ -171,13 +171,13 @@ class Fisher:
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
                    "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
-                   "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1, 
+                   "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1,
                    "cllike_cl1_b1p": 0.1,"cllike_cl2_b1p": 0.1,"cllike_cl3_b1p": 0.1,
-                   "cllike_cl4_b1p": 0.1,"cllike_cl5_b1p": 0.1,"cllike_cl6_b1p": 0.1, 
+                   "cllike_cl4_b1p": 0.1,"cllike_cl5_b1p": 0.1,"cllike_cl6_b1p": 0.1,
                    "cllike_cl1_b2": 0.1,"cllike_cl2_b2": 0.1,"cllike_cl3_b2": 0.1,
-                   "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1, 
+                   "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1,
                    "cllike_cl1_bs": 0.1,"cllike_cl2_bs": 0.1,"cllike_cl3_bs": 0.1,
-                   "cllike_cl4_bs": 0.1,"cllike_cl5_bs": 0.1,"cllike_cl6_bs": 0.1} 
+                   "cllike_cl4_bs": 0.1,"cllike_cl5_bs": 0.1,"cllike_cl6_bs": 0.1}
 
         theta = list(self.pf.keys())  # array containing parameter names
 
@@ -190,14 +190,14 @@ class Fisher:
                 h1 = h_fact*typ_var[param1]
                 h2 = h_fact*typ_var[param2]
                 F[i][j] = self.F_ij(param1,param2,h1,h2)
-                
+
         return F
-    
+
     # Determine condition number of Fisher matrix
     def get_cond_num(self):
         cond_num = LA.cond(self.calc_Fisher())
         return cond_num
-        
+
     # Get errors on parameters
     def get_err(self):
         covar = LA.inv(self.calc_Fisher())  # covariance matrix

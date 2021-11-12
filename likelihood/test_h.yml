@@ -37,56 +37,56 @@ params:
   # clk_cl3_b1: 2.
   # clk_cl4_b1: 2.
   # clk_cl5_b1: 2.
-  # clk_cl6_b1: 2.
+  clk_cl6_b1: 2.
   # sngg
   clk_cl1_sngg: 1000.
   #clk_cl2_sngg: 0.
   #clk_cl3_sngg: 0.
   #clk_cl4_sngg: 0.
   #clk_cl5_sngg: 0.
-  #clk_cl6_sngg: 0.
+  clk_cl6_sngg: 1000.
   # A0gg
   clk_cl1_A0gg: 100.
   #clk_cl2_A0gg: 0.
   #clk_cl3_A0gg: 0.
   #clk_cl4_A0gg: 0.
   #clk_cl5_A0gg: 0.
-  #clk_cl6_A0gg: 0.
+  clk_cl6_A0gg: 100.
   # Rgg
   clk_cl1_Rgg: 30.
   #clk_cl2_Rgg: 0.
   #clk_cl3_Rgg: 0.
   #clk_cl4_Rgg: 0.
   #clk_cl5_Rgg: 0.
-  #clk_cl6_Rgg: 0.
+  clk_cl6_Rgg: 30.
   # R1hgg
   clk_cl1_R1hgg: 2.
   #clk_cl2_R1hgg: 0.
   #clk_cl3_R1hgg: 0.
   #clk_cl4_R1hgg: 0.
   #clk_cl5_R1hgg: 0.
-  #clk_cl6_R1hgg: 0.
+  clk_cl6_R1hgg: 2.
   # A0gm
   clk_cl1_A0gm: 100.
   #clk_cl2_A0gm: 0.
   #clk_cl3_A0gm: 0.
   #clk_cl4_A0gm: 0.
   #clk_cl5_A0gm: 0.
-  #clk_cl6_A0gm: 0.
+  clk_cl6_A0gm: 100.
   # Rgm
   clk_cl1_Rgm: 30.
   #clk_cl2_Rgm: 0.
   #clk_cl3_Rgm: 0.
   #clk_cl4_Rgm: 0.
   #clk_cl5_Rgm: 0.
-  #clk_cl6_Rgm: 0.
+  clk_cl6_Rgm: 30.
   # R1hgm
   clk_cl1_R1hgm: 2.
   #clk_cl2_R1hgm: 0.
   #clk_cl3_R1hgm: 0.
   #clk_cl4_R1hgm: 0.
   #clk_cl5_R1hgm: 0.
-  #clk_cl6_R1hgm: 0.
+  clk_cl6_R1hgm: 2.
 
 
 # CCL settings
@@ -109,7 +109,7 @@ likelihood:
     # - name: cl3
     # - name: cl4
     # - name: cl5
-    # - name: cl6
+      - name: cl6
       - name: sh1
     # - name: sh2
     # - name: sh3
@@ -125,7 +125,7 @@ likelihood:
     #  - bins: [cl3, cl3]
     #  - bins: [cl4, cl4]
     #  - bins: [cl5, cl5]
-    #  - bins: [cl6, cl6]
+      - bins: [cl6, cl6]
       - bins: [cl1, sh1]
     #  - bins: [cl1, sh2]
     #  - bins: [cl1, sh3]
@@ -151,7 +151,7 @@ likelihood:
     #  - bins: [cl5, sh3]
     #  - bins: [cl5, sh4]
     #  - bins: [cl5, sh5]
-    #  - bins: [cl6, sh1]
+      - bins: [cl6, sh1]
     #  - bins: [cl6, sh2]
     #  - bins: [cl6, sh3]
     #  - bins: [cl6, sh4]
