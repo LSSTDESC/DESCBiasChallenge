@@ -1,7 +1,9 @@
 import numpy as np
 import pyccl as ccl
 import pyccl.nl_pt as pt
-from .bacco import BACCOCalculator
+import sys
+sys.path.append('../likelihood/cl_like')
+from bacco import BACCOCalculator
 from scipy.integrate import simps
 import os
 
@@ -173,13 +175,13 @@ class DataGenerator(object):
             pt_tracers = []
             for i in range(self.n_cl):
                 zmean = np.average(self.z_cl, weights=self.nz_cl[i, :])
-                b1 = self.c['cl{}_b1'.format(i)]
-                b1p = self.c['cl{}_b1p'.format(i)]
+                b1 = self.c['cl{}_b1'.format(i+1)]
+                b1p = self.c['cl{}_b1p'.format(i+1)]
                 bz = b1 + b1p * (self.z_cl - zmean)
-                b2 = self.c['cl{}_b2'.format(i)]
-                bs = self.c['cl{}_bs'.format(i)]
-                bk2 = self.c.get('cl{}_bk2.format(i)', None)
-                b3nl = self.c.get('cl{}_b3nl'.format(i), None)
+                b2 = self.c['cl{}_b2'.format(i+1)]
+                bs = self.c['cl{}_bs'.format(i+1)]
+                bk2 = self.c.get('cl{}_bk2'.format(i+1), None)
+                b3nl = self.c.get('cl{}_b3nl'.format(i+1), None)
                 pt_tracers.append(pt.PTNumberCountsTracer(b1=(self.z_cl, bz), b2=b2,
                                                           bs=bs, bk2=bk2, b3nl=b3nl))
         else:
