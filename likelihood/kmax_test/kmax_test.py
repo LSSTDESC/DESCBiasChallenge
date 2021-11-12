@@ -63,8 +63,7 @@ with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
 # Determine true bias parameters depending on input
-bias = [2., 2., 2., 2., 2., 2.]
-#^what is this?
+bias = [2., 2., 2., 2., 2., 2.] #these are b1 starter values for each bin...
 
 #go through all the parameters, if we want to fit it use these priors, if one of them is not specified then adopt a default fixed value
 if 'sigma8' in fit_params:
@@ -112,6 +111,22 @@ elif args.n_s is not None:
 else:
     info['params']['n_s'] = 0.9649
 
+#---- HZPT default parameters and bounds ----#
+
+sn_param = {'prior': {'min': 0.0, 'max': 50000.0},
+        'ref': {'dist': 'norm', 'loc': 1000., 'scale': 200.},
+        'latex': 'blank', 'proposal': 0.001}
+A0_param = {'prior': {'min': 0.0, 'max': 2000.0},
+        'ref': {'dist': 'norm', 'loc': 700., 'scale': 100.},
+        'latex': 'blank', 'proposal': 0.001}
+R_param = {'prior': {'min': 0.0, 'max': 100.0},
+        'ref': {'dist': 'norm', 'loc': 30., 'scale': 10.},
+        'latex': 'blank', 'proposal': 0.001}
+Rh_param = {'prior': {'min': 0.0, 'max': 20.0},
+        'ref': {'dist': 'norm', 'loc': 2., 'scale': 2.},
+        'latex': 'blank', 'proposal': 0.001}
+
+
 #which bins to use, which 2pt combos to use
 probes = args.probes
 info['likelihood']['cl_like.ClLike']['bins'] = [{'name': bin_name} for bin_name in args.bins]
@@ -132,7 +147,6 @@ if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl',
     bpar = ['1', '1p', '2', 's', '3nl', 'k2']
     bpar = ['_b'+bp for bp in bpar]
 elif bias_model =='HZPT':
-    print('using hzpt bpar')
     bpar = ['_b1', '_sngg',
                 '_A0gg','_Rgg','_R1hgg',
                 '_A0gm','_Rgm','_R1hgm']
@@ -146,7 +160,16 @@ for b in bpar:
         #param_name = 'cllike_cl'+str(i+1)+'_b'+b
         param_name = 'cllike_cl'+str(i+1)+b
         if param_name in fit_params:
-            info['params'][param_name] = cl_param.copy()
+            if('sngg' in param_name):
+                info['params'][param_name] = sn_param.copy()
+            elif('A0g' in param_name):
+                info['params'][param_name] = A0_param.copy()
+            elif('Rg' in param_name):
+                info['params'][param_name] = R_param.copy()
+            elif( ('R2' in param_name) or ('R1' in param_name) or ('R3' in param_name) ):
+                info['params'][param_name] = Rh_param.copy()
+            else:
+                info['params'][param_name] = cl_param.copy()
             info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
             if b == '_b0' or b == '_b1':
                 info['params']['cllike_cl'+str(i+1)+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
@@ -236,6 +259,7 @@ class Fisher:
 
         #Are these relative? Where did you get them?
         # typical variations of each parameter
+        sn_var, A0_var, R_var, Rh_var = 10., 10., 2.,0.2
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
                    "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
                    "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1,
@@ -249,13 +273,13 @@ class Fisher:
                    "cllike_cl4_bk2": 0.1,"cllike_cl5_bk2": 0.1,"cllike_cl6_bk2": 0.1,
                    "cllike_cl1_b3nl": 0.1,"cllike_cl2_b3nl": 0.1,"cllike_cl3_b3nl": 0.1,
                    "cllike_cl4_b3nl": 0.1,"cllike_cl5_b3nl": 0.1,"cllike_cl6_b3nl": 0.1,
-                   "cllike_cl1_sngg":0.1, "cllike_cl2_sngg":0.1,"cllike_cl3_sngg":0.1,"cllike_cl4_sngg":0.1,"cllike_cl5_sngg":0.1,"cllike_cl6_sngg":0.1,
-                   "cllike_cl1_A0gg":0.1, "cllike_cl2_A0gg":0.1,"cllike_cl3_A0gg":0.1,"cllike_cl4_A0gg":0.1,"cllike_cl5_A0gg":0.1,"cllike_cl6_A0gg":0.1,
-                   "cllike_cl1_Rgg":0.1, "cllike_cl2_Rgg":0.1,"cllike_cl3_Rgg":0.1,"cllike_cl4_Rgg":0.1,"cllike_cl5_Rgg":0.1,"cllike_cl6_Rgg":0.1,
-                   "cllike_cl1_R1hgg":0.1, "cllike_cl2_R1hgg":0.1,"cllike_cl3_R1hgg":0.1,"cllike_cl4_R1hgg":0.1,"cllike_cl5_R1hgg":0.1,"cllike_cl6_R1hgg":0.1,
-                   "cllike_cl1_A0gm":0.1, "cllike_cl2_A0gm":0.1,"cllike_cl3_A0gm":0.1,"cllike_cl4_A0gm":0.1,"cllike_cl5_A0gm":0.1,"cllike_cl6_A0gm":0.1,
-                   "cllike_cl1_Rgm":0.1, "cllike_cl2_Rgm":0.1,"cllike_cl3_Rgm":0.1,"cllike_cl4_Rgm":0.1,"cllike_cl5_Rgm":0.1,"cllike_cl6_Rgm":0.1,
-                   "cllike_cl1_R1hgm":0.1, "cllike_cl2_R1hgm":0.1,"cllike_cl3_R1hgm":0.1,"cllike_cl4_R1hgm":0.1,"cllike_cl5_R1hgm":0.1,"cllike_cl6_R1hgm":0.1
+                   "cllike_cl1_sngg":sn_var, "cllike_cl2_sngg":sn_var,"cllike_cl3_sngg":sn_var,"cllike_cl4_sngg":sn_var,"cllike_cl5_sngg":sn_var,"cllike_cl6_sngg":sn_var,
+                   "cllike_cl1_A0gg":A0_var, "cllike_cl2_A0gg":A0_var,"cllike_cl3_A0gg":A0_var,"cllike_cl4_A0gg":A0_var,"cllike_cl5_A0gg":A0_var,"cllike_cl6_A0gg":A0_var,
+                   "cllike_cl1_Rgg":R_var, "cllike_cl2_Rgg":R_var,"cllike_cl3_Rgg":R_var,"cllike_cl4_Rgg":R_var,"cllike_cl5_Rgg":R_var,"cllike_cl6_Rgg":R_var,
+                   "cllike_cl1_R1hgg":Rh_var, "cllike_cl2_R1hgg":Rh_var,"cllike_cl3_R1hgg":Rh_var,"cllike_cl4_R1hgg":Rh_var,"cllike_cl5_R1hgg":Rh_var,"cllike_cl6_R1hgg":Rh_var,
+                   "cllike_cl1_A0gm":A0_var, "cllike_cl2_A0gm":A0_var,"cllike_cl3_A0gm":A0_var,"cllike_cl4_A0gm":A0_var,"cllike_cl5_A0gm":A0_var,"cllike_cl6_A0gm":A0_var,
+                   "cllike_cl1_Rgm":R_var, "cllike_cl2_Rgm":R_var,"cllike_cl3_Rgm":R_var,"cllike_cl4_Rgm":R_var,"cllike_cl5_Rgm":R_var,"cllike_cl6_Rgm":R_var,
+                   "cllike_cl1_R1hgm":Rh_var, "cllike_cl2_R1hgm":Rh_var,"cllike_cl3_R1hgm":Rh_var,"cllike_cl4_R1hgm":Rh_var,"cllike_cl5_R1hgm":Rh_var,"cllike_cl6_R1hgm":Rh_var
                    }
 
         theta = list(self.pf.keys())  # array containing parameter names

@@ -371,7 +371,6 @@ class ClLike(Likelihood):
         For linear bias, this is just the matter power spectrum.
         """
         # Get P(k)s from CCL
-        print("INSIDE CLLIKE BZ MODEL IS ", self.bz_model)
         if self.bz_model == 'Linear':
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
@@ -415,7 +414,6 @@ class ClLike(Likelihood):
         """ Get the P(k) between two tracers. """
         q1 = self.used_tracers[clm['bin_1']]
         q2 = self.used_tracers[clm['bin_2']]
-        print("INSIDE GET PXY BZ MODEL IS ", self.bz_model)
 
         if (self.bz_model == 'Linear') or (self.bz_model == 'BzNone'):
             if (q1 == 'galaxy_density') and (q2 == 'galaxy_density'):
