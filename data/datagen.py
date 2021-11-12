@@ -322,7 +322,7 @@ class DataGenerator(object):
             t_sh, pt_sh = self._get_shear_tracers()
             ptc = BACCOCalculator(log10k_min=np.log10(1e-2 * self.c['cosmology']['h']),
                                   log10k_max=np.log10(0.75 * self.c['cosmology']['h']),
-                                  nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=k_filter)
+                                  nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=self.c['bias']['k_filter'])
             ptc.update_pk(self.c['cosmology'])
         # Ell sampling
         ll = self._get_ell_sampling()
