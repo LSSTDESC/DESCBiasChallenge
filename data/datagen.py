@@ -352,7 +352,10 @@ class DataGenerator(object):
                         else:
                             pk = pks['gm']  # gm case
                 else:
-                    pk = get_bacco_pk2d(self.cosmo, pts[i1], tracer2=pts[i2], ptc=ptc)
+                    if i1 >= self.n_cl and i2 >= self.n_cl:
+                        pk = None
+                    else:
+                        pk = get_bacco_pk2d(self.cosmo, pts[i1], tracer2=pts[i2], ptc=ptc)
                 # Limber integral
                 cl = ccl.angular_cl(self.cosmo, t1, t2, ll['ls'],
                                     p_of_k_a=pk)
