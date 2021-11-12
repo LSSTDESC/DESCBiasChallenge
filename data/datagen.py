@@ -3,7 +3,7 @@ import pyccl as ccl
 import pyccl.nl_pt as pt
 import sys
 sys.path.append('../likelihood/cl_like')
-from bacco import BACCOCalculator
+from bacco import BACCOCalculator, get_bacco_pk2d
 from scipy.integrate import simps
 import os
 
@@ -352,7 +352,7 @@ class DataGenerator(object):
                         else:
                             pk = pks['gm']  # gm case
                 else:
-                    pk = ptc.get_bacco_pk2d(self.cosmo, pts[i1], tracer2=pts[i2], ptc=ptc)
+                    pk = get_bacco_pk2d(self.cosmo, pts[i1], tracer2=pts[i2], ptc=ptc)
                 # Limber integral
                 cl = ccl.angular_cl(self.cosmo, t1, t2, ll['ls'],
                                     p_of_k_a=pk)
