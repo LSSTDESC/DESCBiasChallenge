@@ -72,10 +72,15 @@ class ClLike(Likelihood):
             if b['name'] not in s.tracers:
                 raise LoggedError(self.log, "Unknown tracer %s" % b['name'])
             t = s.tracers[b['name']]
-            zmean = np.average(t.z, weights=t.nz)
-            self.bin_properties[b['name']] = {'z_fid': t.z,
-                                              'nz_fid': t.nz,
-                                              'zmean_fid': zmean}
+            # B.H. bug
+            if t.quantity in ['galaxy_density', 'galaxy_shear']:
+                zmid = np.average(t.z, weights=t.nz)
+                self.bin_properties[b['name']] = {'z_fid': t.z,
+                                                  'nz_fid': t.nz,
+                                                  'zmean_fid': zmid}
+            else:
+                self.bin_properties[b['name']] = {}
+                
             # Ensure all tracers have ell_min
             if b['name'] not in self.defaults:
                 self.defaults[b['name']] = {}
@@ -108,8 +113,14 @@ class ClLike(Likelihood):
             # Get the suffix for both tracers
             cl_name1 = get_suffix_for_tr(s.tracers[tn1])
             cl_name2 = get_suffix_for_tr(s.tracers[tn2])
-            ind = s.indices('cl_%s%s' % (cl_name1, cl_name2), (tn1, tn2),
-                            ell__gt=lmin, ell__lt=lmax)
+            # B.H. bug maybe CMB lensing
+            # TODO: temporary solution cause sacc doesn't like cl_e0
+            if cl_name1 == 'e' and cl_name2 == '0': # get rid of cl_e0 case
+                ind = s.indices('cl_%s%s' % (cl_name2, cl_name1), (tn1, tn2),
+                                ell__gt=lmin, ell__lt=lmax)
+            else:
+                ind = s.indices('cl_%s%s' % (cl_name1, cl_name2), (tn1, tn2),
+                                ell__gt=lmin, ell__lt=lmax)
             indices += list(ind)
         s.keep_indices(np.array(indices))
 
@@ -126,11 +137,19 @@ class ClLike(Likelihood):
             tn1, tn2 = cl['bins']
             cl_name1 = get_suffix_for_tr(s.tracers[tn1])
             cl_name2 = get_suffix_for_tr(s.tracers[tn2])
-            l, c_ell, cov, ind = s.get_ell_cl('cl_%s%s' % (cl_name1, cl_name2),
-                                              tn1,
-                                              tn2,
-                                              return_cov=True,
-                                              return_ind=True)
+            # TODO: temporary solution cause sacc doesn't like cl_e0
+            if cl_name1 == 'e' and cl_name2 == '0': # get rid of cl_e0 case
+                l, c_ell, cov, ind = s.get_ell_cl('cl_%s%s' % (cl_name2, cl_name1),
+                                                  tn1,
+                                                  tn2,
+                                                  return_cov=True,
+                                                  return_ind=True)
+            else:
+                l, c_ell, cov, ind = s.get_ell_cl('cl_%s%s' % (cl_name1, cl_name2),
+                                                  tn1,
+                                                  tn2,
+                                                  return_cov=True,
+                                                  return_ind=True)
             if c_ell.size > 0:
                 if tn1 not in self.used_tracers:
                     self.used_tracers[tn1] = s.tracers[tn1].quantity
@@ -199,7 +218,7 @@ class ClLike(Likelihood):
         z = self.bin_properties[name]['z_fid']
         nz = self.bin_properties[name]['nz_fid']
         if self.nz_model == 'NzShift':
-            z = z + pars[self.input_params_prefix + '_' + name + '_dz']
+            z = z + pars.get(self.input_params_prefix + '_' + name + '_dz', 0.)
             msk = z >= 0
             z = z[msk]
             nz = nz[msk]
@@ -215,7 +234,7 @@ class ClLike(Likelihood):
         bz = np.ones_like(z)
         if self.bz_model == 'Linear':
             b1 = pars[self.input_params_prefix + '_' + name + '_b1']
-            b1p = pars[self.input_params_prefix + '_' + name + '_b1p']
+            b1p = pars.get(self.input_params_prefix + '_' + name + '_b1p', 0.)
             bz = b1 + b1p * (z - zmean)
         return (z, bz)
 
@@ -232,6 +251,13 @@ class ClLike(Likelihood):
             elif self.ia_model == 'IADESY1':
                 A0 = pars[self.input_params_prefix + '_A_IA']
                 eta = pars[self.input_params_prefix + '_eta_IA']
+                A_IA = A0 * ((1+z)/1.62)**eta
+            # B.H. buba 
+            elif self.ia_model == 'IADESY1_PerSurvey': # TODO: make pretty
+                # This assumes that name = survey__zbin
+                survey = name.split('__')[0]
+                A0 = pars[self.input_params_prefix + '_' + survey + '_A_IA']
+                eta = pars[self.input_params_prefix + '_' + survey + '_eta_IA']
                 A_IA = A0 * ((1+z)/1.62)**eta
             else:
                 raise LoggedError(self.log, "Unknown IA model %s" %
