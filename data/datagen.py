@@ -329,10 +329,11 @@ class DataGenerator(object):
                                   log10k_max=np.log10(0.75 * self.c['cosmology']['h']),
                                   nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=self.c['bias']['k_filter'])
             ptc.update_pk(self.cosmo)
+            pts = pt_cl + pt_sh
+            
         # Ell sampling
         ll = self._get_ell_sampling()
         ts = t_cl + t_sh
-        pts = pt_cl + pt_sh
         n_tot = self.n_cl + self.n_sh
 
         # Loop over all tracer pairs
