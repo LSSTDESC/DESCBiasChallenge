@@ -28,6 +28,7 @@ class HEFTCalculator(object):
         self.lpt_table = None
         self.ks = None
         self.cleftobj = None
+
     def update_pk(self, cosmo):
         '''
         Computes the HEFT predictions using Anzu for the cosmology being probed by the likelihood.
@@ -100,7 +101,9 @@ class HEFTCalculator(object):
         #Convert units back to 1/Mpc and Mpc^3
         self.lpt_table /= cosmo['h']**3
         self.ks = k_emu*cosmo['h']
-    def get_pgg(self, btheta1, btheta2=None):
+
+    def get_pgg(self, b11, b21, bs1, b12, b22, bs2,
+                bk21=None, bk22=None, bsn1=None, bsn2=None):
         """ 
         Get P_gg between two tracer samples with sets of bias params starting from the heft component spectra
     
@@ -122,34 +125,71 @@ class HEFTCalculator(object):
             Note the term <nabla^2, nabla^2> isn't included in the prediction since it's degenerate with even higher deriv
             terms such as <nabla^4, 1> which in principle have different parameters. 
         """
-        if btheta2 is not None:
-            raise NotImplementedError("Two populations of tracers are not yet implemented for HEFT!")
-        if len(btheta1) == 4:
-            b1, b2, bs, sn = btheta1
-            # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
-            bterms_hh = [np.ones(self.nas),
-                         2*b1, b1**2,
-                         b2, b2*b1, 0.25*b2**2,
-                         2*bs, 2*bs*b1, bs*b2, bs**2]
-            pkvec = self.lpt_table
-        else:
-            b1, b2, bs, bk2, sn = btheta1
-            # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
-            bterms_hh = [np.ones(self.nas),
-                         2*b1, b1**2,
-                         b2, b2*b1, 0.25*b2**2,
-                         2*bs, 2*bs*b1, bs*b2, bs**2,
-                         2*bk2, 2*bk2*b1, bk2*b2, 2*bk2*bs]
-            pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
-            pkvec[:,:10] = self.lpt_table
-            # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
-            nabla_idx = [0, 1, 3, 6]
-            # Higher derivative terms
-            pkvec[:,10:] = -self.ks**2 * pkvec[:,nabla_idx] 
+        # Clarification:
+        # anzu uses the following expansion for the galaxy overdensity:
+        #   d_g = b1 d + b2 d2^2 + bs s^2 + bnabla2d nabla^2 d
+        # (see Eq. 1 of https://arxiv.org/abs/2101.12187).
+        #
+        # The BACCO table below contains the following power spectra
+        # in order:
+        # <1,1>
+        # <1,d>
+        # <d,d>
+        # <1,d^2>
+        # <d,d^2>
+        # <d^2,d^2> (!)
+        # <1,s^2>
+        # <d,s^2>
+        # <d^2,s^2> (!)
+        # <s^2,s^2> (!)
+        #
+        # EPT uses:
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2 + b3 psi/2 + bnabla nablad/2
+        # So:
+        #   a) The spectra involving b2 are for d^2 - convert to d^2/2
+        #   b) The spectra involving bs are for s^2 - convert to s^2/2
+        #   c) The spectra involving bnabla are for nablad - convert to nablad/2
+        # Also, the spectra marked with (!) tend to a constant
+        # as k-> 0, which we can suppress with a low-pass filter.
+        #
+        # Importantly, we have corrected the spectra involving d^2 and s2 to
+        # make the definitions of b2, bs equivalent to what we have adopted for
+        # the EPT and LPT expansions.
+
+        b1_list = [b11, b21, bs1, bk21, bsn1]
+        b2_list = [b12, b22, bs2, bk22, bsn2]
+
+        assert np.all([b1_list[i] == b2_list[i] for i in range(len(b1_list))]), \
+            'Two populations of tracers are not yet implemented for HEFT!'
+
+        if bk21 is None:
+            bk21 = np.zeros_like(self.a_s)
+        if bk22 is None:
+            bk22 = np.zeros_like(self.a_s)
+        if bsn1 is None:
+            bsn1 = np.zeros_like(self.a_s)
+        if bsn2 is None:
+            bsn2 = np.zeros_like(self.a_s)
+
+        # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
+        bterms_hh = [np.ones(self.nas),
+                     2*b11, b11**2,
+                     b21, b21*b11, 0.25*b21**2,
+                     bs1, bs1*b11, 0.5*bs1*b21, 0.25*bs1**2,
+                     bk21, bk21*b11, 0.5*bk21*b21, 0.5*bk21*bs1]
+        pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
+        pkvec[:,:10] = self.lpt_table
+        # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
+        nabla_idx = [0, 1, 3, 6]
+        # Higher derivative terms
+        pkvec[:,10:] = -self.ks**2 * pkvec[:,nabla_idx]
+
         bterms_hh = np.array(bterms_hh)
-        p_hh = np.einsum('bz, zbk->zk', bterms_hh, pkvec) + np.einsum('z, zk->zk', sn, np.ones(shape=(self.nas, len(self.ks)) ))
+        p_hh = np.einsum('bz, zbk->zk', bterms_hh, pkvec) + np.einsum('z, zk->zk', bsn1, np.ones(shape=(self.nas, len(self.ks)) ))
+
         return p_hh
-    def get_pgm(self, btheta):
+
+    def get_pgm(self, b1, b2, bs, bk2=None, bsn=None):
         """ Get P_gm for a set of bias parameters from the heft component spectra
        
           Inputs: 
@@ -158,77 +198,76 @@ class HEFTCalculator(object):
           Outputs:
           -p_gm: tracer-matter power spectrum    
         """
-        if len(btheta) == 4:
-            b1, b2, bs, sn = btheta
-            bterms_hm = [np.ones(self.nas),
-                         b1, np.zeros(self.nas),
-                         b2/2, np.zeros(self.nas), np.zeros(self.nas),
-                         bs, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas)]
-            pkvec = self.lpt_table
-        else:
-            # hm correlations only have one kind of <1,delta_i> correlation
-            b1, b2, bs, bk2, sn = btheta
-            bterms_hm = [np.ones(self.nas),
-                         b1, np.zeros(self.nas),
-                         b2/2, np.zeros(self.nas), np.zeros(self.nas),
-                         bs, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas),
-                         bk2, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas)]
-            pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
-            pkvec[:,:10] = self.lpt_table
-            # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
-            nabla_idx = [0, 1, 3, 6]
 
-            # Higher derivative terms
-            pkvec[:,10:] = -self.ks**2 * pkvec[:,nabla_idx] 
+        if bk2 is None:
+            bk2 = np.zeros_like(self.a_s)
+        if bsn is None:
+            bsn = np.zeros_like(self.a_s)
+
+        # hm correlations only have one kind of <1,delta_i> correlation
+        bterms_hm = [np.ones(self.nas),
+                     b1, np.zeros(self.nas),
+                     0.5*b2, np.zeros(self.nas), np.zeros(self.nas),
+                     0.5*bs, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas),
+                     0.5*bk2, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas)]
+        pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
+        pkvec[:,:10] = self.lpt_table
+        # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
+        nabla_idx = [0, 1, 3, 6]
+
+        # Higher derivative terms
+        pkvec[:,10:] = -self.ks**2 * pkvec[:,nabla_idx]
         bterms_hm = np.array(bterms_hm)
         p_hm = np.einsum('bz, zbk->zk', bterms_hm, pkvec)
+
         return p_hm
-def get_heft_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
+
+def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
     two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
     """
-    print('TRACERS:', tracer1, tracer2)
-    if tracer2 is None:
-        tracer2 = tracer1
-    if tracer2 is not None:
-        if tracer2 is tracer1:
-            pass 
-        elif tracer2.type == 'M' or tracer1.type == 'M':
-            pass
-        else:
-            raise NotImplementedError('Two-tracer correlations are not implemented yet!')
-    #Commenting the lines below because we are using custom tracer objects
-    #if not isinstance(tracer1, ccl.nl_pt.PTTracer):
-    #    raise TypeError("tracer1 must be of type `ccl.nl_pt.PTTracer`")
-    #if not isinstance(tracer2, ccl.nl_pt.PTTracer):
-    #    raise TypeError("tracer2 must be of type `ccl.nl_pt.PTTracer`")
 
-    #if not isinstance(ptc, LPTCalculator):
-    #    raise TypeError("ptc should be of type `LPTCalculator`")
+    #Commenting the lines below because we are using custom tracer objects
+    if not isinstance(tracer1, ccl.nl_pt.PTTracer):
+       raise TypeError("tracer1 must be of type `ccl.nl_pt.PTTracer`")
+    if not isinstance(tracer2, ccl.nl_pt.PTTracer):
+       raise TypeError("tracer2 must be of type `ccl.nl_pt.PTTracer`")
+
+    if not isinstance(ptc, HEFTCalculator):
+       raise TypeError("ptc should be of type `HEFTCalculator`")
     # z
     z_arr = 1. / ptc.a_arr - 1
     if (tracer1.type == 'NC'):
         b11 = tracer1.b1(z_arr)
         b21 = tracer1.b2(z_arr)
         bs1 = tracer1.bs(z_arr)
-        bk21 = tracer1.bk2(z_arr)
-        sn21 = tracer1.sn(z_arr)
-        btheta1 = np.array([b11, b21, bs1, bk21, sn21])
+        if hasattr(tracer1, 'bk2'):
+            bk21 = tracer1.bk2(z_arr)
+        else:
+            bk21 = None
+        if hasattr(tracer1, 'sn'):
+            sn1 = tracer1.sn(z_arr)
+        else:
+            sn1 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-
-            bk22 = tracer2.bk2(z_arr)
-            sn22 = tracer2.sn(z_arr)
-            
-            btheta2 = np.array([b21, b22, bs2, bk22, sn22])
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
+            if hasattr(tracer2, 'sn'):
+                sn2 = tracer2.sn(z_arr)
+            else:
+                sn2 = None
             
             #Right now get_pgg will get tracer auto-spectrum.
-            p_pt = ptc.get_pgg(btheta1)
+            p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, sn1, sn2)
+
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(btheta1)
+            p_pt = ptc.get_pgm(b11, b21, bs1, bk21, sn1)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -238,13 +277,16 @@ def get_heft_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-
-            bk22 = tracer2.bk2(z_arr)
-            sn22 = tracer2.sn(z_arr)
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
+            if hasattr(tracer2, 'sn'):
+                sn2 = tracer2.sn(z_arr)
+            else:
+                sn2 = None
             
-            btheta2 = np.array([b21, b22, bs2, bk22, sn22])
-            
-            p_pt = ptc.get_pgm(btheta2)
+            p_pt = ptc.get_pgm(b12, b22, bs2, bk22, sn2)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))

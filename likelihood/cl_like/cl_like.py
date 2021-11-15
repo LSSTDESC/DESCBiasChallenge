@@ -1,12 +1,16 @@
 import numpy as np
 from scipy.interpolate import interp1d
 import pyccl as ccl
-import pyccl.nl_pt as pt
+# import pyccl.nl_pt as pt
+from . import tracers as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
 from .ept import EPTCalculator, get_ept_pk2d
-# from .bacco import BACCOCalculator, get_bacco_pk2d
+from .bacco import BACCOCalculator, get_bacco_pk2d
+from .heft import HEFTCalculator, get_anzu_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
+from anzu.emu_funcs import LPTEmulator
+import baccoemu_beta as baccoemu
 
 
 class ClLike(Likelihood):
@@ -39,6 +43,11 @@ class ClLike(Likelihood):
         self._read_data()
         # Ell sampling for interpolation
         self._get_ell_sampling()
+        # Initialize emu to train it once
+        if self.bz_model == 'anzu':
+            self.emu = LPTEmulator(extrap=False)
+        if self.bz_model == 'BACCO':
+            self.emu = baccoemu.Lbias_expansion()
 
     def _read_data(self):
         """
@@ -243,7 +252,7 @@ class ClLike(Likelihood):
         """ Transforms all used tracers into CCL tracers for the
         current set of parameters."""
         trs = {}
-        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT', 'BACCO']
+        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT', 'BACCO', 'anzu']
         for name, q in self.used_tracers.items():
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
@@ -320,8 +329,19 @@ class ClLike(Likelihood):
                 k_filter = self.k_pt_filter
             else:
                 k_filter = None
-            ptc = BACCOCalculator(log10k_min=np.log10(1e-2*cosmo['h']), log10k_max=np.log10(0.75*cosmo['h']),
+            ptc = BACCOCalculator(bacco_emu=self.emu, log10k_min=np.log10(1e-2*cosmo['h']), log10k_max=np.log10(0.75*cosmo['h']),
                                   nk_per_decade=20, h=cosmo['h'], k_filter=k_filter)
+            cosmo.compute_nonlin_power()
+            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
+            ptc.update_pk(cosmo)
+            return {'ptc': ptc, 'pk_mm': pkmm}
+        elif self.bz_model == 'anzu':
+            a_s = 1. / (1 + np.linspace(0., 4., 30)[::-1])
+            if self.k_pt_filter > 0:
+                k_filter = self.k_pt_filter
+            else:
+                k_filter = None
+            ptc = HEFTCalculator(self.emu, cosmo, a_arr=a_s)
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             ptc.update_pk(cosmo)
@@ -368,6 +388,15 @@ class ClLike(Likelihood):
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
                 pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
+                return pk_pt
+        elif (self.bz_model == 'anzu'):
+            if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                return pkd['pk_mm']  # matter-matter
+            else:
+                ptt1 = trs[clm['bin_1']]['PT_tracer']
+                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
+                                       ptc=pkd['ptc'])
                 return pk_pt
         else:
             raise LoggedError(self.log,

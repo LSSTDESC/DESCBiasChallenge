@@ -19,7 +19,7 @@ class BACCOCalculator(object):
             Fourier scale (in Mpc^-1) for which you want to
             calculate perturbation theory quantities.
     """
-    def __init__(self, log10k_min=-2, log10k_max=0, nk_per_decade=20, h=None, k_filter=None):
+    def __init__(self, bacco_emu=None, log10k_min=-2, log10k_max=0, nk_per_decade=20, h=None, k_filter=None):
 
         self.h = h
         if np.log10(10**log10k_min/self.h) < -2:
@@ -31,7 +31,9 @@ class BACCOCalculator(object):
         nk_total = int((log10k_max - log10k_min) * nk_per_decade)
         self.ks = np.logspace(log10k_min, log10k_max, nk_total)
 
-        self.bacco_emu = baccoemu.Lbias_expansion()
+        self.bacco_emu = bacco_emu
+        if self.bacco_emu is None:
+            self.bacco_emu = baccoemu.Lbias_expansion()
         self.bacco_table = None
 
         # redshifts for creating the Pk-2d object
