@@ -330,7 +330,7 @@ class DataGenerator(object):
                                   nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=self.c['bias']['k_filter'])
             ptc.update_pk(self.cosmo)
             pts = pt_cl + pt_sh
-            
+
         # Ell sampling
         ll = self._get_ell_sampling()
         ts = t_cl + t_sh
@@ -646,9 +646,9 @@ config = {'ndens_sh': 10.,
           'dNdz_file': 'data/dNdz_shear_red.npz',
           'e_rms': 0.28,
           'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus',
+          'bias': {'model': 'Abacus_unnorm',
                    'galtype': 'red'},
-          'sacc_name': 'abacus_red_err=Y1_abacus.fits'}
+          'sacc_name': 'abacus_red_unnorm_err=Y1_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
