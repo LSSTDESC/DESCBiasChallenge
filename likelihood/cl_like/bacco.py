@@ -96,7 +96,7 @@ class BACCOCalculator(object):
         self.bacco_table = pk2d_bacco
 
     def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2,
-                bk21=None, bk22=None, Pgrad=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, Pgrad=None):
         if self.bacco_table is None:
             raise ValueError("Please initialise BACCO calculator")
         # Clarification:
@@ -167,6 +167,10 @@ class BACCOCalculator(object):
             bk21 = np.zeros_like(self.a_s)
         if bk22 is None:
             bk22 = np.zeros_like(self.a_s)
+        if bsn1 is None:
+            bsn1 = np.zeros_like(self.a_s)
+        if bsn2 is None:
+            bsn2 = np.zeros_like(self.a_s)
 
         pgg += ((b21 + b22)[:, None] * Pdmd2 +
                 (bs1 + bs2)[:, None] * Pdms2 +
@@ -185,9 +189,12 @@ class BACCOCalculator(object):
         else:
             pgg += (b12 * bk21 + b11 * bk22)[:, None] * Pd1k2
 
+        #TODO: This is a terrible hack - need to think what to do about shot noise in x-corrs
+        pgg += bsn1[:, None]
+
         return pgg
 
-    def get_pgm(self, Pnl, b1, b2, bs, bk2=None, Pgrad=None):
+    def get_pgm(self, Pnl, b1, b2, bs, bk2=None, bsn=None, Pgrad=None):
 
         if self.bacco_table is None:
             raise ValueError("Please initialise BACCO calculator")
@@ -319,6 +326,10 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             bk21 = tracer1.bk2(z_arr)
         else:
             bk21 = None
+        if hasattr(tracer1, 'sn'):
+            sn1 = tracer1.sn(z_arr)
+        else:
+            sn1 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
@@ -327,14 +338,19 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                 bk22 = tracer2.bk2(z_arr)
             else:
                 bk22 = None
+            if hasattr(tracer2, 'sn'):
+                sn2 = tracer2.sn(z_arr)
+            else:
+                sn2 = None
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1,
                                b12, b22, bs2,
                                bk21, bk22,
+                               sn1, sn2,
                                Pgrad)
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, bk21, Pgrad)
+            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, bk21, sn1, Pgrad)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -347,7 +363,11 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                 bk22 = tracer2.bk2(z_arr)
             else:
                 bk22 = None
-            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2, bk22, Pgrad)
+            if hasattr(tracer2, 'sn'):
+                sn2 = tracer2.sn(z_arr)
+            else:
+                sn2 = None
+            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2, bk22, sn2, Pgrad)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))

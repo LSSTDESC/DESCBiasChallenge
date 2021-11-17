@@ -162,21 +162,24 @@ class HEFTCalculator(object):
         assert np.all([b1_list[i] == b2_list[i] for i in range(len(b1_list))]), \
             'Two populations of tracers are not yet implemented for HEFT!'
 
+        bL11 = b11 - 1
+        bL12 = b12 - 1
+
         if bk21 is None:
-            bk21 = np.zeros_like(self.a_s)
+            bk21 = np.zeros_like(self.a_arr)
         if bk22 is None:
-            bk22 = np.zeros_like(self.a_s)
+            bk22 = np.zeros_like(self.a_arr)
         if bsn1 is None:
-            bsn1 = np.zeros_like(self.a_s)
+            bsn1 = np.zeros_like(self.a_arr)
         if bsn2 is None:
-            bsn2 = np.zeros_like(self.a_s)
+            bsn2 = np.zeros_like(self.a_arr)
 
         # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
         bterms_hh = [np.ones(self.nas),
-                     2*b11, b11**2,
-                     b21, b21*b11, 0.25*b21**2,
-                     bs1, bs1*b11, 0.5*bs1*b21, 0.25*bs1**2,
-                     bk21, bk21*b11, 0.5*bk21*b21, 0.5*bk21*bs1]
+                     2*bL11, bL11**2,
+                     b21, b21*bL11, 0.25*b21**2,
+                     bs1, bs1*bL11, 0.5*bs1*b21, 0.25*bs1**2,
+                     bk21, bk21*bL11, 0.5*bk21*b21, 0.5*bk21*bs1]
         pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
         pkvec[:,:10] = self.lpt_table
         # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
@@ -189,7 +192,7 @@ class HEFTCalculator(object):
 
         return p_hh
 
-    def get_pgm(self, b1, b2, bs, bk2=None, bsn=None):
+    def get_pgm(self, b1, b2, bs, bk2=None, sn=None):
         """ Get P_gm for a set of bias parameters from the heft component spectra
        
           Inputs: 
@@ -201,12 +204,14 @@ class HEFTCalculator(object):
 
         if bk2 is None:
             bk2 = np.zeros_like(self.a_s)
-        if bsn is None:
-            bsn = np.zeros_like(self.a_s)
+        if sn is None:
+            sn = np.zeros_like(self.a_s)
+
+        bL1 = b1 - 1.
 
         # hm correlations only have one kind of <1,delta_i> correlation
         bterms_hm = [np.ones(self.nas),
-                     b1, np.zeros(self.nas),
+                     bL1, np.zeros(self.nas),
                      0.5*b2, np.zeros(self.nas), np.zeros(self.nas),
                      0.5*bs, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas),
                      0.5*bk2, np.zeros(self.nas), np.zeros(self.nas), np.zeros(self.nas)]

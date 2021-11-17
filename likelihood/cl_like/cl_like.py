@@ -270,9 +270,10 @@ class ClLike(Likelihood):
                     bs = pars[pref + '_bs']
                     bk2 = pars.get(pref + '_bk2', None)
                     b3nl = pars.get(pref + '_b3nl', None)
+                    bsn = pars.get(pref + '_bsn', None)
                     if bk2 is not None or b3nl is not None:
                         ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
-                                                      bs=bs, bk2=bk2, b3nl=b3nl)
+                                                      bs=bs, bk2=bk2, b3nl=b3nl, sn=bsn)
                     else:
                         ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
                                                       bs=bs)
@@ -337,6 +338,7 @@ class ClLike(Likelihood):
             return {'ptc': ptc, 'pk_mm': pkmm}
         elif self.bz_model == 'anzu':
             a_s = 1. / (1 + np.linspace(0., 4., 30)[::-1])
+            # TODO: Implement k_filter in anzu
             if self.k_pt_filter > 0:
                 k_filter = self.k_pt_filter
             else:
