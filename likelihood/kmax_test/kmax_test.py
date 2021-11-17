@@ -248,7 +248,9 @@ class Fisher:
                    "cllike_cl1_bk2": 0.1,"cllike_cl2_bk2": 0.1,"cllike_cl3_bk2": 0.1,
                    "cllike_cl4_bk2": 0.1,"cllike_cl5_bk2": 0.1,"cllike_cl6_bk2": 0.1,
                    "cllike_cl1_b3nl": 0.1,"cllike_cl2_b3nl": 0.1,"cllike_cl3_b3nl": 0.1,
-                   "cllike_cl4_b3nl": 0.1,"cllike_cl5_b3nl": 0.1,"cllike_cl6_b3nl": 0.1}
+                   "cllike_cl4_b3nl": 0.1,"cllike_cl5_b3nl": 0.1,"cllike_cl6_b3nl": 0.1,
+                   "cllike_cl1_sn": 0.1,"cllike_cl2_sn": 0.1,"cllike_cl3_sn": 0.1,
+                   "cllike_cl4_sn": 0.1,"cllike_cl5_sn": 0.1,"cllike_cl6_sn": 0.1}
 
         theta = list(self.pf.keys())  # array containing parameter names
 
