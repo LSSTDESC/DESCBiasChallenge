@@ -59,6 +59,8 @@ class DataGenerator(object):
         self.ndens_sh *= (180*60/np.pi)**2
         self.n_cl = len(self.ndens_cl)
         self.n_sh = len(self.ndens_sh)
+        if 'theor_err' not in self.c:
+            self.c['theor_err'] = False
 
         # Cosmological model
         if 'cosmology' in self.c:
@@ -95,8 +97,14 @@ class DataGenerator(object):
                 cli1j2 = cls[i1, j2]
                 cli2j1 = cls[i2, j1]
                 cli2j2 = cls[i2, j2]
-                cov[icl, :, jcl, :] = np.diag((cli1j1*cli2j2 +
-                                               cli1j2*cli2j1)/nmodes)
+                if not self.c['theor_err']:
+                    cov[icl, :, jcl, :] = np.diag((cli1j1*cli2j2 +
+                                                   cli1j2*cli2j1)/nmodes)
+                else:
+                    cov[icl, :, jcl, :] = np.diag((cli1j1 * cli2j2 +
+                                                   cli1j2 * cli2j1) / nmodes) \
+                                          + np.diag(self.c['theor_err_rel']*(cli1j1 * cli2j2 +
+                                                   cli1j2 * cli2j1))
         if unwrap:
             cov = cov.reshape([ncl*nl, ncl*nl])
         return cov
@@ -176,7 +184,7 @@ class DataGenerator(object):
             bc = self.c['bias'].get('constant_bias', 0.95)
             bz = bc/ccl.growth_factor(self.cosmo, 1./(1+self.z_cl))
         # For BACCO we need to create PT tracers with bias information for each tracer
-        elif self.bias_model == 'BACCO':
+        elif self.bias_model in ['BACCO', 'anzu']:
             pt_tracers = []
             for i in range(self.n_cl):
                 zmean = np.average(self.z_cl, weights=self.nz_cl[i, :])
@@ -194,7 +202,7 @@ class DataGenerator(object):
             bz = np.ones_like(self.z_cl)
         nc_tracers = [ccl.NumberCountsTracer(self.cosmo, False, (self.z_cl, n),
                                 (self.z_cl, bz)) for n in self.nz_cl]
-        if self.bias_model != 'BACCO':
+        if self.bias_model not in ['BACCO', 'anzu']:
             return nc_tracers
         else:
             return nc_tracers, pt_tracers
@@ -313,7 +321,7 @@ class DataGenerator(object):
     def _get_cls(self):
         """ Computes all angular power spectra
         """
-        if self.bias_model != 'BACCO':
+        if self.bias_model not in ['BACCO', 'anzu']:
             # Get P(k)s
             pks = self._get_pks()
             # Get clustering tracers
@@ -325,9 +333,13 @@ class DataGenerator(object):
             t_cl, pt_cl = self._get_clustering_tracers()
             # Get shear tracers
             t_sh, pt_sh = self._get_shear_tracers()
-            ptc = BACCOCalculator(log10k_min=np.log10(1e-2 * self.c['cosmology']['h']),
-                                  log10k_max=np.log10(0.75 * self.c['cosmology']['h']),
-                                  nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=self.c['bias']['k_filter'])
+            if self.bias_model == 'BACCO':
+                ptc = BACCOCalculator(log10k_min=np.log10(1e-2 * self.c['cosmology']['h']),
+                                      log10k_max=np.log10(0.75 * self.c['cosmology']['h']),
+                                      nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=self.c['bias']['k_filter'])
+            elif self.bias_model == 'anzu':
+                # ptc = HEFTCalculator(self.emu, cosmo, a_arr=a_s)
+                pass
             ptc.update_pk(self.cosmo)
             pts = pt_cl + pt_sh
 
@@ -627,33 +639,35 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # # Red (same HOD params)
-# config = {'ndens_sh': 27.,
-#           'ndens_cl': 4.,
-#           'dNdz_file': 'data/dNdz_shear_red.npz',
-#           'e_rms': 0.28,
-#           'cosmology': 'Abacus',
-#           'bias': {'model': 'Abacus',
-#                    'galtype': 'red'},
-#           'sacc_name': 'abacus_red_abacus.fits'}
-# if not os.path.isfile(config['sacc_name']):
-#     d = DataGenerator(config)
-#     s = d.get_sacc_file()
-#     d.save_config()
-#     print(" ")
-# Red Y1 errors (same HOD params)
-config = {'ndens_sh': 10.,
-          'ndens_cl': 1.5,
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
           'dNdz_file': 'data/dNdz_shear_red.npz',
           'e_rms': 0.28,
+          'theory_err': True,
+          'theory_err_rel': 0.01,
           'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus_unnorm',
+          'bias': {'model': 'Abacus',
                    'galtype': 'red'},
-          'sacc_name': 'abacus_red_unnorm_err=Y1_abacus.fits'}
+          'sacc_name': 'abacus_red_theory_err=0p01_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
+# Red Y1 errors (same HOD params)
+# config = {'ndens_sh': 10.,
+#           'ndens_cl': 1.5,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red_unnorm_err=Y1_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # # Red unnorm (same HOD params)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
