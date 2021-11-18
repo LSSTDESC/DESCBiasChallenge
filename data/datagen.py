@@ -103,8 +103,7 @@ class DataGenerator(object):
                 else:
                     cov[icl, :, jcl, :] = np.diag((cli1j1 * cli2j2 +
                                                    cli1j2 * cli2j1) / nmodes) \
-                                          + np.diag(self.c['theor_err_rel']*(cli1j1 * cli2j2 +
-                                                   cli1j2 * cli2j1))
+                                          + self.c['theor_err_rel']**2*np.diag(cls[i1, i2]*cls[j1, j2])
         if unwrap:
             cov = cov.reshape([ncl*nl, ncl*nl])
         return cov
