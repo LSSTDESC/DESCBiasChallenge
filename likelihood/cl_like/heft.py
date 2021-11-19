@@ -3,7 +3,6 @@ from anzu.emu_funcs import LPTEmulator
 import pyccl as ccl
 from velocileptors.EPT.cleft_kexpanded_resummed_fftw import RKECLEFT
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
 
 
 class HEFTCalculator(object):
@@ -19,7 +18,7 @@ class HEFTCalculator(object):
         self.emu = emu
         if emu is None:
             #No emu found, train and store emu object
-            self.emu = LPTEmulator(kecleft=True,extrap=False)
+            self.emu = LPTEmulator(kecleft=True, extrap=False)
         self.cosmo = cosmo
         if a_arr is None: 
             self.a_arr = 1./(1+np.linspace(0., 4., 30)[::-1])
