@@ -3,6 +3,7 @@ from anzu.emu_funcs import LPTEmulator
 import pyccl as ccl
 from velocileptors.EPT.cleft_kexpanded_resummed_fftw import RKECLEFT
 from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
 
 
 class HEFTCalculator(object):
@@ -18,7 +19,7 @@ class HEFTCalculator(object):
         self.emu = emu
         if emu is None:
             #No emu found, train and store emu object
-            self.emu = LPTEmulator()
+            self.emu = LPTEmulator(kecleft=True,extrap=False)
         self.cosmo = cosmo
         if a_arr is None: 
             self.a_arr = 1./(1+np.linspace(0., 4., 30)[::-1])
@@ -252,9 +253,9 @@ def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
         else:
             bk21 = None
         if hasattr(tracer1, 'sn'):
-            sn1 = tracer1.sn(z_arr)
+            bsn1 = tracer1.sn(z_arr)
         else:
-            sn1 = None
+            bsn1 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
@@ -264,15 +265,15 @@ def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
             else:
                 bk22 = None
             if hasattr(tracer2, 'sn'):
-                sn2 = tracer2.sn(z_arr)
+                bsn2 = tracer2.sn(z_arr)
             else:
-                sn2 = None
+                bsn2 = None
             
             #Right now get_pgg will get tracer auto-spectrum.
-            p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, sn1, sn2)
+            p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, bsn1, bsn2)
 
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(b11, b21, bs1, bk21, sn1)
+            p_pt = ptc.get_pgm(b11, b21, bs1, bk21, bsn1)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -287,11 +288,11 @@ def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
             else:
                 bk22 = None
             if hasattr(tracer2, 'sn'):
-                sn2 = tracer2.sn(z_arr)
+                bsn2 = tracer2.sn(z_arr)
             else:
-                sn2 = None
+                bsn2 = None
             
-            p_pt = ptc.get_pgm(b12, b22, bs2, bk22, sn2)
+            p_pt = ptc.get_pgm(b12, b22, bs2, bk22, bsn2)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))

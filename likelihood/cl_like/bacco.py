@@ -327,9 +327,9 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
         else:
             bk21 = None
         if hasattr(tracer1, 'sn'):
-            sn1 = tracer1.sn(z_arr)
+            bsn1 = tracer1.sn(z_arr)
         else:
-            sn1 = None
+            bsn1 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
@@ -339,18 +339,18 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             else:
                 bk22 = None
             if hasattr(tracer2, 'sn'):
-                sn2 = tracer2.sn(z_arr)
+                bsn2 = tracer2.sn(z_arr)
             else:
-                sn2 = None
+                bsn2 = None
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1,
                                b12, b22, bs2,
                                bk21, bk22,
-                               sn1, sn2,
+                               bsn1, bsn2,
                                Pgrad)
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, bk21, sn1, Pgrad)
+            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, bk21, bsn1, Pgrad)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -364,10 +364,10 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             else:
                 bk22 = None
             if hasattr(tracer2, 'sn'):
-                sn2 = tracer2.sn(z_arr)
+                bsn2 = tracer2.sn(z_arr)
             else:
-                sn2 = None
-            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2, bk22, sn2, Pgrad)
+                bsn2 = None
+            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2, bk22, bsn2, Pgrad)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))

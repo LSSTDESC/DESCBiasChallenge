@@ -36,7 +36,7 @@ class ClLike(Likelihood):
     # List of two-point functions that make up the data vector
     twopoints: list = []
     # Low-pass filter for PT
-    k_pt_filter: float = 0.01
+    k_pt_filter: float = 0.
 
     def initialize(self):
         # Read SACC file
@@ -45,7 +45,7 @@ class ClLike(Likelihood):
         self._get_ell_sampling()
         # Initialize emu to train it once
         if self.bz_model == 'anzu':
-            self.emu = LPTEmulator(extrap=False)
+            self.emu = LPTEmulator(kecleft=True, extrap=False)
         if self.bz_model == 'BACCO':
             self.emu = baccoemu.Lbias_expansion()
 
