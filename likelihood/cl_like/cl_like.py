@@ -48,7 +48,7 @@ class PTNumberCountsTracer(pt.PTTracer):
         # Initialize bk2
         self.biases['bk2'] = self._get_bias_function(bk2)
         # Initialize sn
-        self.biases['sn'] = self._get_bias_function(sn)
+        self.biases['bsn'] = self._get_bias_function(sn)
 
     @property
     def b1(self):
@@ -83,7 +83,7 @@ class PTNumberCountsTracer(pt.PTTracer):
     def sn(self):
         """Internal residual shot-noise function.
         """
-        return self.biases['sn']
+        return self.biases['bsn']
 class ClLike(Likelihood):
     # All parameters starting with this will be
     # identified as belonging to this stage.
@@ -117,7 +117,7 @@ class ClLike(Likelihood):
         # Initialize emu to train it once
         if self.bz_model == 'HybridEFT':
             print('Initializing again')
-            self.emu = LPTEmulator(extrap=False)
+            self.emu = LPTEmulator(kecleft=True,extrap=False)
     def _read_data(self):
         """
         Reads sacc file
@@ -338,7 +338,7 @@ class ClLike(Likelihood):
                     b2 = pars[pref + '_b2']
                     bs = pars[pref + '_bs']
                     bk2 = pars.get(pref + '_bk2', None)
-                    sn = pars.get(pref + '_sn', None)
+                    sn = pars.get(pref + '_bsn', None)
                     ptt = PTNumberCountsTracer(b1=(z, bz), b2=b2,
                                                   bs=bs, bk2=bk2,sn=sn)
             elif q == 'galaxy_shear':
