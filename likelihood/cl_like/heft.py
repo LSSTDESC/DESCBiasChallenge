@@ -159,7 +159,7 @@ class HEFTCalculator(object):
         b1_list = [b11, b21, bs1, bk21, bsn1]
         b2_list = [b12, b22, bs2, bk22, bsn2]
 
-        assert np.all([b1_list[i] == b2_list[i] for i in range(len(b1_list))]), \
+        assert np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]), \
             'Two populations of tracers are not yet implemented for HEFT!'
 
         bL11 = b11 - 1
