@@ -646,21 +646,21 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # # Red (same HOD params)
-# config = {'ndens_sh': 27.,
-#           'ndens_cl': 4.,
-#           'dNdz_file': 'data/dNdz_shear_red.npz',
-#           'e_rms': 0.28,
-#           'theory_err': True,
-#           'theory_err_rel': 0.01,
-#           'cosmology': 'Abacus',
-#           'bias': {'model': 'Abacus',
-#                    'galtype': 'red'},
-#           'sacc_name': 'abacus_red_theory_err=0p01_abacus.fits'}
-# if not os.path.isfile(config['sacc_name']):
-#     d = DataGenerator(config)
-#     s = d.get_sacc_file()
-#     d.save_config()
-#     print(" ")
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'theor_err': True,
+          'theor_err_rel': 0.01,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'galtype': 'red'},
+          'sacc_name': 'abacus_red_theory_err=0p01_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
 # Red Y1 errors (same HOD params)
 # config = {'ndens_sh': 10.,
 #           'ndens_cl': 1.5,
@@ -734,50 +734,50 @@ cospar = {'Omega_c': 0.25,
 # ###
 # 5. From BACCO
 # Red (same HOD params)
-config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_shear_red.npz',
-          'e_rms': 0.28,
-          'cosmology': 'Abacus',
-          'bias': {'model': 'BACCO',
-                   'k_filter': None,
-                   'bias_params': {'cl1_b1': 2.,
-                                   'cl1_b1p': 0.,
-                                   'cl1_b2': 0.,
-                                   'cl1_bs': 0.,
-                                   'cl1_bk2': 0.,
-                                   'cl2_b1': 1.75,
-                                   'cl2_b1p': -0.03,
-                                   'cl2_b2': -0.08,
-                                   'cl2_bs': -0.0018,
-                                   'cl2_bk2': -0.11,
-                                   'cl3_b1': 2.,
-                                   'cl3_b1p': 0.,
-                                   'cl3_b2': 0.,
-                                   'cl3_bs': 0.,
-                                   'cl3_bk2': 0.,
-                                   'cl4_b1': 2.,
-                                   'cl4_b1p': 0.,
-                                   'cl4_b2': 0.,
-                                   'cl4_bs': 0.,
-                                   'cl4_bk2': 0.,
-                                   'cl5_b1': 2.,
-                                   'cl5_b1p': 0.,
-                                   'cl5_b2': 0.,
-                                   'cl5_bs': 0.,
-                                   'cl5_bk2': 0.,
-                                   'cl6_b1': 2.,
-                                   'cl6_b1p': 0.,
-                                   'cl6_b2': 0.,
-                                   'cl6_bs': 0.,
-                                   'cl6_bk2': 0.
-                   }},
-          'sacc_name': 'fid_red_BACCO.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'BACCO',
+#                    'k_filter': None,
+#                    'bias_params': {'cl1_b1': 2.,
+#                                    'cl1_b1p': 0.,
+#                                    'cl1_b2': 0.,
+#                                    'cl1_bs': 0.,
+#                                    'cl1_bk2': 0.,
+#                                    'cl2_b1': 1.75,
+#                                    'cl2_b1p': -0.03,
+#                                    'cl2_b2': -0.08,
+#                                    'cl2_bs': -0.0018,
+#                                    'cl2_bk2': -0.11,
+#                                    'cl3_b1': 2.,
+#                                    'cl3_b1p': 0.,
+#                                    'cl3_b2': 0.,
+#                                    'cl3_bs': 0.,
+#                                    'cl3_bk2': 0.,
+#                                    'cl4_b1': 2.,
+#                                    'cl4_b1p': 0.,
+#                                    'cl4_b2': 0.,
+#                                    'cl4_bs': 0.,
+#                                    'cl4_bk2': 0.,
+#                                    'cl5_b1': 2.,
+#                                    'cl5_b1p': 0.,
+#                                    'cl5_b2': 0.,
+#                                    'cl5_bs': 0.,
+#                                    'cl5_bk2': 0.,
+#                                    'cl6_b1': 2.,
+#                                    'cl6_b1p': 0.,
+#                                    'cl6_b2': 0.,
+#                                    'cl6_bs': 0.,
+#                                    'cl6_bk2': 0.
+#                    }},
+#           'sacc_name': 'fid_red_BACCO.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # 6. From anzu
 # Red (same HOD params)
 # config = {'ndens_sh': 27.,
