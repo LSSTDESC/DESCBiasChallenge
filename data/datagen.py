@@ -646,21 +646,21 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # # Red (same HOD params)
-config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_shear_red.npz',
-          'e_rms': 0.28,
-          'theor_err': True,
-          'theor_err_rel': 0.01,
-          'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus',
-                   'galtype': 'red'},
-          'sacc_name': 'abacus_red_theory_err=0p01_abacus.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'theor_err': True,
+#           'theor_err_rel': 0.01,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red_theory_err=0p01_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # Red Y1 errors (same HOD params)
 # config = {'ndens_sh': 10.,
 #           'ndens_cl': 1.5,
@@ -704,19 +704,19 @@ if not os.path.isfile(config['sacc_name']):
 #     d.save_config()
 #     print(" ")
 # Red spectro (same HOD params)
-# config = {'ndens_sh': 27.,
-#           'ndens_cl': 4.,
-#           'dNdz_file': 'data/dNdz_spectro_red.npz',
-#           'e_rms': 0.28,
-#           'cosmology': 'Abacus',
-#           'bias': {'model': 'Abacus_unnorm',
-#                    'galtype': 'red'},
-#           'sacc_name': 'abacus_red_spectro_unnorm_abacus.fits'}
-# if not os.path.isfile(config['sacc_name']):
-#     d = DataGenerator(config)
-#     s = d.get_sacc_file()
-#     d.save_config()
-#     print(" ")
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_spectro-dzcl=0p02-dzwl=0p03_red.npz',
+          'e_rms': 0.28,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'galtype': 'red'},
+          'sacc_name': 'abacus_red_spectro-dzcl=0p02-dzwl=0p03_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
 # Red (with assembly bias)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
