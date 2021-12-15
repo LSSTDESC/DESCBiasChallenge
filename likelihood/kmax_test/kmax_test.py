@@ -29,6 +29,8 @@ parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed paramet
 parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
+                    default='cl_like.ClLike')
 
 args = parser.parse_args()
 
@@ -37,6 +39,7 @@ path2output = args.path2output
 bias_model = args.bias_model
 k_max = args.k_max
 fit_params = args.fit_params
+name_like = args.name_like
 
 # Set model
 if bias_model == 'lin':
@@ -53,6 +56,7 @@ else:
     raise ValueError("Unknown bias model")
 
 logger.info('Running analysis for:')
+logger.info('Likelihood: {}.'.format(name_like))
 logger.info('Bias model: {}.'.format(bias_model))
 logger.info('k_max: {}.'.format(k_max))
 
@@ -127,8 +131,8 @@ else:
     info['params']['n_s'] = 0.9649
 
 probes = args.probes
-info['likelihood']['cl_like.ClLike']['bins'] = [{'name': bin_name} for bin_name in args.bins]
-info['likelihood']['cl_like.ClLike']['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
+info['likelihood'][name_like]['bins'] = [{'name': bin_name} for bin_name in args.bins]
+info['likelihood'][name_like]['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
 n_bin = len(args.bins)
 bin_nos = [int(bin_name[-1])-1 for bin_name in args.bins if 'cl' in bin_name]
 
@@ -146,26 +150,27 @@ else:
     bpar = ['1','1p']
     
 # Write bias parameters into yaml file
+input_params_prefix = info['likelihood'][name_like]['input_params_prefix']
 for b in bpar:
     for i in bin_nos:
-        param_name = 'cllike_cl'+str(i+1)+'_b'+b
+        param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
         if param_name in fit_params:
             info['params'][param_name] = cl_param.copy()
             info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
             if b == '0' or b == '1':
-                info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+                info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
         else:
             if b == '0' or b == '1':
-                info['params']['cllike_cl'+str(i+1)+'_b'+b] = bias[i]
+                info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = bias[i]
             else:
-                info['params']['cllike_cl' + str(i + 1) + '_b' + b] = 0.
+                info['params'][input_params_prefix+'_cl' + str(i + 1) + '_b' + b] = 0.
 
 # Add model and input file
-info['likelihood']['cl_like.ClLike']['bz_model'] = model
-info['likelihood']['cl_like.ClLike']['input_file'] = args.path2data
+info['likelihood'][name_like]['bz_model'] = model
+info['likelihood'][name_like]['input_file'] = args.path2data
 
 # Add kmax and output file
-info['likelihood']['cl_like.ClLike']['defaults']['kmax'] = float(k_max)
+info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)
 info['output'] = path2output
 
 # Save yaml file
@@ -237,20 +242,27 @@ class Fisher:
 
         # typical variations of each parameter
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
-                   "cllike_cl1_b1": 0.1,"cllike_cl2_b1": 0.1,"cllike_cl3_b1": 0.1,
-                   "cllike_cl4_b1": 0.1,"cllike_cl5_b1": 0.1,"cllike_cl6_b1": 0.1, 
-                   "cllike_cl1_b1p": 0.1,"cllike_cl2_b1p": 0.1,"cllike_cl3_b1p": 0.1,
-                   "cllike_cl4_b1p": 0.1,"cllike_cl5_b1p": 0.1,"cllike_cl6_b1p": 0.1, 
-                   "cllike_cl1_b2": 0.1,"cllike_cl2_b2": 0.1,"cllike_cl3_b2": 0.1,
-                   "cllike_cl4_b2": 0.1,"cllike_cl5_b2": 0.1,"cllike_cl6_b2": 0.1, 
-                   "cllike_cl1_bs": 0.1,"cllike_cl2_bs": 0.1,"cllike_cl3_bs": 0.1,
-                   "cllike_cl4_bs": 0.1,"cllike_cl5_bs": 0.1,"cllike_cl6_bs": 0.1,
-                   "cllike_cl1_bk2": 0.1,"cllike_cl2_bk2": 0.1,"cllike_cl3_bk2": 0.1,
-                   "cllike_cl4_bk2": 0.1,"cllike_cl5_bk2": 0.1,"cllike_cl6_bk2": 0.1,
-                   "cllike_cl1_b3nl": 0.1,"cllike_cl2_b3nl": 0.1,"cllike_cl3_b3nl": 0.1,
-                   "cllike_cl4_b3nl": 0.1,"cllike_cl5_b3nl": 0.1,"cllike_cl6_b3nl": 0.1,
-                   "cllike_cl1_bsn": 0.1,"cllike_cl2_bsn": 0.1,"cllike_cl3_bsn": 0.1,
-                   "cllike_cl4_bsn": 0.1,"cllike_cl5_bsn": 0.1,"cllike_cl6_bsn": 0.1}
+                   input_params_prefix+"_cl1_b1": 0.1,input_params_prefix+"_cl2_b1": 0.1,
+                   input_params_prefix+"_cl3_b1": 0.1,input_params_prefix+"_cl4_b1": 0.1,
+                   input_params_prefix+"_cl5_b1": 0.1,input_params_prefix+"_cl6_b1": 0.1,
+                   input_params_prefix+"_cl1_b1p": 0.1,input_params_prefix+"_cl2_b1p": 0.1,
+                   input_params_prefix+"_cl3_b1p": 0.1,input_params_prefix+"_cl4_b1p": 0.1,
+                   input_params_prefix+"_cl5_b1p": 0.1,input_params_prefix+"_cl6_b1p": 0.1,
+                   input_params_prefix+"_cl1_b2": 0.1,input_params_prefix+"_cl2_b2": 0.1,
+                   input_params_prefix+"_cl3_b2": 0.1,input_params_prefix+"_cl4_b2": 0.1,
+                   input_params_prefix+"_cl5_b2": 0.1,input_params_prefix+"_cl6_b2": 0.1,
+                   input_params_prefix+"_cl1_bs": 0.1,input_params_prefix+"_cl2_bs": 0.1,
+                   input_params_prefix+"_cl3_bs": 0.1,input_params_prefix+"_cl4_bs": 0.1,
+                   input_params_prefix+"_cl5_bs": 0.1,input_params_prefix+"_cl6_bs": 0.1,
+                   input_params_prefix+"_cl1_bk2": 0.1,input_params_prefix+"_cl2_bk2": 0.1,
+                   input_params_prefix+"_cl3_bk2": 0.1,input_params_prefix+"_cl4_bk2": 0.1,
+                   input_params_prefix+"_cl5_bk2": 0.1,input_params_prefix+"_cl6_bk2": 0.1,
+                   input_params_prefix+"_cl1_b3nl": 0.1,input_params_prefix+"_cl2_b3nl": 0.1,
+                   input_params_prefix+"_cl3_b3nl": 0.1,input_params_prefix+"_cl4_b3nl": 0.1,
+                   input_params_prefix+"_cl5_b3nl": 0.1,input_params_prefix+"_cl6_b3nl": 0.1,
+                   input_params_prefix+"_cl1_bsn": 0.1,input_params_prefix+"_cl2_bsn": 0.1,
+                   input_params_prefix+"_cl3_bsn": 0.1,input_params_prefix+"_cl4_bsn": 0.1,
+                   input_params_prefix+"_cl5_bsn": 0.1,input_params_prefix+"_cl6_bsn": 0.1}
 
         theta = list(self.pf.keys())  # array containing parameter names
 
