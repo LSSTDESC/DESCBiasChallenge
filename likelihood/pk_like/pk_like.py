@@ -348,7 +348,49 @@ class PkLike(Likelihood):
                               "Unknown bias model %s" % self.bz_model)
 
         if self.bin_properties[pkm['bin_1']]['zmean_fid'] == self.bin_properties[pkm['bin_2']]['zmean_fid']:
-            pk = pk_pt.eval(pkm['k'], 1. / (1. + self.bin_properties[pkm['bin_1']]['zmean_fid']), cosmo)
+            pk = pk_pt.eval(pkm['k'], 1./(1. + self.bin_properties[pkm['bin_1']]['zmean_fid']), cosmo)
+            # print(q1, q2)
+            # print(pkm['k'])
+            # print(self.bin_properties[pkm['bin_1']]['zmean_fid'], self.bin_properties[pkm['bin_2']]['zmean_fid'])
+            # print(pk)
+            # if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+            #     ptt1 = trs[pkm['bin_1']]['PT_tracer']
+            #     ptt2 = trs[pkm['bin_2']]['PT_tracer']
+            #
+            #     cosmology = {'omega_b': 0.02237,
+            #                  'omega_cdm': 0.12,
+            #                  'h': 0.6736,
+            #                  'A_s': 2.083e-09,
+            #                  'n_s': 0.9649,
+            #                  'alpha_s': 0.0,
+            #                  'N_ur': 2.0328,
+            #                  'N_ncdm': 1.0,
+            #                  'omega_ncdm': 0.0006442,
+            #                  'w0_fld': -1.0,
+            #                  'wa_fld': 0.0
+            #                  }
+            #     cosmo = ccl.Cosmology(Omega_c=cosmology['omega_cdm'] / cosmology['h'] ** 2,
+            #                           Omega_b=cosmology['omega_b'] / cosmology['h'] ** 2,
+            #                           h=cosmology['h'], A_s=cosmology['A_s'], n_s=cosmology['n_s'],
+            #                           m_nu=0.06)
+            #     sigma8 = ccl.sigma8(cosmo)
+            #     cosmo = ccl.Cosmology(Omega_c=cosmology['omega_cdm'] / cosmology['h'] ** 2,
+            #                           Omega_b=cosmology['omega_b'] / cosmology['h'] ** 2,
+            #                           h=cosmology['h'], sigma8=sigma8, n_s=cosmology['n_s'],
+            #                           m_nu=0.06)
+            #     cosmo.compute_linear_power()
+            #     cosmo.compute_nonlin_power()
+            #
+            #     pkd['ptc'].update_pk(cosmo)
+            #
+            #     pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
+            #                           ptc=pkd['ptc'])
+            #     pk = pk_pt.eval(pkm['k'], 1., cosmo)
+            #     print(pk)
+            #     pk = pkd['ptc'].bacco_table
+            #     print(pk[-1, 0, :])
+            #     pk = pk_pt.eval(pkm['k'], 1./(1. + self.bin_properties[pkm['bin_1']]['zmean_fid']), cosmo)
+            #     print(pk)
         else:
             pk = np.zeros_like(pkm['k'])
 

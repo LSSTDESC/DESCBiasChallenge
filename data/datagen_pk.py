@@ -402,7 +402,7 @@ class DataGenerator(object):
         ell=5000.
         """
         if self.kk is None:
-            k_edges = np.geomspace(1e-3, 1, 20)
+            k_edges = np.geomspace(1e-2, 1, 20)
             k_mean = 0.5*(k_edges[:-1] + k_edges[1:])
             dk = np.diff(k_edges)
             n_bpw = len(k_mean)
@@ -627,12 +627,12 @@ config = {'ndens_cl': 2e-3,
           'dNdz_file': 'data/dNdz_lens=source_red.npz',
           'zmean_cl': np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
           'zmean_sh': np.array([0.1, 0.2, 0.3, 0.4, 0.5]),
-          'theor_err': True,
-          'theor_err_rel': 0.01,
+          # 'theor_err': True,
+          # 'theor_err_rel': 0.01,
           'cosmology': 'Abacus',
           'bias': {'model': 'Abacus',
                    'galtype': 'red'},
-          'sacc_name': 'abacus_red_pk_lens=source_theory_err=0p01_abacus.fits'}
+          'sacc_name': 'abacus_red_pk_lens=source_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
