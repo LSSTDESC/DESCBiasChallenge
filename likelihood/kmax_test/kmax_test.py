@@ -52,6 +52,8 @@ elif bias_model in ['BACCO', '3BACCO_bk2', '3BACCO_bk2+bsn']:
     model = 'BACCO'
 elif bias_model in ['anzu', '3anzu_bk2', '3anzu_bk2+bsn']:
     model = 'anzu'
+elif bias_model == 'HOD':
+    model = 'HOD'
 else:
     raise ValueError("Unknown bias model")
 
@@ -136,34 +138,57 @@ info['likelihood'][name_like]['twopoints'] = [{'bins': [probes[2*i], probes[2*i+
 n_bin = len(args.bins)
 bin_nos = [int(bin_name[-1])-1 for bin_name in args.bins if 'cl' in bin_name]
 
-# Template for bias parameters in yaml file
-cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
-        'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
-        'latex': 'blank', 'proposal': 0.001}
-
 # Set bias parameter types used in each model
 if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl',
                   'LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl',
-                  'BACCO', '3BACCO_bk2', '3BACCO_bk2+bsn', 'anzu', '3anzu_bk2', '3anzu_bk2+bsn']:
+                  'BACCO', '3BACCO_bk2', '3BACCO_bk2+bsn',
+                  'anzu', '3anzu_bk2', '3anzu_bk2+bsn']:
     bpar = ['1', '1p', '2', 's', '3nl', 'k2', 'sn']
-else:
+elif bias_model == 'Linear':
     bpar = ['1','1p']
+elif bias_model == 'HOD':
+    bpar = ['lMmin_0', 'lMmin_p',
+            'siglM_0', 'siglM_p',
+            'lM0_0', 'lM0_p',
+            'lM1_0', 'lM1_p',
+            'alpha_0', 'alpha_p']
+
+if bias_model != 'HOD':
+    # Template for bias parameters in yaml file
+    cl_param = {'prior': {'min': -100.0, 'max': 100.0},
+            'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
+            'latex': 'blank', 'proposal': 0.001}
+else:
+    HOD_means = [12.95, -2.0, 0.25, 0., 12.3, 0., 14.0, -1.5, 1.32, 0.]
+    cl_param = {'prior': {'min': -100.0, 'max': 100.0},
+            'ref': {'dist': 'norm', 'loc': 'blank', 'scale': 0.1},
+            'latex': 'blank', 'proposal': 0.001}
     
 # Write bias parameters into yaml file
 input_params_prefix = info['likelihood'][name_like]['input_params_prefix']
-for b in bpar:
-    for i in bin_nos:
-        param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
+if bias_model != 'HOD':
+    for b in bpar:
+        for i in bin_nos:
+            param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
+            if param_name in fit_params:
+                info['params'][param_name] = cl_param.copy()
+                info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
+                if b == '0' or b == '1':
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+            else:
+                if b == '0' or b == '1':
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = bias[i]
+                else:
+                    info['params'][input_params_prefix+'_cl' + str(i + 1) + '_b' + b] = 0.
+else:
+    for i, b in enumerate(bpar):
+        param_name = input_params_prefix + '_hod_' + b
         if param_name in fit_params:
             info['params'][param_name] = cl_param.copy()
-            info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
-            if b == '0' or b == '1':
-                info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+            info['params'][param_name]['latex'] = b + '\\,\\text{for HOD}'
+            info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': HOD_means[i], 'scale': 0.1}
         else:
-            if b == '0' or b == '1':
-                info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = bias[i]
-            else:
-                info['params'][input_params_prefix+'_cl' + str(i + 1) + '_b' + b] = 0.
+            info['params'][param_name] = HOD_means[i]
 
 # Add model and input file
 info['likelihood'][name_like]['bz_model'] = model
@@ -262,7 +287,13 @@ class Fisher:
                    input_params_prefix+"_cl5_b3nl": 0.1,input_params_prefix+"_cl6_b3nl": 0.1,
                    input_params_prefix+"_cl1_bsn": 0.1,input_params_prefix+"_cl2_bsn": 0.1,
                    input_params_prefix+"_cl3_bsn": 0.1,input_params_prefix+"_cl4_bsn": 0.1,
-                   input_params_prefix+"_cl5_bsn": 0.1,input_params_prefix+"_cl6_bsn": 0.1}
+                   input_params_prefix+"_cl5_bsn": 0.1,input_params_prefix+"_cl6_bsn": 0.1,
+                   input_params_prefix+"_hod_lMmin_0": 0.1,input_params_prefix+"_hod_lMmin_p": 0.1,
+                   input_params_prefix+"_hod_siglM_0": 0.1,input_params_prefix+"_hod_siglM_p": 0.1,
+                   input_params_prefix+"_hod_lM0_0": 0.1,input_params_prefix+"_hod_lM0_p": 0.1,
+                   input_params_prefix+"_hod_lM1_0": 0.1,input_params_prefix+"_hod_lM1_p": 0.1,
+                   input_params_prefix+"_hod_alpha_0": 0.1,input_params_prefix+"_hod_alpha_p": 0.1
+                   }
 
         theta = list(self.pf.keys())  # array containing parameter names
 

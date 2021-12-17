@@ -94,10 +94,10 @@ class PkLike(Likelihood):
         indices = []
         for pk in self.twopoints:
             tn1, tn2 = pk['bins']
-            kmin = np.max([self.defaults[tn1].get('kmin', 2),
-                           self.defaults[tn2].get('kmin', 2)])
-            kmax = np.min([self.defaults[tn1].get('kmax', 1E30),
-                           self.defaults[tn2].get('kmax', 1E30)])
+            kmin = np.max([self.defaults[tn1].get('kmin', 1e-4),
+                           self.defaults[tn2].get('kmin', 1e-4)])
+            kmax = np.min([self.defaults[tn1].get('kmax', 0.6),
+                           self.defaults[tn2].get('kmax', 0.6)])
             # Get the suffix for both tracers
             pk_name1 = get_suffix_for_tr(s.tracers[tn1])
             pk_name2 = get_suffix_for_tr(s.tracers[tn2])
@@ -112,8 +112,6 @@ class PkLike(Likelihood):
         self.pk_meta = []
         id_sofar = 0
         self.used_tracers = {}
-        self.l_min_sample = 1E30
-        self.l_max_sample = -1E30
         for pk in self.twopoints:
             # Get the suffix for both tracers
             tn1, tn2 = pk['bins']
@@ -201,6 +199,7 @@ class PkLike(Likelihood):
         trs = {}
         is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT', 'BACCO', 'anzu']
         for name, q in self.used_tracers.items():
+            trs[name] = {}
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
                 bz = self._get_bz(cosmo, name, **pars)
@@ -224,6 +223,21 @@ class PkLike(Likelihood):
                     else:
                         ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
                                                       bs=bs)
+                elif self.bz_model == 'HOD':
+                    pref = self.input_params_prefix + '_hod_'
+                    trs[name] = {'HOD_params': {
+                                                'lMmin_0': pars[pref + 'lMmin_0'],
+                                                'lMmin_p': pars[pref + 'lMmin_p'],
+                                                'siglM_0': pars[pref + 'siglM_0'],
+                                                'siglM_p': pars[pref + 'siglM_p'],
+                                                'lM0_0': pars[pref + 'lM0_0'],
+                                                'lM0_p': pars[pref + 'lM0_p'],
+                                                'lM1_0': pars[pref + 'lM1_0'],
+                                                'lM1_p': pars[pref + 'lM1_p'],
+                                                'alpha_0': pars[pref + 'alpha_0'],
+                                                'alpha_p': pars[pref + 'alpha_p']
+                                                }
+                                }
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
@@ -235,7 +249,6 @@ class PkLike(Likelihood):
                 t = ccl.CMBLensingTracer(cosmo, z_source=1100)
                 if is_PT_bias:
                     ptt = pt.PTMatterTracer()
-            trs[name] = {}
             trs[name]['ccl_tracer'] = t
             if is_PT_bias:
                 trs[name]['PT_tracer'] = ptt
@@ -247,7 +260,7 @@ class PkLike(Likelihood):
         For linear bias, this is just the matter power spectrum.
         """
         # Get P(k)s from CCL
-        if self.bz_model == 'Linear':
+        if self.bz_model == 'Linear' or self.bz_model == 'HOD':
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             return {'pk_mm': pkmm}
@@ -343,6 +356,54 @@ class PkLike(Likelihood):
                 ptt2 = trs[pkm['bin_2']]['PT_tracer']
                 pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
                                        ptc=pkd['ptc'])
+        elif (self.bz_model == 'HOD'):
+            # Halo model calculation
+            if ((q1 == 'galaxy_density') or (q2 == 'galaxy_density')):
+                md = ccl.halos.MassDef200m()
+                cm = ccl.halos.ConcentrationDuffy08(mdef=md)
+                mf = ccl.halos.MassFuncTinker08(cosmo, mass_def=md)
+                bm = ccl.halos.HaloBiasTinker10(cosmo, mass_def=md)
+                pgg = ccl.halos.Profile2ptHOD()
+                pm = ccl.halos.HaloProfileNFW(cm)
+                hmc = ccl.halos.HMCalculator(cosmo, mf, bm, md)
+                k_s = np.geomspace(1E-4, 1E2, 512)
+                lk_s = np.log(k_s)
+                a_s = 1. / (1 + np.linspace(0., 2., 30)[::-1])
+
+                def alpha_HMCODE(a):
+                    return 0.7
+
+                def k_supress(a):
+                    return 0.001
+
+                if ((q1 == 'galaxy_density') and (q2 == 'galaxy_density')):
+                    print(trs[pkm['bin_1']])
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[pkm['bin_1']]['HOD_params']))
+                    pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg, prof_2pt=pgg,
+                                                   prof2=pg,
+                                                   normprof1=True, normprof2=True,
+                                                   lk_arr=lk_s, a_arr=a_s,
+                                                   smooth_transition=alpha_HMCODE,
+                                                   supress_1h=k_supress)
+                elif ((q1 != 'galaxy_density') and (q2 == 'galaxy_density')):
+                    print(trs[pkm['bin_2']])
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[pkm['bin_2']]['HOD_params']))
+                    pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg,
+                                                   prof2=pm,
+                                                   normprof1=True, normprof2=True,
+                                                   lk_arr=lk_s, a_arr=a_s,
+                                                   smooth_transition=alpha_HMCODE,
+                                                   supress_1h=k_supress)
+                elif ((q1 == 'galaxy_density') and (q2 != 'galaxy_density')):
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[pkm['bin_1']]['HOD_params']))
+                    pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg,
+                                                   prof2=pm,
+                                                   normprof1=True, normprof2=True,
+                                                   lk_arr=lk_s, a_arr=a_s,
+                                                   smooth_transition=alpha_HMCODE,
+                                                   supress_1h=k_supress)
+            elif ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                pk_pt = pkd['pk_mm']  # matter-matter
         else:
             raise LoggedError(self.log,
                               "Unknown bias model %s" % self.bz_model)
