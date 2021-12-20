@@ -7,6 +7,7 @@ from .ept import EPTCalculator, get_ept_pk2d
 from .hzpt import HZPTCalculator, get_hzpt_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
+import time
 
 #Following Nick...need a custom tracer
 class HZPTNumberCountsTracer(pt.PTTracer):
@@ -400,8 +401,10 @@ class ClLike(Likelihood):
 
             Dz = ccl.growth_factor(cosmo, ptc.a_s)
             pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
+            t0 = time.perf_counter()
             ptc.update_pk(pk_lin_z0, Dz)
-
+            t1 = time.perf_counter()
+            print("update pk time: ", t1-t0)
             #mm stuff, not touching...
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
@@ -437,8 +440,11 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
+                t0 = time.perf_counter()
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
+                t1 = time.perf_counter()
+                print("LPT pk2d time: ", t1-t0)
                 return pk_pt
         elif (self.bz_model == 'HZPT'):
             """jms - hmm this will be slightly complicated by the fact that tracers
@@ -450,8 +456,11 @@ class ClLike(Likelihood):
                    values of the input bias parameters for each redshift bin in the yaml"""
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
+                t0 = time.perf_counter()
                 pk_pt = get_hzpt_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
+                t1 = time.perf_counter()
+                print("HZPT pk2d time: ", t1-t0)
                 return pk_pt
         else:
             raise LoggedError(self.log,
@@ -544,7 +553,10 @@ class ClLike(Likelihood):
 
     def _get_theory(self, **pars):
         """ Computes theory vector."""
+        t0 = time.perf_counter()
         cls = self.get_cls_theory(**pars)
+        t1 = time.perf_counter()
+        print("Time to evalute all cls: ", t1-t0)
 
         # Flattening into a 1D array
         cl_out = np.zeros(self.ndata)
