@@ -5,21 +5,23 @@ from numpy.linalg import multi_dot
 
 class Fisher_first_deri():
     
-    def __init__ (self,model,fitted_parms,method = 'five-stencil'):
+    def __init__ (self,model,parms,fp_name,method = 'five-stencil'):
         '''
         This Class implement first derivative expression fisher matrix calculation for error estimation
         Parameters:
         ----
         model: cobaya.model.Model object
            Cobaya model class
-        fitted_parms: Dict
-           Sampled parameters
+        parms: Dict
+            Parameters needed to calculate theory vector
+        fp_name: List
+           Sampled parameter name
         method: String
            Differentiation method. 
-           Default is set to 'five_stencil': Five stencil approximation for 1st derivative
+           Default is set to 'five-stencil': Five stencil approximation for 1st derivative
            (Note: The fisher sampler implemented in Cosmosis by Zuntz et al.(2015) uses five stencil approximation)
            The following alternatives are also avaliable:
-           'three_-stencil': Three stencil approximation for 1st derivative
+           'three-stencil': Three stencil approximation for 1st derivative
            'seven-stencil': Seven stencil approximation for 1st derivative
            (see Fornberg, B. 1988, Mathematics of computation, 51, 699 for detailed description)
             
@@ -29,13 +31,17 @@ class Fisher_first_deri():
         self.ClLike = self.model.likelihood['cl_like.ClLike']
         
         # Sampled parameter name
-        self.parms_name = [p for p in fitted_parms]
+        self.parms_name = fp_name
         
         # Fitting values of Sampled parameter 
-        self.parms = fitted_parms
+        self.parms = parms
 
         # inverse of date covariance
         self.data_invc = self.ClLike.inv_cov
+        
+        # inv_cov check
+        if not np.allclose(self.data_invc, self.data_invc.T):
+            print("WARNING: The inverse covariance matrix is not symmetric.")
     
     def update (self,par_name,stencil,step_size):
         '''
@@ -49,13 +55,11 @@ class Fisher_first_deri():
             The factor that determine the step size of finite difference.
         stencil: int
             The stencil at which the theory vector is evaluated for differentiation
-            (See Fornberg, B. 1988, Mathematics of computation, 51, 699 for details)
         '''
         
         # update parameters based on step size
         params = self.parms.copy()
         params[par_name] = params[par_name]+ stencil * step_size
-        
         self.model.loglikes(params)
         theory_v = self.ClLike._get_theory(**params)
         return(theory_v)
@@ -77,19 +81,15 @@ class Fisher_first_deri():
         # typical variations of each parameter
         pref = self.ClLike.input_params_prefix
         
-        # hard-coded typical variations of cosmology and bias parameters
-        typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
-               pref+ "_cl1_b1": 0.1, pref+"_cl2_b1": 0.1,pref+"_cl3_b1": 0.1,
-               pref+"_cl4_b1": 0.1,pref+"_cl5_b1": 0.1,pref+"_cl6_b1": 0.1, 
-               pref+"_cl1_b1p": 0.1,pref+"_cl2_b1p": 0.1,pref+"_cl3_b1p": 0.1,
-               pref+"_cl4_b1p": 0.1,pref+"_cl5_b1p": 0.1,pref+"_cl6_b1p": 0.1, 
-               pref+"_cl1_b2": 0.1,pref+"_cl2_b2": 0.1,pref+"_cl3_b2": 0.1,
-               pref+"_cl4_b2": 0.1,pref+"_cl5_b2": 0.1,pref+"_cl6_b2": 0.1, 
-               pref+"_cl1_bs": 0.1,pref+"_cl2_bs": 0.1,pref+"_cl3_bs": 0.1,
-               pref+"_cl4_bs": 0.1,pref+"_cl5_bs": 0.1,pref+"_cl6_bs": 0.1} 
+        # hard-coded typical variations of cosmology
+        typ_var = {"sigma8": 0.1,"Omega_c":0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1}
         
         # step_size for differentiation
-        step_size = typ_var[par_name]*step_factor
+        if pref in par_name:
+            # step_size for bias parameters with 0.1 typical variation 
+            step_size = 0.1*step_factor
+        else:
+            step_size = typ_var[par_name]*step_factor
         
         if self.method == 'five-stencil':
             # Five point stencils
@@ -107,7 +107,8 @@ class Fisher_first_deri():
         elif self.method == 'seven-stencil':
             stencils = [-3,-2,-1,1,2,3]
             stencil_wgt = [-1,9,-45,45,-9,1]
-            stencil_factor = 60  
+            stencil_factor = 60 
+            
         else:
             raise ValueError('Unknown differentiation method. Avaliable methods: three-stencil, five-stencil, seven-stencil')
             
@@ -126,21 +127,13 @@ class Fisher_first_deri():
         Function calculate the fisher matrix
         Parameters:
         ----
-        parameters: list of string
-            Fitted parameters counted in the fisher matrix.
         step_factor: float
-            The factor that determine the step size of finite difference.
+            The factor that determine the step size of finite difference. Default is set to 0.01
         '''
-        
-        F = np.empty([len(self.parms_name),len(self.parms_name)])
-        dcl_dparm = {}
+        dcl_dparm = []
         for pars in self.parms_name:
-            dcl_dparm[pars] =  self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor)
-        for i,par1 in enumerate(self.parms_name):
-            for j,par2 in enumerate(self.parms_name):
-                    de_par1 = dcl_dparm[par1]
-                    de_par2 = dcl_dparm[par2]
-                    F[i,j] =  multi_dot([de_par1,self.data_invc,de_par2])
+            dcl_dparm.append(self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor))
+        F = np.einsum("il,lk,jk->ij", dcl_dparm, self.data_invc, dcl_dparm)
         return(F)
     
     
