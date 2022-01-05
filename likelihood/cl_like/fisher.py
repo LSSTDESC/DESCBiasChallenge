@@ -139,7 +139,7 @@ class Fisher_first_deri():
     
 class Fisher_second_deri():
 
-    def __init__(self,model,pf,h):
+    def __init__(self,model,pf,pf_name,h):
         '''
         This class implement the 2nd derivative fisher matrix calculation written by Nathan Findlay.
         Parameters:
@@ -153,6 +153,7 @@ class Fisher_second_deri():
         self.model = model
         self.pf = pf
         self.h_fact = h
+        self.pf_name = pf_name
 
     # Determine likelihood at new steps
     def fstep(self,param1,param2,h1,h2,signs):
@@ -199,7 +200,8 @@ class Fisher_second_deri():
                pref+"_cl1_bs": 0.1,pref+"_cl2_bs": 0.1,pref+"_cl3_bs": 0.1,
                pref+"_cl4_bs": 0.1,pref+"_cl5_bs": 0.1,pref+"_cl6_bs": 0.1} 
 
-        theta = list(self.pf.keys())  # array containing parameter names
+        #theta = list(self.pf.keys())  # array containing parameter names
+        theta = self.pf_name
 
         # Assign matrix elements
         F = np.empty([len(theta),len(theta)])
