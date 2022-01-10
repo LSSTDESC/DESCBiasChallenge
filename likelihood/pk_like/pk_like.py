@@ -229,13 +229,13 @@ class PkLike(Likelihood):
                                                 'lMmin_0': pars[pref + 'lMmin_0'],
                                                 'lMmin_p': pars[pref + 'lMmin_p'],
                                                 'siglM_0': pars[pref + 'siglM_0'],
-                                                'siglM_p': pars[pref + 'siglM_p'],
+                                                'siglM_p': pars.get(pref + 'siglM_p', 0.),
                                                 'lM0_0': pars[pref + 'lM0_0'],
                                                 'lM0_p': pars[pref + 'lM0_p'],
                                                 'lM1_0': pars[pref + 'lM1_0'],
                                                 'lM1_p': pars[pref + 'lM1_p'],
                                                 'alpha_0': pars[pref + 'alpha_0'],
-                                                'alpha_p': pars[pref + 'alpha_p']
+                                                'alpha_p': pars.get(pref + 'alpha_p', 0.)
                                                 }
                                 }
             elif q == 'galaxy_shear':
