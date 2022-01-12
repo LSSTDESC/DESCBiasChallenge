@@ -62,7 +62,7 @@ def get_Pk(pos1_fns, N_dim, Lbox, interlaced, dk=None, pos2_fns=None):
     Pk -= P_sn
     return ks, Pk
 
-def get_single_Pk(pos_gal_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None):
+def get_all_Pk(pos_gal_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None):
     """
     Takes FITS filenames of positions to compute the power spectrum
     """
