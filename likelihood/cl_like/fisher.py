@@ -42,6 +42,14 @@ class Fisher_first_deri():
         # inv_cov check
         if not np.allclose(self.data_invc, self.data_invc.T):
             print("WARNING: The inverse covariance matrix is not symmetric.")
+            
+    def get_r (self):
+        params = self.parms.copy()
+        #update model
+        self.model.loglikes(params)
+        theory_v = self.ClLike._get_theory(**params)
+        r = self.ClLike.data_vec - theory_v
+        return(r)
     
     def update (self,par_name,stencil,step_size):
         '''
@@ -60,9 +68,11 @@ class Fisher_first_deri():
         # update parameters based on step size
         params = self.parms.copy()
         params[par_name] = params[par_name]+ stencil * step_size
+        #update model
         self.model.loglikes(params)
         theory_v = self.ClLike._get_theory(**params)
         return(theory_v)
+    
     
     def n_point_stencil_deriv(self,par_name = 'sigma8',step_factor = 0.01):
         '''
@@ -121,8 +131,40 @@ class Fisher_first_deri():
         dcl_dparam = dcl_dparam / (stencil_factor * step_size)
         
         return(dcl_dparam)
+
+    def update_offdiag (self,par_name1,par_name2,stencil,step_size):
+        
+        # update parameters based on step size
+        params = self.parms.copy()
+        params[par_name1] = params[par_name1]+ stencil[0] * step_size[0]
+        params[par_name2] = params[par_name2]+ stencil[1] * step_size[1]
+        #update model
+        self.model.loglikes(params)
+        theory_v = self.ClLike._get_theory(**params)
+        return(theory_v)
     
-    def get_fisher(self,step_factor = 0.01):
+    def off_diag(self,par_pair,step_factor = 0.01):
+        step_size = []
+        
+        pref = self.ClLike.input_params_prefix
+        # hard-coded typical variations of cosmology
+        typ_var = {"sigma8": 0.1,"Omega_c":0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1}
+        for k in range(2):
+            # step_size for differentiation
+            if pref in par_pair[k]:
+                # step_size for bias parameters with 0.1 typical variation 
+                step_size.append(0.1*step_factor)
+            else:
+                step_size.append(typ_var[par_pair[k]]*step_factor)
+        dcl_dp1p2 = np.zeros(shape = len(self.data_invc))
+        stencils = [[1,1],[1,-1],[-1,1],[-1,-1]]
+        stencil_wgt = [1,-1,-1,1]
+        for sten,wgt in zip(stencils,stencil_wgt):
+            dcl_dp1p2 += wgt * self.update_offdiag(par_name1 = par_pair[0], par_name2 = par_pair[1], stencil=sten, step_size= step_size)
+        dcl_dp1p2 = dcl_dp1p2 / (4* step_size[0]*step_size[1])
+        return(dcl_dp1p2)
+    
+    def get_fisher(self,step_factor = 0.01,full_expresssion = False):
         '''
         Function calculate the fisher matrix
         Parameters:
@@ -130,12 +172,28 @@ class Fisher_first_deri():
         step_factor: float
             The factor that determine the step size of finite difference. Default is set to 0.01
         '''
-        dcl_dparm = []
-        for pars in self.parms_name:
-            dcl_dparm.append(self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor))
-        F = np.einsum("il,lk,jk->ij", dcl_dparm, self.data_invc, dcl_dparm)
-        return(F)
-    
+        if full_expresssion == False:
+            
+            dcl_dparm = []
+            for pars in self.parms_name:
+                dcl_dparm.append(self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor))
+            F = np.einsum("il,lk,jk->ij", dcl_dparm, self.data_invc, dcl_dparm)
+            return(F)
+        
+        else:
+            F = np.empty([len(self.parms_name),len(self.parms_name)])
+            r = self.get_r()
+            dcl_dparm = {}
+            for pars in self.parms_name:
+                dcl_dparm[pars] =  self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor)
+            for i,par1 in enumerate(self.parms_name):
+                for j,par2 in enumerate(self.parms_name):
+                        de_par1 = dcl_dparm[par1]
+                        de_par2 = dcl_dparm[par2]
+                        dcl_p1p2 = self.off_diag(par_pair = [par1,par2],step_factor = step_factor)
+                        F[i,j] =  multi_dot([de_par1.T,self.data_invc,de_par2]) - multi_dot([r.T,self.data_invc,dcl_p1p2])
+                        
+            return(F)
     
 class Fisher_second_deri():
 
@@ -169,10 +227,16 @@ class Fisher_second_deri():
     def F_ij(self,param1,param2,h1,h2):
         # Diagonal elements
         if param1==param2:
+            #f1 = self.fstep(param1,param2,h1,h2,(0,+2))
+            #f2 = self.fstep(param1,param2,h1,h2,(0,+1))
+            #f3 = self.fstep(param1,param2,h1,h2,(0,0))
+            #f4 = self.fstep(param1,param2,h1,h2,(0,-1))
+            #f5 = self.fstep(param1,param2,h1,h2,(0,-2))
             f1 = self.fstep(param1,param2,h1,h2,(0,+1))
             f2 = self.fstep(param1,param2,h1,h2,(0,0))
             f3 = self.fstep(param1,param2,h1,h2,(0,-1))
             F_ij = (f1-2*f2+f3)/(h2**2)
+            #F_ij = (-1.*f1 + 16*f2 - 30*f3 + 16*f4 - f5)/ (12*h2**2)
         # Off-diagonal elements
         else:
             f1 = self.fstep(param1,param2,h1,h2,(+1,+1))
