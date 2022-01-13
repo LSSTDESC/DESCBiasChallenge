@@ -168,7 +168,11 @@ else:
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
             'ref': {'dist': 'norm', 'loc': 'blank', 'scale': 0.1},
             'latex': 'blank', 'proposal': 0.001}
-    
+
+# Add model and input file
+info['likelihood'][name_like]['bz_model'] = model
+info['likelihood'][name_like]['input_file'] = args.path2data
+
 # Write bias parameters into yaml file
 input_params_prefix = info['likelihood'][name_like]['input_params_prefix']
 if bias_model != 'HOD':
@@ -211,10 +215,6 @@ else:
             info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': HOD_means[i], 'scale': 0.1}
         else:
             info['params'][param_name] = HOD_means[i]
-
-# Add model and input file
-info['likelihood'][name_like]['bz_model'] = model
-info['likelihood'][name_like]['input_file'] = args.path2data
 
 # Add kmax and output file
 info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)
