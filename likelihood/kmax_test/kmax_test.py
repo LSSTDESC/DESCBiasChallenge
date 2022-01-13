@@ -68,7 +68,7 @@ with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
 # Determine true bias parameters depending on input
-bias = [2., 2., 2., 2., 2., 2.]
+bias = np.array([2., 2., 2., 2., 2., 2.])
 #TODO: Check these
 sn_hh_1 = 300.*np.ones(bias.shape[0])
 sn_hh_2 = 1000.*np.ones(bias.shape[0])
