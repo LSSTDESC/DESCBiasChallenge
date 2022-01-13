@@ -13,16 +13,13 @@ class Fisher_first_deri():
         model: cobaya.model.Model object
            Cobaya model class
         parms: Dict
-            Parameters needed to calculate theory vector
+           Parameters needed to calculate theory vector
         fp_name: List
            Sampled parameter name
         method: String
            Differentiation method. 
            Default is set to 'five-stencil': Five stencil approximation for 1st derivative
-           (Note: The fisher sampler implemented in Cosmosis by Zuntz et al.(2015) uses five stencil approximation)
-           The following alternatives are also avaliable:
-           'three-stencil': Three stencil approximation for 1st derivative
-           'seven-stencil': Seven stencil approximation for 1st derivative
+           The following alternatives are also avaliable: 'three-stencil', 'seven-stencil'
            (see Fornberg, B. 1988, Mathematics of computation, 51, 699 for detailed description)
             
         '''
@@ -44,6 +41,9 @@ class Fisher_first_deri():
             print("WARNING: The inverse covariance matrix is not symmetric.")
             
     def get_r (self):
+        '''
+        Get data-theory vector
+        '''
         params = self.parms.copy()
         #update model
         self.model.loglikes(params)
@@ -54,7 +54,7 @@ class Fisher_first_deri():
     def update (self,par_name,stencil,step_size):
         '''
         Calculating theory vector with varying values of a given sampled parameter
-        based on stencil and step_size for differentiation
+        based on stencil and step_size for 1st derivative differentiation
         Parameters:
         --------
         par_name: string
@@ -72,16 +72,27 @@ class Fisher_first_deri():
         self.model.loglikes(params)
         theory_v = self.ClLike._get_theory(**params)
         return(theory_v)
-    
+
+    def update_2ndd (self,par_name1,par_name2,stencil,step_size):
+        '''
+        Calculating theory vector with varying values of two sampled parameters
+        based on corresponding stencil and step_size for 2nd derivative differentiation
+        '''
+        # update parameters based on step size
+        params = self.parms.copy()
+        params[par_name1] = params[par_name1]+ stencil[0] * step_size[0]
+        params[par_name2] = params[par_name2]+ stencil[1] * step_size[1]
+        #update model
+        self.model.loglikes(params)
+        theory_v = self.ClLike._get_theory(**params)
+        return(theory_v)
     
     def n_point_stencil_deriv(self,par_name = 'sigma8',step_factor = 0.01):
         '''
         Calculating first derivative of the theory data vector with respect to 
-        a single parameter based on selected stencil approximation
+        a single parameter based on selected stencil approximation method.
         Parameters:
         ----
-        parms: dict
-            A dictionry that stores fitted value for each parameter.
         par_name: string
             The parameter the derivative corresponds to.
         step_factor: float
@@ -132,18 +143,20 @@ class Fisher_first_deri():
         
         return(dcl_dparam)
 
-    def update_offdiag (self,par_name1,par_name2,stencil,step_size):
-        
-        # update parameters based on step size
-        params = self.parms.copy()
-        params[par_name1] = params[par_name1]+ stencil[0] * step_size[0]
-        params[par_name2] = params[par_name2]+ stencil[1] * step_size[1]
-        #update model
-        self.model.loglikes(params)
-        theory_v = self.ClLike._get_theory(**params)
-        return(theory_v)
     
-    def off_diag(self,par_pair,step_factor = 0.01):
+    def second_deri(self,par_pair,step_factor = 0.01):
+        '''
+        Calculating 2nd derivative of the theory data vector with respect to two parameters 
+        Equation used to calculate Diagonal elements: https://en.wikipedia.org/wiki/Five-point_stencil
+        Equation used to calculate Off-diagonal elements: https://en.wikipedia.org/wiki/Finite_difference
+        
+        Parameters:
+        ----
+        par_pair: list of string
+            The pair of parameters to calculate 2nd derivative
+        step_factor: float
+            The factor that determine the step size of finite difference.
+        '''
         step_size = []
         
         pref = self.ClLike.input_params_prefix
@@ -157,12 +170,32 @@ class Fisher_first_deri():
             else:
                 step_size.append(typ_var[par_pair[k]]*step_factor)
         dcl_dp1p2 = np.zeros(shape = len(self.data_invc))
-        stencils = [[1,1],[1,-1],[-1,1],[-1,-1]]
-        stencil_wgt = [1,-1,-1,1]
-        for sten,wgt in zip(stencils,stencil_wgt):
-            dcl_dp1p2 += wgt * self.update_offdiag(par_name1 = par_pair[0], par_name2 = par_pair[1], stencil=sten, step_size= step_size)
-        dcl_dp1p2 = dcl_dp1p2 / (4* step_size[0]*step_size[1])
-        return(dcl_dp1p2)
+        
+        if par_pair[0] != par_pair[1]:
+            
+            stencils = [[1,1],[1,-1],[-1,1],[-1,-1]]
+            stencil_wgt = [1,-1,-1,1]
+            
+            for sten,wgt in zip(stencils,stencil_wgt):
+                dcl_dp1p2 += wgt * self.update_2ndd(par_name1 = par_pair[0], par_name2 = par_pair[1], stencil=sten, step_size= step_size)
+                
+            dcl_dp1p2 = dcl_dp1p2 / (4* step_size[0]*step_size[1])
+            return(dcl_dp1p2)
+        
+        else:
+            # Five point stencils
+            stencils = [-2,-1,0,1,2]
+            # weight for each stencil
+            stencil_wgt = [-1,16,-30,16,-1]
+            # stencil factor
+            stencil_factor = 12
+            
+            for sten,wgt in zip(stencils,stencil_wgt):
+                dcl_dp1p2 += wgt * self.update(par_name=par_pair[0], stencil=sten, step_size= step_size[0])
+            
+            dcl_dp1p2 = dcl_dp1p2 / (stencil_factor * step_size[0]**2)
+            
+            return(dcl_dp1p2)
     
     def get_fisher(self,step_factor = 0.01,full_expresssion = False):
         '''
@@ -171,6 +204,11 @@ class Fisher_first_deri():
         ----
         step_factor: float
             The factor that determine the step size of finite difference. Default is set to 0.01
+        full_expression: bool 
+            False -- Default fisher expression for gaussian likelihood: 
+                F_ij = dcl/dpar_i.T * C^{-1} * dcl/dpar_j
+            True -- With the extra term (usually expected to be averaged out) added to the default expression:
+                F_ij = -(d-t).T * C^{-1} * d^2cl/dpar_i dpar_j + dcl/dpar_i.T * C^{-1} * dcl/dpar_j
         '''
         if full_expresssion == False:
             
@@ -178,20 +216,26 @@ class Fisher_first_deri():
             for pars in self.parms_name:
                 dcl_dparm.append(self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor))
             F = np.einsum("il,lk,jk->ij", dcl_dparm, self.data_invc, dcl_dparm)
+            
             return(F)
         
         else:
             F = np.empty([len(self.parms_name),len(self.parms_name)])
             r = self.get_r()
             dcl_dparm = {}
+            dcl_dp1p2 = {}
             for pars in self.parms_name:
                 dcl_dparm[pars] =  self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor)
             for i,par1 in enumerate(self.parms_name):
                 for j,par2 in enumerate(self.parms_name):
                         de_par1 = dcl_dparm[par1]
                         de_par2 = dcl_dparm[par2]
-                        dcl_p1p2 = self.off_diag(par_pair = [par1,par2],step_factor = step_factor)
-                        F[i,j] =  multi_dot([de_par1.T,self.data_invc,de_par2]) - multi_dot([r.T,self.data_invc,dcl_p1p2])
+                        if (j,i) in dcl_dp1p2:
+                            dcl_dp1p2[i,j] = dcl_dp1p2[j,i]
+                        else:
+                            dcl_dp1p2[i,j] = self.second_deri(par_pair = [par1,par2],step_factor = step_factor)
+                            
+                        F[i,j] =  multi_dot([de_par1.T,self.data_invc,de_par2]) - multi_dot([r.T,self.data_invc,dcl_dp1p2[i,j]])
                         
             return(F)
     
@@ -199,7 +243,7 @@ class Fisher_second_deri():
 
     def __init__(self,model,pf,pf_name,h):
         '''
-        This class implement the 2nd derivative fisher matrix calculation written by Nathan Findlay.
+        This class implement the 2nd derivative fisher matrix calculation originally written by Nathan Findlay.
         Parameters:
         ----
         model: cobaya.model.Model object
@@ -227,16 +271,11 @@ class Fisher_second_deri():
     def F_ij(self,param1,param2,h1,h2):
         # Diagonal elements
         if param1==param2:
-            #f1 = self.fstep(param1,param2,h1,h2,(0,+2))
-            #f2 = self.fstep(param1,param2,h1,h2,(0,+1))
-            #f3 = self.fstep(param1,param2,h1,h2,(0,0))
-            #f4 = self.fstep(param1,param2,h1,h2,(0,-1))
-            #f5 = self.fstep(param1,param2,h1,h2,(0,-2))
             f1 = self.fstep(param1,param2,h1,h2,(0,+1))
             f2 = self.fstep(param1,param2,h1,h2,(0,0))
             f3 = self.fstep(param1,param2,h1,h2,(0,-1))
             F_ij = (f1-2*f2+f3)/(h2**2)
-            #F_ij = (-1.*f1 + 16*f2 - 30*f3 + 16*f4 - f5)/ (12*h2**2)
+
         # Off-diagonal elements
         else:
             f1 = self.fstep(param1,param2,h1,h2,(+1,+1))
