@@ -69,6 +69,11 @@ with open(config_fn, "r") as fin:
 
 # Determine true bias parameters depending on input
 bias = [2., 2., 2., 2., 2., 2.]
+#TODO: Check these
+sn_hh_1 = 300.*np.ones(bias.shape[0])
+sn_hh_2 = 1000.*np.ones(bias.shape[0])
+sn_hh_3 = 3000.*np.ones(bias.shape[0])
+sn_gg = 300.*np.ones(bias.shape[0])
 
 # Note: we need to hard-code the BACCO parameter bounds:
 # omega_matter: [0.23, 0.4 ]
@@ -175,6 +180,23 @@ if bias_model != 'HOD':
                 info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
                 if b == '0' or b == '1':
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+                elif b == 'sn':
+                    if 'red' in info['likelihood'][name_like]['input_file']:
+                        mean = sn_gg[i]
+                    elif 'halo-Mmin=12-Mmax=12p5' in info['likelihood'][name_like]['input_file']:
+                        mean = sn_hh_1[i]
+                    elif 'halo-Mmin=12p5-Mmax=13' in info['likelihood'][name_like]['input_file']:
+                        mean = sn_hh_2[i]
+                    elif 'halo-Mmin=13-Mmax=13p5' in info['likelihood'][name_like]['input_file']:
+                        mean = sn_hh_3[i]
+                    else:
+                        raise NotImplementedError('Selected sample not implemented.')
+
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['ref'] = {'dist': 'norm',
+                                                                                                  'loc': mean,
+                                                                                                  'scale': 0.1*mean}
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': 0.5*mean,
+                                                                                                    'max': 1.5*mean}
             else:
                 if b == '0' or b == '1':
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = bias[i]
