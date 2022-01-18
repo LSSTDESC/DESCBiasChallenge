@@ -224,9 +224,24 @@ class DataGenerator(object):
             hmc = ccl.halos.HMCalculator(self.cosmo, mf, bm, md)
             b = ccl.halos.halomod_bias_1pt(self.cosmo, hmc, 1E-4, 1/(1+z), pg, normprof=True)
             return b
-        elif self.bias_model == 'Abacus':
-            d = np.load('AbacusData/pk2d_abacus.npz')
+        elif self.bias_model == 'Abacus' or self.bias_model == 'Abacus_unnorm':
+            print("Getting Abacus Pks")
             gtype = self.c['bias']['galtype']
+            if gtype != 'h':
+                print('Reading galaxy power spectra from Abacus.')
+                d = np.load('AbacusData/pk2d_abacus.npz')
+            else:
+                print('Reading halo power spectra from Abacus.')
+                assert 'massbin' in self.c['bias'], 'Must specify massbin.'
+                massbin = self.c['bias']['massbin']
+                if massbin == 1:
+                    d = np.load('AbacusData/pk2d_halo_abacus.npz')
+                elif massbin == 2:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13_abacus.npz')
+                elif massbin == 3:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5_abacus.npz')
+                else:
+                    print('Only massbin = 1, 2, 3 suppoorted.')
             ids = d['k_s'] < 0.1
             pkgg = d[f'{gtype}_{gtype}'][:, ids]
             pkmm = d['m_m'][:, ids]
@@ -283,8 +298,22 @@ class DataGenerator(object):
             # (generated in AbacusData.ipynb), and interpolate
             # in k and a.
             print("Getting Abacus Pks")
-            d = np.load('AbacusData/pk2d_abacus.npz')
             gtype = self.c['bias']['galtype']
+            if gtype != 'h':
+                print('Reading galaxy power spectra from Abacus.')
+                d = np.load('AbacusData/pk2d-sn_abacus.npz')
+            else:
+                print('Reading halo power spectra from Abacus.')
+                assert 'massbin' in self.c['bias'], 'Must specify massbin.'
+                massbin = self.c['bias']['massbin']
+                if massbin == 1:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5-sn_abacus.npz')
+                elif massbin == 2:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13-sn_abacus.npz')
+                elif massbin == 3:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5-sn_abacus.npz')
+                else:
+                    print('Only massbin = 1, 2, 3 suppoorted.')
 
             # The red-red Pk is super noisy at z>1.7, so we remove that
             if gtype in ['red', 'red_AB']:
@@ -357,8 +386,10 @@ class DataGenerator(object):
                     continue
                 if self.bias_model not in ['BACCO', 'anzu']:
                     if self.bias_model != 'Abacus_unnorm':
+                        print('Using halofit Pmm.')
                         pk = None
                     else:
+                        print('Using Pmm from sims.')
                         pk = pks['mm']
                     if i1 < self.n_cl:
                         if i2 < self.n_cl:
@@ -676,19 +707,19 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # # Red unnorm (same HOD params)
-# config = {'ndens_sh': 27.,
-#           'ndens_cl': 4.,
-#           'dNdz_file': 'data/dNdz_shear_red.npz',
-#           'e_rms': 0.28,
-#           'cosmology': 'Abacus',
-#           'bias': {'model': 'Abacus_unnorm',
-#                    'galtype': 'red'},
-#           'sacc_name': 'abacus_red_unnorm_abacus.fits'}
-# if not os.path.isfile(config['sacc_name']):
-#     d = DataGenerator(config)
-#     s = d.get_sacc_file()
-#     d.save_config()
-#     print(" ")
+config = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+          'e_rms': 0.28,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus_unnorm',
+                   'galtype': 'red'},
+          'sacc_name': 'abacus_red-sn_unnorm_z=0p1-1p4_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
 # Red all norm (same HOD params)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
@@ -704,19 +735,19 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # Red spectro (same HOD params)
-config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_spectro-dzcl=0p02-dzwl=0p03_red.npz',
-          'e_rms': 0.28,
-          'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus',
-                   'galtype': 'red'},
-          'sacc_name': 'abacus_red_spectro-dzcl=0p02-dzwl=0p03_abacus.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_spectro-dzcl=0p02-dzwl=0p03_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red_spectro-dzcl=0p02-dzwl=0p03_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # Red (with assembly bias)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
@@ -726,6 +757,21 @@ if not os.path.isfile(config['sacc_name']):
 #           'bias': {'model': 'Abacus',
 #                    'galtype': 'red_AB'},
 #           'sacc_name': 'abacus_red_AB_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# Halo (same HOD params)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'galtype': 'h',
+#                    'massbin': 3},
+#           'sacc_name': 'abacus_halo-Mmin=13-Mmax=13p5-sn_unnorm_abacus.fits'}
 # if not os.path.isfile(config['sacc_name']):
 #     d = DataGenerator(config)
 #     s = d.get_sacc_file()

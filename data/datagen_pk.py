@@ -7,6 +7,10 @@ from heft import HEFTCalculator, get_anzu_pk2d
 import tracers as pt
 from scipy.integrate import simps
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def get_abacus_cosmo():
@@ -38,13 +42,42 @@ def get_abacus_cosmo():
     cosmo.compute_nonlin_power()
     return cosmo, cosmology
 
+def get_UNIT_cosmo():
+    """ Returns the Abacus cosmology as a CCL object
+    """
+
+    Omega_m = 0.3089
+    h = 0.6774
+    n_s = 0.9667
+    sigma8 = 0.8147
+    Omega_b = 0.0223 / h ** 2
+    Omega_cdm = Omega_m - Omega_b
+
+    cosmology = {'Omega_b': Omega_b,
+                 'Omega_cdm': Omega_cdm,
+                 'h': h,
+                 'n_s': n_s,
+                 'sigma8': sigma8,
+                 'alpha_s': 0.0,
+                 'N_ur': 2.0328,
+                 'N_ncdm': 1.0,
+                 'omega_ncdm': 0.0006442,
+                 'w0_fld': -1.0,
+                 'wa_fld': 0.0
+                 }
+
+    cosmo = ccl.Cosmology(Omega_c=cosmology['Omega_cdm'], Omega_b=cosmology['Omega_b'],
+                          h=cosmology['h'], sigma8=cosmology['sigma8'], n_s=cosmology['n_s'])
+    cosmo.compute_linear_power()
+    cosmo.compute_nonlin_power()
+    return cosmo, cosmology
 
 class DataGenerator(object):
     lmax = 5000
 
     def __init__(self, config):
         self.c = config
-        print(self.c['sacc_name'])
+        logger.info('Running datagen_pk for {}.'.format(self.c['sacc_name']))
         # Read redshift distributions and compute number densities
         # for all redshift bins
         d = np.load(self.c['dNdz_file'])
@@ -59,12 +92,23 @@ class DataGenerator(object):
         z_arr = np.tile(self.z_sh, self.nz_sh.shape[0]).reshape(self.nz_sh.shape[0], -1)
         zmean_sh = np.average(z_arr, axis=1, weights=self.nz_sh)
 
+        if 'use_custom_zmean' not in self.c:
+            self.c['use_custom_zmean'] = False
+
+        if self.c['use_custom_zmean']:
+            logger.info('use_custom_zmean = {}.'.format(self.c['use_custom_zmean']))
+            logger.info('Using provided mean redshifts.')
+            zmean_cl = self.c['zmean_cl']
+            zmean_sh = self.c['zmean_sh']
+
         self.zmeans = np.concatenate((zmean_cl, zmean_sh))
 
-        self.n_cl = len(self.ndens_cl)
+        self.n_cl = len(zmean_cl)
         self.n_sh = len(zmean_sh)
         if 'theor_err' not in self.c:
             self.c['theor_err'] = False
+        if 'rescale_errs' not in self.c:
+            self.c['rescale_errs'] = False
 
         # Cosmological model
         if 'cosmology' in self.c:
@@ -73,6 +117,9 @@ class DataGenerator(object):
             else:
                 if self.c['cosmology'] == 'Abacus':
                     self.cosmo, cosmo_dict = get_abacus_cosmo()
+                    self.c['cosmology'] = cosmo_dict
+                elif self.c['cosmology'] == 'UNIT':
+                    self.cosmo, cosmo_dict = get_UNIT_cosmo()
                     self.c['cosmology'] = cosmo_dict
                 else:
                     raise ValueError('Unknown cosmology')
@@ -106,6 +153,22 @@ class DataGenerator(object):
                 if not self.c['theor_err']:
                     cov[ipk, :, jpk, :] = np.diag((pki1j1*pki2j2 +
                                                    pki1j2*pki2j1)/nmodes)
+
+                    if self.c['rescale_errs']:
+                        if ipk == jpk:
+                            d = np.load(self.c['err_file'])
+                            if 'sh' in ni1 and 'sh' in ni2:
+                                err_mm = np.interp(ks, d['ks_mm'], d['err_mm'])
+                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_mm**2
+                            elif 'cl' in ni1 and 'sh' in ni2:
+                                err_gm = np.interp(ks, d['ks_gm'], d['err_gm'])
+                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gm**2
+                            elif 'sh' in ni1 and 'cl' in ni2:
+                                err_gm = np.interp(ks, d['ks_gm'], d['err_gm'])
+                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gm**2
+                            else:
+                                err_gg = np.interp(ks, d['ks_gg'], d['err_gg'])
+                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gg**2
                 else:
                     cov[ipk, :, jpk, :] = np.diag((pki1j1 * pki2j2 +
                                                    pki1j2 * pki2j1) / nmodes) \
@@ -225,9 +288,24 @@ class DataGenerator(object):
             hmc = ccl.halos.HMCalculator(self.cosmo, mf, bm, md)
             b = ccl.halos.halomod_bias_1pt(self.cosmo, hmc, 1E-4, 1/(1+z), pg, normprof=True)
             return b
-        elif self.bias_model == 'Abacus':
-            d = np.load('AbacusData/pk2d_abacus.npz')
+        elif self.bias_model == 'Abacus' or self.bias_model == 'Abacus_unnorm':
+            print("Getting Abacus Pks")
             gtype = self.c['bias']['galtype']
+            if gtype != 'h':
+                print('Reading galaxy power spectra from Abacus.')
+                d = np.load('AbacusData/pk2d_abacus.npz')
+            else:
+                print('Reading halo power spectra from Abacus.')
+                assert 'massbin' in self.c['bias'], 'Must specify massbin.'
+                massbin = self.c['bias']['massbin']
+                if massbin == 1:
+                    d = np.load('AbacusData/pk2d_halo_abacus.npz')
+                elif massbin == 2:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13_abacus.npz')
+                elif massbin == 3:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5_abacus.npz')
+                else:
+                    print('Only massbin = 1, 2, 3 suppoorted.')
             ids = d['k_s'] < 0.1
             pkgg = d[f'{gtype}_{gtype}'][:, ids]
             pkmm = d['m_m'][:, ids]
@@ -284,8 +362,22 @@ class DataGenerator(object):
             # (generated in AbacusData.ipynb), and interpolate
             # in k and a.
             print("Getting Abacus Pks")
-            d = np.load('AbacusData/pk2d_abacus.npz')
             gtype = self.c['bias']['galtype']
+            if gtype != 'h':
+                print('Reading galaxy power spectra from Abacus.')
+                d = np.load('AbacusData/pk2d-sn_abacus.npz')
+            else:
+                print('Reading halo power spectra from Abacus.')
+                assert 'massbin' in self.c['bias'], 'Must specify massbin.'
+                massbin = self.c['bias']['massbin']
+                if massbin == 1:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5-sn_abacus.npz')
+                elif massbin == 2:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13-sn_abacus.npz')
+                elif massbin == 3:
+                    d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5-sn_abacus.npz')
+                else:
+                    print('Only massbin = 1, 2, 3 supported.')
 
             # The red-red Pk is super noisy at z>1.7, so we remove that
             if gtype in ['red', 'red_AB']:
@@ -309,12 +401,23 @@ class DataGenerator(object):
             pk_mm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(d[f'm_m']),
                              is_logp=True)
+        elif self.bias_model == 'UNIT':
+            assert self.zmeans.shape[0] == 2, 'UNIT power spectra only defined for one discrete redshift.'
+            d = np.load('UNITData/simtest_halopk_hbin0_UNITtest.npy')
+            ks = d[0, :int(d[0, :].shape[0] / 2)]
+            pk_gg = d[1, :int(d[0, :].shape[0] / 2)]
+            pk_gm = d[1, int(d[0, :].shape[0] / 2):]
         else:
             raise NotImplementedError("Bias model " + self.bias_model +
                                       " not implemented.")
         if 'Abacus' not in self.bias_model:
-            return {'gg': pk_gg,
-                    'gm': pk_gm}
+            if self.bias_model != 'UNIT':
+                return {'gg': pk_gg,
+                        'gm': pk_gm}
+            else:
+                return {'ks': ks,
+                        'gg': pk_gg,
+                        'gm': pk_gm}
         else:
             return {'gg': pk_gg,
                     'gm': pk_gm,
@@ -370,8 +473,9 @@ class DataGenerator(object):
                             pk = pks['gg']  # gg case
                         else:
                             pk = pks['gm']  # gm case
+                        if self.bias_model == 'UNIT':
+                            ks = pks['ks']
                 else:
-
                     if i1 >= self.n_cl and i2 >= self.n_cl:
                         pk = None
                     else:
@@ -382,7 +486,13 @@ class DataGenerator(object):
                                 continue
                             pk = get_anzu_pk2d(self.cosmo, pts[i1], tracer2=pts[i2], ptc=ptc)
                 if self.zmeans[i1] == self.zmeans[i2]:
-                    pk = pk.eval(self.kk['ks'], 1./(1. + self.zmeans[i1]), self.cosmo)
+                    if self.bias_model != 'UNIT':
+                        pk = pk.eval(self.kk['ks'], 1./(1. + self.zmeans[i1]), self.cosmo)
+                    else:
+                        if i1 >= self.n_cl and i2 >= self.n_cl:
+                            pk = pk.eval(self.kk['ks'], 1. / (1. + self.zmeans[i1]), self.cosmo)
+                        else:
+                            pk = np.interp(self.kk['ks'], ks, pk)
                 else:
                     pk = np.zeros_like(self.kk['ks'])
                 pks_all[i1, i2, :] = pk
@@ -402,7 +512,7 @@ class DataGenerator(object):
         ell=5000.
         """
         if self.kk is None:
-            k_edges = np.geomspace(1e-2, 1, 20)
+            k_edges = np.geomspace(6e-2, 1, 20)
             k_mean = 0.5*(k_edges[:-1] + k_edges[1:])
             dk = np.diff(k_edges)
             n_bpw = len(k_mean)
@@ -623,16 +733,53 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # Red (same HOD params)
+# config = {'ndens_cl': 2e-3,
+#           'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+#           # 'zmean_cl': np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
+#           # 'zmean_sh': np.array([0.1, 0.2, 0.3, 0.4, 0.5]),
+#           # 'theor_err': True,
+#           # 'theor_err_rel': 0.01,
+#           'rescale_errs': True,
+#           'err_file': 'data/clerr-pkerr-ratio_red-sn_unnorm_kmin=0p06_z=0p1-1p4.npz',
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red-sn_unnorm_pk_lens=source_kmin=0p06_z=0p1-1p4_err=cl-resc_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# Halo
+# config = {'ndens_cl': 2e-3,
+#           'dNdz_file': 'data/dNdz_lens=source_red.npz',
+#           # 'zmean_cl': np.array([0.8, 1.1, 1.4, 1.7, 2., 2.5]),
+#           # 'zmean_sh': np.array([0.8, 1.1, 1.4, 1.7, 2., 2.5]),
+#           # 'use_custom_zmean': True,
+#           'rescale_errs': True,
+#           'err_file': 'data/clerr-pkerr-ratio_halo-Mmin=13-Mmax=13p5-sn_unnorm_kmin=0p06.npz',
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'galtype': 'h',
+#                    'massbin': 3},
+#           'sacc_name': 'abacus_halo-Mmin=13-Mmax=13p5-sn_unnorm_pk_lens=source_kmin=0p06_err=cl-resc_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+# Halo UNIT
 config = {'ndens_cl': 2e-3,
-          'dNdz_file': 'data/dNdz_lens=source_red.npz',
-          'zmean_cl': np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
-          'zmean_sh': np.array([0.1, 0.2, 0.3, 0.4, 0.5]),
-          # 'theor_err': True,
-          # 'theor_err_rel': 0.01,
-          'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus',
-                   'galtype': 'red'},
-          'sacc_name': 'abacus_red_pk_lens=source_abacus.fits'}
+          'dNdz_file': 'data/dNdz_lens=source_z=0p59.npz',
+          # 'zmean_cl': np.array([0.59]),
+          # 'zmean_sh': np.array([0.59]),
+          # 'use_custom_zmean': True,
+          'rescale_errs': True,
+          'err_file': 'data/clerr-pkerr-ratio_red-sn_unnorm_kmin=0p06_z=0p5.npz',
+          'cosmology': 'UNIT',
+          'bias': {'model': 'UNIT',
+                   'galtype': 'h'},
+          'sacc_name': 'unit_redmagic-sn_pk_lens=source_kmin=0p06_z=0p59_err=cl-resc_unit.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
