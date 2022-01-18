@@ -62,6 +62,90 @@ def get_Pk(pos1_fns, N_dim, Lbox, interlaced, dk=None, pos2_fns=None):
     Pk -= P_sn
     return ks, Pk
 
+
+def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, interlaced, dk=None):
+    """
+    Takes FITS filenames of positions to compute the power spectrum
+    """
+
+    # Get meshes for both data splits
+    mesh_gal_s1 = get_mesh(pos_gal_s1_fns, N_dim, Lbox, interlaced)
+    mesh_gal_s2 = get_mesh(pos_gal_s2_fns, N_dim, Lbox, interlaced)
+
+    # Create pm fields that can be added
+    field_gal_s1 = mesh_gal_s1.paint(mode='real')
+    field_gal_s2 = mesh_gal_s2.paint(mode='real')
+
+    field_HS = 0.5*(field_gal_s1 + field_gal_s2)
+    field_HD = 0.5*(field_gal_s1 - field_gal_s2)
+
+    # Convert back to meshes
+    mesh_gal_s1 = FieldMesh(field_gal_s1)
+    mesh_gal_s2 = FieldMesh(field_gal_s2)
+    mesh_HS = FieldMesh(field_HS)
+    mesh_HD = FieldMesh(field_HD)
+
+    # dictionary with all power spectra
+    power_dic = {}
+
+    # obtain all power spectra
+    # Auto-power spectrum of HS mesh
+    r = FFTPower(first=mesh_HS, second=mesh_HS, mode='1d', dk=dk)
+    ks = r.power['k']
+    Pk = r.power['power'].astype(np.float64)
+    P_sn = r.attrs['shotnoise']
+    power_dic['Pk_HSxHS'] = Pk
+    power_dic['Pk_HSxHS_SN'] = P_sn
+    print("Computed HSxHS power")
+    # np.save(data_dir+"/Pk_gg.npy", Pk)
+
+    # Auto-power spectrum of HD mesh
+    r = FFTPower(first=mesh_HD, second=mesh_HD, mode='1d', dk=dk)
+    ks = r.power['k']
+    Pk = r.power['power'].astype(np.float64)
+    P_sn = r.attrs['shotnoise']
+    power_dic['Pk_HDxHD'] = Pk
+    power_dic['Pk_HDxHD_SN'] = P_sn
+    print("Computed HDxHD power")
+    # np.save(data_dir+"/Pk_gg.npy", Pk)
+
+    # Cross-power spectrum of s1, s2 mesh
+    r = FFTPower(first=mesh_gal_s1, second=mesh_gal_s2, mode='1d', dk=dk)
+    ks = r.power['k']
+    Pk = r.power['power'].astype(np.float64)
+    P_sn = r.attrs['shotnoise']
+    power_dic['Pk_s1xs2'] = Pk
+    power_dic['Pk_s1xs2_SN'] = P_sn
+    print("Computed s1xs2 power")
+    # np.save(data_dir+"/Pk_gg.npy", Pk)
+
+    mesh_mat = get_mesh(pos_mat_fns, N_dim, Lbox, interlaced)
+    # Cross-power spectrum of s1, m mesh
+    r = FFTPower(first=mesh_gal_s1, second=mesh_mat, mode='1d', dk=dk)
+    ks = r.power['k']
+    Pk = r.power['power'].astype(np.float64)
+    P_sn = r.attrs['shotnoise']
+    power_dic['Pk_s1xm'] = Pk
+    power_dic['Pk_s1xm_SN'] = P_sn
+    del mesh_mat
+    gc.collect()
+    print("Computed s1xm power")
+    # np.save(data_dir+"/Pk_gm.npy", Pk)
+
+    # Cross-power spectrum of s1, m mesh
+    r = FFTPower(first=mesh_gal_s2, second=mesh_mat, mode='1d', dk=dk)
+    ks = r.power['k']
+    Pk = r.power['power'].astype(np.float64)
+    P_sn = r.attrs['shotnoise']
+    power_dic['Pk_s2xm'] = Pk
+    power_dic['Pk_s2xm_SN'] = P_sn
+    del mesh_mat
+    gc.collect()
+    print("Computed s2xm power")
+    # np.save(data_dir+"/Pk_gm.npy", Pk)
+
+    return power_dic
+
 def get_all_Pk(pos_gal_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None):
     """
     Takes FITS filenames of positions to compute the power spectrum
