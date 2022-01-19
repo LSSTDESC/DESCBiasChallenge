@@ -76,20 +76,20 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     field_gal_s1 = mesh_gal_s1.paint(mode='real')
     field_gal_s2 = mesh_gal_s2.paint(mode='real')
 
-    field_HS = 0.5*(field_gal_s1 + field_gal_s2)
-    field_HD = 0.5*(field_gal_s1 - field_gal_s2)
-
-    # Convert back to meshes
-    mesh_gal_s1 = FieldMesh(field_gal_s1)
-    mesh_gal_s2 = FieldMesh(field_gal_s2)
-    mesh_HS = FieldMesh(field_HS)
-    mesh_HD = FieldMesh(field_HD)
+    del mesh_gal_s1, mesh_gal_s2
+    gc.collect()
 
     # dictionary with all power spectra
     power_dic = {}
 
     # obtain all power spectra
     # Auto-power spectrum of HS mesh
+    # Create pm fields that can be added
+    field_HS = 0.5 * (field_gal_s1 + field_gal_s2)
+    # Convert back to meshes
+    mesh_HS = FieldMesh(field_HS)
+    del field_HS
+    gc.collect()
     r = FFTPower(first=mesh_HS, second=mesh_HS, mode='1d', dk=dk)
     ks = r.power['k']
     Pk = r.power['power'].astype(np.float64)
@@ -97,9 +97,17 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     power_dic['Pk_HSxHS'] = Pk
     power_dic['Pk_HSxHS_SN'] = P_sn
     print("Computed HSxHS power")
+    del mesh_HS
+    gc.collect()
     # np.save(data_dir+"/Pk_gg.npy", Pk)
 
     # Auto-power spectrum of HD mesh
+    # Create pm fields that can be added
+    field_HD = 0.5 * (field_gal_s1 - field_gal_s2)
+    # Convert back to meshes
+    mesh_HD = FieldMesh(field_HD)
+    del field_HD
+    gc.collect()
     r = FFTPower(first=mesh_HD, second=mesh_HD, mode='1d', dk=dk)
     ks = r.power['k']
     Pk = r.power['power'].astype(np.float64)
@@ -107,9 +115,16 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     power_dic['Pk_HDxHD'] = Pk
     power_dic['Pk_HDxHD_SN'] = P_sn
     print("Computed HDxHD power")
+    del mesh_HD
+    gc.collect()
     # np.save(data_dir+"/Pk_gg.npy", Pk)
 
     # Cross-power spectrum of s1, s2 mesh
+    # Convert back to meshes
+    mesh_gal_s1 = FieldMesh(field_gal_s1)
+    mesh_gal_s2 = FieldMesh(field_gal_s2)
+    del field_gal_s1, field_gal_s2
+    gc.collect()
     r = FFTPower(first=mesh_gal_s1, second=mesh_gal_s2, mode='1d', dk=dk)
     ks = r.power['k']
     Pk = r.power['power'].astype(np.float64)
@@ -127,9 +142,9 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     P_sn = r.attrs['shotnoise']
     power_dic['Pk_s1xm'] = Pk
     power_dic['Pk_s1xm_SN'] = P_sn
-    del mesh_mat
-    gc.collect()
     print("Computed s1xm power")
+    del mesh_gal_s1
+    gc.collect()
     # np.save(data_dir+"/Pk_gm.npy", Pk)
 
     # Cross-power spectrum of s1, m mesh
@@ -139,7 +154,7 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     P_sn = r.attrs['shotnoise']
     power_dic['Pk_s2xm'] = Pk
     power_dic['Pk_s2xm_SN'] = P_sn
-    del mesh_mat
+    del mesh_mat, mesh_gal_s2
     gc.collect()
     print("Computed s2xm power")
     # np.save(data_dir+"/Pk_gm.npy", Pk)
