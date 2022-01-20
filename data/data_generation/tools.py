@@ -5,9 +5,13 @@ import numpy as np
 from nbodykit.lab import *
 import fitsio
 import asdf
+import logging
 
 from nbodykit.source.catalog import FITSCatalog
 from pmesh.pm import ParticleMesh
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def CompensateTSC(w, v):
     """
@@ -72,9 +76,14 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     mesh_gal_s1 = get_mesh(pos_gal_s1_fns, N_dim, Lbox, interlaced)
     mesh_gal_s2 = get_mesh(pos_gal_s2_fns, N_dim, Lbox, interlaced)
 
+    logger.info('Created meshes.')
+
     # Create pm fields that can be added
     field_gal_s1 = mesh_gal_s1.paint(mode='real')
+    logger.info('Created field_gal_s1.')
     field_gal_s2 = mesh_gal_s2.paint(mode='real')
+
+    logger.info('Created field_gal_s2.')
 
     del mesh_gal_s1, mesh_gal_s2
     gc.collect()
@@ -86,8 +95,10 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     # Auto-power spectrum of HS mesh
     # Create pm fields that can be added
     field_HS = 0.5 * (field_gal_s1 + field_gal_s2)
+    logger.info('Created field_HS.')
     # Convert back to meshes
     mesh_HS = FieldMesh(field_HS)
+    logger.info('Created mesh_HS.')
     del field_HS
     gc.collect()
     r = FFTPower(first=mesh_HS, second=mesh_HS, mode='1d', dk=dk)
@@ -104,8 +115,10 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     # Auto-power spectrum of HD mesh
     # Create pm fields that can be added
     field_HD = 0.5 * (field_gal_s1 - field_gal_s2)
+    logger.info('Created field_HD.')
     # Convert back to meshes
     mesh_HD = FieldMesh(field_HD)
+    logger.info('Created mesh_HD.')
     del field_HD
     gc.collect()
     r = FFTPower(first=mesh_HD, second=mesh_HD, mode='1d', dk=dk)
@@ -123,6 +136,7 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
     # Convert back to meshes
     mesh_gal_s1 = FieldMesh(field_gal_s1)
     mesh_gal_s2 = FieldMesh(field_gal_s2)
+    logger.info('Created mesh_gal_s1, mesh_gal_s2.')
     del field_gal_s1, field_gal_s2
     gc.collect()
     r = FFTPower(first=mesh_gal_s1, second=mesh_gal_s2, mode='1d', dk=dk)
