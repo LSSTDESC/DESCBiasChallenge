@@ -40,8 +40,8 @@ for redshift in redshifts:
     
     # save all power spectra
     # matter
-    # power_mat_dic = get_mat_Pk(pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None)
-    # write_asdf(power_mat_dic, (f"power_mat_z{redshift:.3f}.asdf"), data_dir, header=header)
+    power_mat_dic = get_mat_Pk(pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None)
+    write_asdf(power_mat_dic, (f"power_mat_z{redshift:.3f}.asdf"), data_dir, header=header)
     #
     # # galaxies and matter
     # power_all_dic, power_red_dic = get_all_red_Pk(pos_gal_all_fns, pos_gal_red_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None)
@@ -68,14 +68,14 @@ for redshift in redshifts:
     # header['gal_sample'] = 'halo_13.0_13.5'
     # write_asdf(power_dic, (f"power_halo_3_z{redshift:.3f}.asdf"), data_dir, header=header)
 
-    power_dic = get_Pk_splits(pos_halo_1_s1_fns, pos_halo_1_s2_fns, pos_mat_fns, N_dim, Lbox, interlaced, dk=None)
-    header['gal_sample'] = 'halo_splits_12.0_12.5'
-    write_asdf(power_dic, (f"power_halo_1_splits_z{redshift:.3f}.asdf"), data_dir, header=header)
-
-    power_dic = get_Pk_splits(pos_halo_2_s1_fns, pos_halo_2_s2_fns, pos_mat_fns, N_dim, Lbox, interlaced, dk=None)
-    header['gal_sample'] = 'halo_splits_12.5_13.0'
-    write_asdf(power_dic, (f"power_halo_2_splits_z{redshift:.3f}.asdf"), data_dir, header=header)
-
-    power_dic = get_Pk_splits(pos_halo_3_s1_fns, pos_halo_3_s2_fns, pos_mat_fns, N_dim, Lbox, interlaced, dk=None)
-    header['gal_sample'] = 'halo_splits_13.0_13.5'
-    write_asdf(power_dic, (f"power_halo_3_splits_z{redshift:.3f}.asdf"), data_dir, header=header)
+    # power_dic = get_Pk_splits(pos_halo_1_s1_fns, pos_halo_1_s2_fns, pos_mat_fns, N_dim, Lbox, interlaced, dk=None)
+    # header['gal_sample'] = 'halo_splits_12.0_12.5'
+    # write_asdf(power_dic, (f"power_halo_1_splits_z{redshift:.3f}.asdf"), data_dir, header=header)
+    #
+    # power_dic = get_Pk_splits(pos_halo_2_s1_fns, pos_halo_2_s2_fns, pos_mat_fns, N_dim, Lbox, interlaced, dk=None)
+    # header['gal_sample'] = 'halo_splits_12.5_13.0'
+    # write_asdf(power_dic, (f"power_halo_2_splits_z{redshift:.3f}.asdf"), data_dir, header=header)
+    #
+    # power_dic = get_Pk_splits(pos_halo_3_s1_fns, pos_halo_3_s2_fns, pos_mat_fns, N_dim, Lbox, interlaced, dk=None)
+    # header['gal_sample'] = 'halo_splits_13.0_13.5'
+    # write_asdf(power_dic, (f"power_halo_3_splits_z{redshift:.3f}.asdf"), data_dir, header=header)
