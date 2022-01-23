@@ -1,5 +1,10 @@
 import glob
 from tools import get_all_Pk, get_all_red_Pk, get_mat_Pk, write_asdf, get_Pk_splits, get_all_cf
+import argparse
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # parameters
 Lbox = 2000. # Mpc/h
@@ -15,7 +20,16 @@ header['sim_name'] = sim_name
 header['interlaced'] = interlaced
 header['units'] = 'Mpc/h'
 
-for redshift in redshifts:
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Compute Abacus correlation functions.')
+
+    parser.add_argument('--ind_rdshft', dest='ind_rdshft', type=int, help='Index of redshift of snapshot.', required=True)
+
+    args = parser.parse_args()
+
+    redshift = redshifts[args.ind_rdshft]
+    logger.info('Running redshift {}.'.format(redshift))
     header['redshift'] = redshift
 
     # filenames
