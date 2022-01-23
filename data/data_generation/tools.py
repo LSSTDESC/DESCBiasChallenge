@@ -175,6 +175,56 @@ def get_Pk_splits(pos_gal_s1_fns, pos_gal_s2_fns, pos_mat_fns, N_dim, Lbox, inte
 
     return power_dic
 
+def get_all_cf(pos_gal_fns, pos_mat_fns, Lbox):
+    """
+    Takes FITS filenames of positions to compute the correlation function
+    """
+
+    # Define radial bins
+    r = np.logspace(-2, 2, 20)
+
+    # calculate correlation function of the galaxies or halos
+    # create catalog from fitsfile
+    cat_gal = FITSCatalog(pos_gal_fns, ext='Data')
+
+    # dictionary with all power spectra
+    cf_dic = {}
+
+    # obtain all power spectra
+    cf_obj = SimulationBox2PCF(mode='1d', data1=cat_gal, data2=cat_gal, edges=r, BoxSize=Lbox)
+    corr = cf_obj.corr.astype(np.float64)
+    D1D2 = cf_obj.D1D2.astype(np.float64)
+    # D1R2 = cf_obj.D1R2.astype(np.float64)
+    # D2R1 = cf_obj.D2R1.astype(np.float64)
+    R1R2 = cf_obj.R1R2.astype(np.float64)
+    cf_dic['corr_gg'] = corr['corr']
+    cf_dic['D1D2_gg'] = D1D2['npairs']
+    # cf_dic['D1R2_gg'] = D1R2
+    # cf_dic['D2R1_gg'] = D2R1
+    cf_dic['R1R2_gg'] = R1R2['npairs']
+    print("Computed gg correlation function.")
+    # np.save(data_dir+"/Pk_gg.npy", Pk)
+
+    # create catalog from fitsfile
+    cat_mat = FITSCatalog(pos_mat_fns, ext='Data')
+    cf_obj = SimulationBox2PCF(mode='1d', data1=cat_gal, data2=cat_mat, edges=r, BoxSize=Lbox)
+    corr = cf_obj.corr.astype(np.float64)
+    D1D2 = cf_obj.D1D2.astype(np.float64)
+    # D1R2 = cf_obj.D1R2.astype(np.float64)
+    # D2R1 = cf_obj.D2R1.astype(np.float64)
+    R1R2 = cf_obj.R1R2.astype(np.float64)
+    cf_dic['corr_gm'] = corr['corr']
+    cf_dic['D1D2_gm'] = D1D2['npairs']
+    # cf_dic['D1R2_gm'] = D1R2
+    # cf_dic['D2R1_gm'] = D2R1
+    cf_dic['R1R2_gm'] = R1R2['npairs']
+    cf_dic['rs'] = corr['r']
+    del cat_gal, cat_mat
+    gc.collect()
+    print("Computed gm Correlation function.")
+
+    return cf_dic
+
 def get_all_Pk(pos_gal_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None):
     """
     Takes FITS filenames of positions to compute the power spectrum
