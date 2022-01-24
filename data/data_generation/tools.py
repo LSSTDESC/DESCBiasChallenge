@@ -205,23 +205,23 @@ def get_all_cf(pos_gal_fns, pos_mat_fns, Lbox):
     print("Computed gg correlation function.")
     # np.save(data_dir+"/Pk_gg.npy", Pk)
 
-    # create catalog from fitsfile
-    cat_mat = FITSCatalog(pos_mat_fns, ext='Data')
-    cf_obj = SimulationBox2PCF(mode='1d', data1=cat_gal, data2=cat_mat, edges=r, BoxSize=Lbox)
-    corr = cf_obj.corr
-    D1D2 = cf_obj.D1D2
-    # D1R2 = cf_obj.D1R2.astype(np.float64)
-    # D2R1 = cf_obj.D2R1.astype(np.float64)
-    R1R2 = cf_obj.R1R2
-    cf_dic['corr_gm'] = corr['corr']
-    cf_dic['D1D2_gm'] = D1D2['npairs']
-    # cf_dic['D1R2_gm'] = D1R2
-    # cf_dic['D2R1_gm'] = D2R1
-    cf_dic['R1R2_gm'] = R1R2['npairs']
-    cf_dic['rs'] = corr['r']
-    del cat_gal, cat_mat
-    gc.collect()
-    print("Computed gm Correlation function.")
+    # # create catalog from fitsfile
+    # cat_mat = FITSCatalog(pos_mat_fns, ext='Data')
+    # cf_obj = SimulationBox2PCF(mode='1d', data1=cat_gal, data2=cat_mat, edges=r, BoxSize=Lbox)
+    # corr = cf_obj.corr
+    # D1D2 = cf_obj.D1D2
+    # # D1R2 = cf_obj.D1R2.astype(np.float64)
+    # # D2R1 = cf_obj.D2R1.astype(np.float64)
+    # R1R2 = cf_obj.R1R2
+    # cf_dic['corr_gm'] = corr['corr']
+    # cf_dic['D1D2_gm'] = D1D2['npairs']
+    # # cf_dic['D1R2_gm'] = D1R2
+    # # cf_dic['D2R1_gm'] = D2R1
+    # cf_dic['R1R2_gm'] = R1R2['npairs']
+    # cf_dic['rs'] = corr['r']
+    # del cat_gal, cat_mat
+    # gc.collect()
+    # print("Computed gm Correlation function.")
 
     return cf_dic
 
