@@ -204,6 +204,9 @@ def get_all_cf(pos_gal_fns, pos_mat_fns, Lbox):
     cf_dic['R1R2_gg'] = R1R2['npairs']
     print("Computed gg correlation function.")
     # np.save(data_dir+"/Pk_gg.npy", Pk)
+    cf_dic['rs'] = corr['r']
+    del cat_gal
+    gc.collect()
 
     # # create catalog from fitsfile
     # cat_mat = FITSCatalog(pos_mat_fns, ext='Data')
