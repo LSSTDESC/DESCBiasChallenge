@@ -63,6 +63,12 @@ if __name__ == '__main__':
     # header['gal_sample'] = 'all'
     # write_asdf(power_all_dic, (f"power_all_z{redshift:.3f}.asdf"), data_dir, header=header)
     #
+
+    cf_all_dic = get_all_cf(pos_gal_all_fns, pos_mat_fns, Lbox)
+
+    header['gal_sample'] = 'all'
+    write_asdf(cf_all_dic, (f"cf_all_z{redshift:.3f}.asdf"), data_dir, header=header)
+
     # header['gal_sample'] = 'red'
     # write_asdf(power_red_dic, (f"power_red_z{redshift:.3f}.asdf"), data_dir, header=header)
     #
@@ -70,6 +76,19 @@ if __name__ == '__main__':
     # header['gal_sample'] = 'red_AB'
     # write_asdf(power_dic, (f"power_red_AB_z{redshift:.3f}.asdf"), data_dir, header=header)
     #
+
+    # power_dic = get_all_Pk(pos_halo_1_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None)
+    # header['gal_sample'] = 'halo_12.0_12.5'
+    # write_asdf(power_dic, (f"power_halo_1_z{redshift:.3f}.asdf"), data_dir, header=header)
+    #
+    # power_dic = get_all_Pk(pos_halo_2_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None)
+    # header['gal_sample'] = 'halo_12.5_13.0'
+    # write_asdf(power_dic, (f"power_halo_2_z{redshift:.3f}.asdf"), data_dir, header=header)
+    #
+    # power_dic = get_all_Pk(pos_halo_3_fns, pos_mat_fns, dens_dir, data_dir, N_dim, Lbox, interlaced, dk=None)
+    # header['gal_sample'] = 'halo_13.0_13.5'
+    # write_asdf(power_dic, (f"power_halo_3_z{redshift:.3f}.asdf"), data_dir, header=header)
+
     cf_dic = get_all_cf(pos_halo_1_fns, pos_mat_fns, Lbox)
     header['gal_sample'] = 'halo_12.0_12.5'
     write_asdf(cf_dic, (f"cf_halo_1_z{redshift:.3f}.asdf"), data_dir, header=header)
