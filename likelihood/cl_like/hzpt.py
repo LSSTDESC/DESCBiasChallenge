@@ -156,7 +156,9 @@ def get_hzpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             A0gm = tracer1.A0gm(z_arr)
             Rgm = tracer1.Rgm(z_arr)
             R1hgm = tracer1.R1hgm(z_arr)
-            p_pt = ptc.get_pgm(np.array([b1,A0gm,Rgm,R1hgm]).T)
+            R1gm = tracer1.R1gm(z_arr)
+            R12gm = tracer1.R12gm(z_arr)
+            p_pt = ptc.get_pgm(np.array([b1,A0gm,Rgm,R1hgm,R1gm,R12gm]).T)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -166,7 +168,9 @@ def get_hzpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             A0gm = tracer1.A0gm(z_arr)
             Rgm = tracer1.Rgm(z_arr)
             R1hgm = tracer1.R1hgm(z_arr)
-            p_pt = ptc.get_pgm(np.array([b1,A0gm,Rgm,R1hgm]).T)
+            R1gm = tracer1.R1gm(z_arr)
+            R12gm = tracer1.R12gm(z_arr)
+            p_pt = ptc.get_pgm(np.array([b1,A0gm,Rgm,R1hgm,R1gm,R12gm]).T)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))

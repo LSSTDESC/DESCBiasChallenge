@@ -35,9 +35,13 @@ class HZPTNumberCountsTracer(pt.PTTracer):
             HZPT gm BB compensation.
         R1hgm (float or tuple of arrays): as above for the
             first HZPT gm BB profile parameter.
+        R1gm (float or tuple of arrays): as above for the
+            second HZPT gm BB profile parameter.
+        R12gm (float or tuple of arrays): as above for the
+            third HZPT gm BB profile parameter.
     """
     def __init__(self, b1, sngg=None,A0gg=None,Rgg=None,R1hgg=None,
-                           A0gm=None,Rgm=None,R1hgm=None
+                           A0gm=None,Rgm=None,R1hgm=None,R1gm=None,R12gm=None
                            ):
         self.biases = {}
         self.type = 'NC'
@@ -51,6 +55,10 @@ class HZPTNumberCountsTracer(pt.PTTracer):
         self.biases['A0gm'] = self._get_bias_function(A0gm)
         self.biases['Rgm'] = self._get_bias_function(Rgm)
         self.biases['R1hgm'] = self._get_bias_function(R1hgm)
+        #FIXME: fix scaling relation
+        self.biases['R1gm'] = self._get_bias_function(R1gm)
+        self.biases['R12gm'] = self._get_bias_function(R12gm)
+
 
     @property
     def b1(self):
@@ -78,6 +86,13 @@ class HZPTNumberCountsTracer(pt.PTTracer):
     @property
     def R1hgm(self):
         return self.biases['R1hgm']
+    @property
+    def R1gm(self):
+        return self.biases['R1gm']
+    @property
+    def R12gm(self):
+        return self.biases['R12gm']
+
 
 class ClLike(Likelihood):
     # All parameters starting with this will be
@@ -343,10 +358,12 @@ class ClLike(Likelihood):
                         A0gm = pars.get(pref + '_A0gm', None)
                         Rgm = pars.get(pref + '_Rgm', None)
                         R1hgm = pars.get(pref + '_R1hgm', None)
+                        R1gm = pars.get(pref + '_R1gm', None)
+                        R12gm = pars.get(pref + '_R12gm', None)
 
                         ptt = HZPTNumberCountsTracer(b1 = b1, sngg = sngg,
                                                  A0gg = A0gg, Rgg = Rgg, R1hgg = R1hgg,
-                                                 A0gm = A0gm, Rgm = Rgm, R1hgm = R1hgm
+                                                 A0gm = A0gm, Rgm = Rgm, R1hgm = R1hgm, R1gm = R1gm, R12gm = R12gm
                                                  )
 
             elif q == 'galaxy_shear':
