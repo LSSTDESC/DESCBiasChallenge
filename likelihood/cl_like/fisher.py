@@ -1,11 +1,12 @@
 import numpy as np
+import numpy.linalg as LA
 from numpy.linalg import multi_dot
 
 
 
 class Fisher_first_deri():
     
-    def __init__ (self,model,parms,fp_name,method = 'five-stencil'):
+    def __init__ (self,model,parms,fp_name,step_factor = 0.01,method = 'five-stencil',full_expresssion = False):
         '''
         This Class implement first derivative expression fisher matrix calculation for error estimation
         Parameters:
@@ -16,15 +17,23 @@ class Fisher_first_deri():
            Parameters needed to calculate theory vector
         fp_name: List
            Sampled parameter name
+        step_factor: float
+            The factor that determine the step size of finite difference. Default is set to 0.01
         method: String
            Differentiation method. 
            Default is set to 'five-stencil': Five stencil approximation for 1st derivative
            The following alternatives are also avaliable: 'three-stencil', 'seven-stencil'
            (see Fornberg, B. 1988, Mathematics of computation, 51, 699 for detailed description)
-            
+        full_expression: bool 
+            False -- Default fisher expression for gaussian likelihood: 
+                F_ij = dcl/dpar_i.T * C^{-1} * dcl/dpar_j
+            True -- With the extra term (usually expected to be averaged out) added to the default expression:
+                F_ij = -(d-t).T * C^{-1} * d^2cl/dpar_i dpar_j + dcl/dpar_i.T * C^{-1} * dcl/dpar_j 
         '''
         self.method = method
+        self.step_factor = step_factor
         self.model = model
+        self.full_expresssion = full_expresssion
         self.ClLike = self.model.likelihood['cl_like.ClLike']
         
         # Sampled parameter name
@@ -59,8 +68,8 @@ class Fisher_first_deri():
         --------
         par_name: string
             The parameter the derivative corresponds to.
-        step_factor: float
-            The factor that determine the step size of finite difference.
+        step_size: float
+            The step size of finite difference.
         stencil: int
             The stencil at which the theory vector is evaluated for differentiation
         '''
@@ -197,24 +206,15 @@ class Fisher_first_deri():
             
             return(dcl_dp1p2)
     
-    def get_fisher(self,step_factor = 0.01,full_expresssion = False):
+    def get_fisher(self):
         '''
         Function calculate the fisher matrix
-        Parameters:
-        ----
-        step_factor: float
-            The factor that determine the step size of finite difference. Default is set to 0.01
-        full_expression: bool 
-            False -- Default fisher expression for gaussian likelihood: 
-                F_ij = dcl/dpar_i.T * C^{-1} * dcl/dpar_j
-            True -- With the extra term (usually expected to be averaged out) added to the default expression:
-                F_ij = -(d-t).T * C^{-1} * d^2cl/dpar_i dpar_j + dcl/dpar_i.T * C^{-1} * dcl/dpar_j
         '''
-        if full_expresssion == False:
+        if self.full_expresssion == False:
             
             dcl_dparm = []
             for pars in self.parms_name:
-                dcl_dparm.append(self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor))
+                dcl_dparm.append(self.n_point_stencil_deriv(par_name= pars,step_factor= self.step_factor))
             F = np.einsum("il,lk,jk->ij", dcl_dparm, self.data_invc, dcl_dparm)
             
             return(F)
@@ -225,7 +225,7 @@ class Fisher_first_deri():
             dcl_dparm = {}
             dcl_dp1p2 = {}
             for pars in self.parms_name:
-                dcl_dparm[pars] =  self.n_point_stencil_deriv(par_name= pars,step_factor= step_factor)
+                dcl_dparm[pars] =  self.n_point_stencil_deriv(par_name= pars,step_factor= self.step_factor)
             for i,par1 in enumerate(self.parms_name):
                 for j,par2 in enumerate(self.parms_name):
                         de_par1 = dcl_dparm[par1]
@@ -233,11 +233,27 @@ class Fisher_first_deri():
                         if (j,i) in dcl_dp1p2:
                             dcl_dp1p2[i,j] = dcl_dp1p2[j,i]
                         else:
-                            dcl_dp1p2[i,j] = self.second_deri(par_pair = [par1,par2],step_factor = step_factor)
+                            dcl_dp1p2[i,j] = self.second_deri(par_pair = [par1,par2],step_factor = self.step_factor)
                             
-                        F[i,j] =  multi_dot([de_par1.T,self.data_invc,de_par2]) - multi_dot([r.T,self.data_invc,dcl_dp1p2[i,j]])
-                        
+                        F[i,j] =  multi_dot([de_par1.T,self.data_invc,de_par2]) - multi_dot([r.T,self.data_invc,dcl_dp1p2[i,j]])               
             return(F)
+        
+    def get_err(self):
+        '''
+        Get errors on parameters
+        '''
+        covar = LA.inv(self.get_fisher())  # covariance matrix
+        err = np.sqrt(np.diag(covar))  # estimated parameter errors
+        return err
+
+    def get_cov(self):
+        '''
+        Get covariance
+        '''
+        covar = LA.inv(self.get_Fisher())  # covariance matrix
+        return covar
+    
+    
     
 class Fisher_second_deri():
 
