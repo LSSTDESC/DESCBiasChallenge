@@ -52,16 +52,18 @@ def get_UNIT_cosmo():
     sigma8 = 0.8147
     Omega_b = 0.0223 / h ** 2
     Omega_cdm = Omega_m - Omega_b
+    Omega_cdm = 0.26
+    Omega_b = 0.049
 
     cosmology = {'Omega_b': Omega_b,
                  'Omega_cdm': Omega_cdm,
                  'h': h,
                  'n_s': n_s,
                  'sigma8': sigma8,
-                 'alpha_s': 0.0,
-                 'N_ur': 2.0328,
-                 'N_ncdm': 1.0,
-                 'omega_ncdm': 0.0006442,
+                 # 'alpha_s': 0.0,
+                 # 'N_ur': 2.0328,
+                 # 'N_ncdm': 1.0,
+                 # 'omega_ncdm': 0.0006442,
                  'w0_fld': -1.0,
                  'wa_fld': 0.0
                  }
@@ -130,6 +132,10 @@ class DataGenerator(object):
 
         # Bias model
         self.bias_model = self.c['bias']['model']
+        if 'sample_type' in self.c:
+            self.sample_type = self.c['sample_type']
+        else:
+            self.sample_type = None
         self.kk = None
 
     def _get_covariance(self, pks, unwrap=True):
@@ -138,43 +144,50 @@ class DataGenerator(object):
         nt, _, nk = pks.shape
         kk = self._get_k_sampling()
         ks = kk['ks']
-        dk = kk['dk']
         fsky = self.c.get('fsky', 0.4)
         npk = (nt*(nt+1)) // 2
         cov = np.zeros([npk, nk, npk, nk])
-        V_survey = 4.*np.pi*fsky*self.R_survey**3
-        nmodes = V_survey*ks**2*dk/(2.*np.pi**2)
-        for i1, i2, ipk, ni1, ni2, pkit in self._get_indices(nt):
-            for j1, j2, jpk, nj1, nj2, pkjt in self._get_indices(nt):
-                pki1j1 = pks[i1, j1]
-                pki1j2 = pks[i1, j2]
-                pki2j1 = pks[i2, j1]
-                pki2j2 = pks[i2, j2]
-                if not self.c['theor_err']:
-                    cov[ipk, :, jpk, :] = np.diag((pki1j1*pki2j2 +
-                                                   pki1j2*pki2j1)/nmodes)
+        if self.sample_type != 'UNIT':
+            dk = kk['dk']
+            V_survey = 4.*np.pi*fsky*self.R_survey**3
+            nmodes = V_survey*ks**2*dk/(2.*np.pi**2)
+            for i1, i2, ipk, ni1, ni2, pkit in self._get_indices(nt):
+                for j1, j2, jpk, nj1, nj2, pkjt in self._get_indices(nt):
+                    pki1j1 = pks[i1, j1]
+                    pki1j2 = pks[i1, j2]
+                    pki2j1 = pks[i2, j1]
+                    pki2j2 = pks[i2, j2]
+                    if not self.c['theor_err']:
+                        cov[ipk, :, jpk, :] = np.diag((pki1j1*pki2j2 +
+                                                       pki1j2*pki2j1)/nmodes)
 
-                    if self.c['rescale_errs']:
-                        if ipk == jpk:
-                            d = np.load(self.c['err_file'])
-                            if 'sh' in ni1 and 'sh' in ni2:
-                                err_mm = np.interp(ks, d['ks_mm'], d['err_mm'])
-                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_mm**2
-                            elif 'cl' in ni1 and 'sh' in ni2:
-                                err_gm = np.interp(ks, d['ks_gm'], d['err_gm'])
-                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gm**2
-                            elif 'sh' in ni1 and 'cl' in ni2:
-                                err_gm = np.interp(ks, d['ks_gm'], d['err_gm'])
-                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gm**2
-                            else:
-                                err_gg = np.interp(ks, d['ks_gg'], d['err_gg'])
-                                cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gg**2
-                else:
-                    cov[ipk, :, jpk, :] = np.diag((pki1j1 * pki2j2 +
-                                                   pki1j2 * pki2j1) / nmodes) \
-                                          + self.c['theor_err_rel']**2*np.diag(pks[i1, i2]*pks[j1, j2])
-        if unwrap:
+                        if self.c['rescale_errs']:
+                            if ipk == jpk:
+                                d = np.load(self.c['err_file'])
+                                if 'sh' in ni1 and 'sh' in ni2:
+                                    err_mm = np.interp(ks, d['ks_mm'], d['err_mm'])
+                                    cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_mm**2
+                                elif 'cl' in ni1 and 'sh' in ni2:
+                                    err_gm = np.interp(ks, d['ks_gm'], d['err_gm'])
+                                    cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gm**2
+                                elif 'sh' in ni1 and 'cl' in ni2:
+                                    err_gm = np.interp(ks, d['ks_gm'], d['err_gm'])
+                                    cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gm**2
+                                else:
+                                    err_gg = np.interp(ks, d['ks_gg'], d['err_gg'])
+                                    cov[ipk, np.arange(nk), jpk, np.arange(nk)] *= err_gg**2
+                    else:
+                        cov[ipk, :, jpk, :] = np.diag((pki1j1 * pki2j2 +
+                                                       pki1j2 * pki2j1) / nmodes) \
+                                              + self.c['theor_err_rel']**2*np.diag(pks[i1, i2]*pks[j1, j2])
+            if unwrap:
+                cov = cov.reshape([npk*nk, npk*nk])
+        else:
+            logger.info('Reading covariance matrix for UNIT sample.')
+            cov_gg_gm = np.load('UNITData/simcov_floor0.01_halopk_hbin0_UNITtest.npy') / self.cosmo['h'] ** 6
             cov = cov.reshape([npk*nk, npk*nk])
+            cov[:cov_gg_gm.shape[0], :cov_gg_gm.shape[1]] = cov_gg_gm
+
         return cov
 
     def _get_tracer_name(self, i):
@@ -404,20 +417,15 @@ class DataGenerator(object):
         elif self.bias_model == 'UNIT':
             assert self.zmeans.shape[0] == 2, 'UNIT power spectra only defined for one discrete redshift.'
             d = np.load('UNITData/simtest_halopk_hbin0_UNITtest.npy')
-            ks = d[0, :int(d[0, :].shape[0] / 2)]
-            pk_gg = d[1, :int(d[0, :].shape[0] / 2)]
-            pk_gm = d[1, int(d[0, :].shape[0] / 2):]
+            # ks = d[0, :int(d[0, :].shape[0] / 2)]*0.6774
+            pk_gg = d[1, :int(d[0, :].shape[0] / 2)]/0.6774**3
+            pk_gm = d[1, int(d[0, :].shape[0] / 2):]/0.6774**3
         else:
             raise NotImplementedError("Bias model " + self.bias_model +
                                       " not implemented.")
         if 'Abacus' not in self.bias_model:
-            if self.bias_model != 'UNIT':
-                return {'gg': pk_gg,
-                        'gm': pk_gm}
-            else:
-                return {'ks': ks,
-                        'gg': pk_gg,
-                        'gm': pk_gm}
+            return {'gg': pk_gg,
+                    'gm': pk_gm}
         else:
             return {'gg': pk_gg,
                     'gm': pk_gm,
@@ -443,7 +451,7 @@ class DataGenerator(object):
                                       log10k_max=np.log10(0.75 * self.c['cosmology']['h']),
                                       nk_per_decade=20, h=self.c['cosmology']['h'], k_filter=self.c['bias']['k_filter'])
             elif self.bias_model == 'anzu':
-                a_s = 1. / (1 + np.linspace(0., 2., 30)[::-1])
+                a_s = 1. / (1 + np.linspace(0., 4., 30)[::-1])
                 ptc = HEFTCalculator(cosmo=self.cosmo, a_arr=a_s)
             ptc.update_pk(self.cosmo)
             pts = pt_cl + pt_sh
@@ -473,11 +481,13 @@ class DataGenerator(object):
                             pk = pks['gg']  # gg case
                         else:
                             pk = pks['gm']  # gm case
-                        if self.bias_model == 'UNIT':
-                            ks = pks['ks']
                 else:
                     if i1 >= self.n_cl and i2 >= self.n_cl:
-                        pk = None
+                        a_s = 1. / (1 + np.linspace(0., 4., 30)[::-1])
+                        k_s = np.logspace(-4, 2, 200)
+                        phf = np.array([ccl.nonlin_matter_power(self.cosmo, k_s, a)
+                                        for a in a_s])
+                        pk = ccl.Pk2D(a_arr=a_s, lk_arr=np.log(k_s), pk_arr=np.log(phf), is_logp=True)
                     else:
                         if self.bias_model == 'BACCO':
                             pk = get_bacco_pk2d(self.cosmo, pts[i1], tracer2=pts[i2], ptc=ptc)
@@ -492,7 +502,7 @@ class DataGenerator(object):
                         if i1 >= self.n_cl and i2 >= self.n_cl:
                             pk = pk.eval(self.kk['ks'], 1. / (1. + self.zmeans[i1]), self.cosmo)
                         else:
-                            pk = np.interp(self.kk['ks'], ks, pk)
+                            pk = pk
                 else:
                     pk = np.zeros_like(self.kk['ks'])
                 pks_all[i1, i2, :] = pk
@@ -511,16 +521,25 @@ class DataGenerator(object):
         to `d_ell_linear`. We start at ell=2 and stop at
         ell=5000.
         """
-        if self.kk is None:
-            k_edges = np.geomspace(6e-2, 1, 20)
-            k_mean = 0.5*(k_edges[:-1] + k_edges[1:])
-            dk = np.diff(k_edges)
-            n_bpw = len(k_mean)
 
-            self.kk = {'ks': k_mean,
-                       'edges': k_edges,
-                       'dk': dk,
-                       'n_bpw': n_bpw}
+        if self.sample_type != 'UNIT':
+            if self.kk is None:
+                k_edges = np.geomspace(6e-2, 1, 20)
+                k_mean = 0.5*(k_edges[:-1] + k_edges[1:])
+                dk = np.diff(k_edges)
+                n_bpw = len(k_mean)
+
+                self.kk = {'ks': k_mean,
+                           'edges': k_edges,
+                           'dk': dk,
+                           'n_bpw': n_bpw}
+        else:
+            d = np.load('UNITData/simtest_halopk_hbin0_UNITtest.npy')
+            ks = d[0, :int(d[0, :].shape[0] / 2)]*0.6774
+
+            self.kk = {'ks': ks,
+                       'n_bpw': len(ks)}
+
         return self.kk
 
     def get_sacc_file(self):
@@ -546,9 +565,11 @@ class DataGenerator(object):
         kk = self._get_k_sampling()
 
         # Cls
-        print("Cls")
+        print("Pks")
         pk_th = self._get_pk_all()
         for i1, i2, icl, n1, n2, pkt in self._get_indices(self.n_cl+self.n_sh):
+            print(i1, i2)
+            print(pk_th[i1, i2])
             s.add_ell_cl(pkt, n1, n2, kk['ks'], pk_th[i1, i2])
 
         # Covariance
@@ -556,6 +577,7 @@ class DataGenerator(object):
         nl = self._get_nls()
         cov = self._get_covariance(pk_th+nl, unwrap=True)
         s.add_covariance(cov)
+        print(cov)
 
         if self.c.get('add_noise', False):
             s.mean = np.random.multivariate_normal(s.mean, cov)
@@ -748,8 +770,8 @@ cospar = {'Omega_c': 0.25,
 # if not os.path.isfile(config['sacc_name']):
 #     d = DataGenerator(config)
 #     s = d.get_sacc_file()
-#     d.save_config()
-#     print(" ")
+    # d.save_config()
+    # print(" ")
 # Halo
 # config = {'ndens_cl': 2e-3,
 #           'dNdz_file': 'data/dNdz_lens=source_red.npz',
@@ -769,22 +791,22 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # Halo UNIT
-config = {'ndens_cl': 2e-3,
-          'dNdz_file': 'data/dNdz_lens=source_z=0p59.npz',
-          # 'zmean_cl': np.array([0.59]),
-          # 'zmean_sh': np.array([0.59]),
-          # 'use_custom_zmean': True,
-          'rescale_errs': True,
-          'err_file': 'data/clerr-pkerr-ratio_red-sn_unnorm_kmin=0p06_z=0p5.npz',
-          'cosmology': 'UNIT',
-          'bias': {'model': 'UNIT',
-                   'galtype': 'h'},
-          'sacc_name': 'unit_redmagic-sn_pk_lens=source_kmin=0p06_z=0p59_err=cl-resc_unit.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
+# config = {'ndens_cl': 2e-3,
+#           'dNdz_file': 'data/dNdz_lens=source_z=0p59.npz',
+#           # 'zmean_cl': np.array([0.59]),
+#           # 'zmean_sh': np.array([0.59]),
+#           # 'use_custom_zmean': True,
+#           'rescale_errs': True,
+#           'err_file': 'data/clerr-pkerr-ratio_red-sn_unnorm_kmin=0p06_z=0p5.npz',
+#           'cosmology': 'UNIT',
+#           'bias': {'model': 'UNIT',
+#                    'galtype': 'h'},
+#           'sacc_name': 'unit_redmagic-sn_pk_lens=source_kmin=0p06_z=0p59_err=cl-resc_unit_test-cov.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # Red Y1 errors (same HOD params)
 # config = {'ndens_sh': 10.,
 #           'ndens_cl': 1.5,
@@ -858,50 +880,47 @@ if not os.path.isfile(config['sacc_name']):
 # ###
 # 5. From BACCO
 # Red (same HOD params)
-# config = {'ndens_sh': 27.,
-#           'ndens_cl': 4.,
-#           'dNdz_file': 'data/dNdz_shear_red.npz',
-#           'e_rms': 0.28,
-#           'cosmology': 'Abacus',
-#           'bias': {'model': 'BACCO',
-#                    'k_filter': None,
-#                    'bias_params': {'cl1_b1': 2.,
-#                                    'cl1_b1p': 0.,
-#                                    'cl1_b2': 0.,
-#                                    'cl1_bs': 0.,
-#                                    'cl1_bk2': 0.,
-#                                    'cl2_b1': 1.75,
-#                                    'cl2_b1p': -0.03,
-#                                    'cl2_b2': -0.08,
-#                                    'cl2_bs': -0.0018,
-#                                    'cl2_bk2': -0.11,
-#                                    'cl3_b1': 2.,
-#                                    'cl3_b1p': 0.,
-#                                    'cl3_b2': 0.,
-#                                    'cl3_bs': 0.,
-#                                    'cl3_bk2': 0.,
-#                                    'cl4_b1': 2.,
-#                                    'cl4_b1p': 0.,
-#                                    'cl4_b2': 0.,
-#                                    'cl4_bs': 0.,
-#                                    'cl4_bk2': 0.,
-#                                    'cl5_b1': 2.,
-#                                    'cl5_b1p': 0.,
-#                                    'cl5_b2': 0.,
-#                                    'cl5_bs': 0.,
-#                                    'cl5_bk2': 0.,
-#                                    'cl6_b1': 2.,
-#                                    'cl6_b1p': 0.,
-#                                    'cl6_b2': 0.,
-#                                    'cl6_bs': 0.,
-#                                    'cl6_bk2': 0.
-#                    }},
-#           'sacc_name': 'fid_red_BACCO.fits'}
-# if not os.path.isfile(config['sacc_name']):
-#     d = DataGenerator(config)
-#     s = d.get_sacc_file()
-#     d.save_config()
-#     print(" ")
+
+# config = {
+#           # 'zmean_cl': np.array([0.59]),
+#           # 'zmean_sh': np.array([0.59]),
+#           # 'use_custom_zmean': True,
+#           'rescale_errs': True,
+#           'err_file': 'data/clerr-pkerr-ratio_red-sn_unnorm_kmin=0p06_z=0p5.npz',
+#           'cosmology': 'UNIT',
+#           'bias': {'model': 'UNIT',
+#                    'galtype': 'h'},
+#           'sacc_name': }
+config = {'ndens_cl': 2e-3,
+          'dNdz_file': 'data/dNdz_lens=source_z=0p59.npz',
+          'cosmology': 'UNIT',
+          'sample_type': 'UNIT',
+          'bias': {'model': 'anzu',
+                   'k_filter': None,
+                   'bias_params':
+                       {'cl1_b1': 1.792437866,
+                                   'cl1_b1p': 0.0,
+                                   'cl1_b2': 0.5191489176,
+                                   'cl1_bs': -1.071675707,
+                                   'cl1_bk2': -2.466574255,
+                                   'cl1_bsn': 5688.966683,
+                                   'cl1_b3nl': 0.0,
+
+                                    # {'cl1_b1': 1.770209978,
+                                    #  'cl1_b2': 0.4169077275,
+                                    #  'cl1_bs': 0.4525840974,
+                                    #  'cl1_bk2': -4.689898773,
+                                    #  'cl1_bsn': 5625.766264,
+                                    #  'cl1_b1p': 0.0,
+                                    #  'cl1_b3nl': 0.0,
+
+                                  }},
+          'sacc_name': 'unit_redmagic-sn_pk_lens=source_kmin=0p06_z=0p59_err=unit-cov_model=anzu.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
 # 6. From anzu
 # Red (same HOD params)
 # config = {'ndens_sh': 27.,
