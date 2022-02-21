@@ -158,6 +158,15 @@ elif bias_model == 'HOD':
             'lM1_0', 'lM1_p',
             'alpha_0', 'alpha_p']
 
+ref_bsn = args.ref_bsn
+if args.ref_bsn is not None:
+    ref_bsn = [0 for i in range(len(args.ref_bsn))]
+    for i, ref in enumerate(args.ref_bsn):
+        if ref != 'None':
+            ref_bsn[i] = float(ref)
+        else:
+            ref_bsn[i] = np.nan
+
 if bias_model != 'HOD':
     # Template for bias parameters in yaml file
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
@@ -185,8 +194,8 @@ if bias_model != 'HOD':
                 if b == '0' or b == '1':
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
                 elif b == 'sn':
-                    if args.ref_bsn is not None:
-                        mean = args.ref_bsn[i]
+                    if ref_bsn is not None:
+                        mean = ref_bsn[i]
                     else:
                         mean = DEFAULT_REF_BSN
 
