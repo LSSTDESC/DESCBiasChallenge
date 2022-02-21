@@ -75,7 +75,6 @@ class HEFTCalculator(object):
             #Do we have to spline every time? nevertheless 
             cleftspline = interp1d(cleftpk[0], cleftpk, fill_value='extrapolate')
             lpt_spec[i] = cleftspline(k)[1:11, :]
- 
         #Computed the relevant lpt predictions, plug into emu
         #1. Set up cosmovec for anzu from CCL cosmo object
         #Final array should be [Nz, Nparam]
@@ -127,7 +126,7 @@ class HEFTCalculator(object):
         """
         # Clarification:
         # anzu uses the following expansion for the galaxy overdensity:
-        #   d_g = b1 d + b2 d2^2 + bs s^2 + bnabla2d nabla^2 d
+        #   d_g = b1 d + b2/2 d2^2 + bs s^2 + bnabla2d nabla^2 d
         # (see Eq. 1 of https://arxiv.org/abs/2101.12187).
         #
         # The BACCO table below contains the following power spectra

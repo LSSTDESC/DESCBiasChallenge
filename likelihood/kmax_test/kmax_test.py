@@ -29,6 +29,8 @@ parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed paramet
 parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='Shotnoise reference distribution (for initializtion).',
+                    required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
 
@@ -69,11 +71,9 @@ with open(config_fn, "r") as fin:
 
 # Determine true bias parameters depending on input
 bias = np.array([2., 2., 2., 2., 2., 2.])
-#TODO: Check these
-sn_hh_1 = 300.*np.ones(bias.shape[0])
-sn_hh_2 = 1000.*np.ones(bias.shape[0])
-sn_hh_3 = 3000.*np.ones(bias.shape[0])
-sn_gg = 300.*np.ones(bias.shape[0])
+
+# Default reference value for bsn
+DEFAULT_REF_BSN = 1000.
 
 # Note: we need to hard-code the BACCO parameter bounds:
 # omega_matter: [0.23, 0.4 ]
@@ -185,22 +185,16 @@ if bias_model != 'HOD':
                 if b == '0' or b == '1':
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
                 elif b == 'sn':
-                    if 'red' in info['likelihood'][name_like]['input_file']:
-                        mean = sn_gg[i]
-                    elif 'halo-Mmin=12-Mmax=12p5' in info['likelihood'][name_like]['input_file']:
-                        mean = sn_hh_1[i]
-                    elif 'halo-Mmin=12p5-Mmax=13' in info['likelihood'][name_like]['input_file']:
-                        mean = sn_hh_2[i]
-                    elif 'halo-Mmin=13-Mmax=13p5' in info['likelihood'][name_like]['input_file']:
-                        mean = sn_hh_3[i]
+                    if args.ref_bsn is not None:
+                        mean = args.ref_bsn[i]
                     else:
-                        raise NotImplementedError('Selected sample not implemented.')
+                        mean = DEFAULT_REF_BSN
 
                     info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['ref'] = {'dist': 'norm',
                                                                                                   'loc': mean,
-                                                                                                  'scale': 0.1*mean}
-                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': 0.5*mean,
-                                                                                                    'max': 1.5*mean}
+                                                                                                  'scale': 0.1*np.abs(mean)}
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -2.*np.abs(mean),
+                                                                                                    'max': 2.*np.abs(mean)}
             else:
                 if b == '0' or b == '1':
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = bias[i]
