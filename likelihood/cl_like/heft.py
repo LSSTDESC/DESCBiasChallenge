@@ -191,7 +191,7 @@ class HEFTCalculator(object):
 
         return p_hh
 
-    def get_pgg_deug(self, b11, b21, bs1, b12, b22, bs2,
+    def get_pgg_debug(self, b11, b21, bs1, b12, b22, bs2,
                 bk21=None, bk22=None, bsn1=None, bsn2=None):
         """
         Get P_gg between two tracer samples with sets of bias params starting from the heft component spectra
@@ -278,7 +278,7 @@ class HEFTCalculator(object):
 
         bterms_hh = np.array(bterms_hh)
         p_hh = np.einsum('bz, zbk->zbk', bterms_hh, pkvec)
-        p_sn = bsn1*np.ones((self.nas, len(self.ks)))
+        p_sn = bsn1[0]*np.ones((self.nas, len(self.ks)))
 
         return p_hh, p_sn
 
