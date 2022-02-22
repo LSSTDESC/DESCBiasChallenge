@@ -191,6 +191,97 @@ class HEFTCalculator(object):
 
         return p_hh
 
+    def get_pgg_deug(self, b11, b21, bs1, b12, b22, bs2,
+                bk21=None, bk22=None, bsn1=None, bsn2=None):
+        """
+        Get P_gg between two tracer samples with sets of bias params starting from the heft component spectra
+
+        Adapted from the anzu method 'basis_to_full' from the LPTEmulator class.
+
+        Inputs:
+        -btheta: vector of bias + shot noise. See notes below fos tructure of terms
+
+        TODO:
+        -Generalize biases for two populations of tracers. For now we're doing auto-correlations but it should be an exercise in book-keeping to adjust.
+
+        Notes from Anzu documentation:
+            Bias parameters can either be
+            btheta = [b1, b2, bs2, SN]
+            or
+            btheta = [b1, b2, bs2, bnabla2, SN]
+            Where SN is a constant term, and the bnabla2 terms follow the approximation
+            <X, nabla^2 delta> ~ -k^2 <X, 1>.
+            Note the term <nabla^2, nabla^2> isn't included in the prediction since it's degenerate with even higher deriv
+            terms such as <nabla^4, 1> which in principle have different parameters.
+        """
+        # Clarification:
+        # anzu uses the following expansion for the galaxy overdensity:
+        #   d_g = b1 d + b2/2 d2^2 + bs s^2 + bnabla2d nabla^2 d
+        # (see Eq. 1 of https://arxiv.org/abs/2101.12187).
+        #
+        # The BACCO table below contains the following power spectra
+        # in order:
+        # <1,1>
+        # <1,d>
+        # <d,d>
+        # <1,d^2>
+        # <d,d^2>
+        # <d^2,d^2> (!)
+        # <1,s^2>
+        # <d,s^2>
+        # <d^2,s^2> (!)
+        # <s^2,s^2> (!)
+        #
+        # EPT uses:
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2 + b3 psi/2 + bnabla nablad/2
+        # So:
+        #   a) The spectra involving b2 are for d^2 - convert to d^2/2
+        #   b) The spectra involving bs are for s^2 - convert to s^2/2
+        #   c) The spectra involving bnabla are for nablad - convert to nablad/2
+        # Also, the spectra marked with (!) tend to a constant
+        # as k-> 0, which we can suppress with a low-pass filter.
+        #
+        # Importantly, we have corrected the spectra involving d^2 and s2 to
+        # make the definitions of b2, bs equivalent to what we have adopted for
+        # the EPT and LPT expansions.
+
+        b1_list = [b11, b21, bs1, bk21, bsn1]
+        b2_list = [b12, b22, bs2, bk22, bsn2]
+
+        assert np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]), \
+            'Two populations of tracers are not yet implemented for HEFT!'
+
+        bL11 = b11 - 1
+        bL12 = b12 - 1
+
+        if bk21 is None:
+            bk21 = np.zeros_like(self.a_arr)
+        if bk22 is None:
+            bk22 = np.zeros_like(self.a_arr)
+        if bsn1 is None:
+            bsn1 = np.zeros_like(self.a_arr)
+        if bsn2 is None:
+            bsn2 = np.zeros_like(self.a_arr)
+
+        # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
+        bterms_hh = [np.ones(self.nas),
+                     2 * bL11, bL11 ** 2,
+                     b21, b21 * bL11, 0.25 * b21 ** 2,
+                     bs1, bs1 * bL11, 0.5 * bs1 * b21, 0.25 * bs1 ** 2,
+                     bk21, bk21 * bL11, 0.5 * bk21 * b21, 0.5 * bk21 * bs1]
+        pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
+        pkvec[:, :10] = self.lpt_table
+        # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
+        nabla_idx = [0, 1, 3, 6]
+        # Higher derivative terms
+        pkvec[:, 10:] = -self.ks ** 2 * pkvec[:, nabla_idx]
+
+        bterms_hh = np.array(bterms_hh)
+        p_hh = np.einsum('bz, zbk->zbk', bterms_hh, pkvec)
+        p_sn = bsn1*np.ones((self.nas, len(self.ks)))
+
+        return p_hh, p_sn
+
     def get_pgm(self, b1, b2, bs, bk2=None, sn=None):
         """ Get P_gm for a set of bias parameters from the heft component spectra
        
