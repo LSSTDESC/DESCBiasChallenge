@@ -1,5 +1,6 @@
 sampler:
   minimize:
+    # method: scipy
     ignore_prior: True
     max_evals: 100000000
     best_of: 2
@@ -33,7 +34,7 @@ likelihood:
 
     defaults:
       kmax: choose_kmax
-      lmin: 0
+      lmin: 30
       lmax: 2000
       sh1:
         lmin: 30
