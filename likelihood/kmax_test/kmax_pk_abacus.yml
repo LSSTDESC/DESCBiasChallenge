@@ -1,7 +1,14 @@
 sampler:
   minimize:
     ignore_prior: True
-    max_evals: 10000
+    max_evals: 100000000
+    best_of: 2
+    override_bobyqa:
+      # option: value
+      # More stringent convergence criterion
+      rhoend: 0.00000001
+      user_params:
+        slow.max_slow_iters: 1000
 
 params:
   m_nu: 0.06
