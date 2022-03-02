@@ -31,6 +31,10 @@ parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed paramet
 parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='Shotnoise reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
+                    default='cl_like.ClLike')
 
 args = parser.parse_args()
 
@@ -39,6 +43,7 @@ path2output = args.path2output
 bias_model = args.bias_model
 k_max = args.k_max
 fit_params = args.fit_params
+name_like = args.name_like
 
 # Set model
 if bias_model == 'lin':
@@ -47,12 +52,17 @@ elif bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl']:
     model = 'EulerianPT'
 elif bias_model in ['LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl']:
     model = 'LagrangianPT'
-elif bias_model in ['BACCO', '3BACCO_bk2']:
+elif bias_model in ['BACCO', '3BACCO_bk2', '3BACCO_bk2+bsn']:
     model = 'BACCO'
+elif bias_model in ['anzu', '3anzu_bk2', '3anzu_bk2+bsn']:
+    model = 'anzu'
+elif bias_model == 'HOD':
+    model = 'HOD'
 else:
     raise ValueError("Unknown bias model")
 
 logger.info('Running analysis for:')
+logger.info('Likelihood: {}.'.format(name_like))
 logger.info('Bias model: {}.'.format(bias_model))
 logger.info('k_max: {}.'.format(k_max))
 
@@ -62,12 +72,28 @@ with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
 # Determine true bias parameters depending on input
-bias = [2., 2., 2., 2., 2., 2.]
+bias = np.array([2., 2., 2., 2., 2., 2.])
+
+# Default reference value for bsn
+DEFAULT_REF_BSN = 1000.
+
+# Note: we need to hard-code the BACCO parameter bounds:
+# omega_matter: [0.23, 0.4 ]
+# sigma8: [0.73, 0.9 ]
+# omega_baryon: [0.04, 0.06]
+# ns: [0.92, 1.01]
+# hubble: [0.6, 0.8]
+# neutrino_mass: [0. , 0.4]
+# w0: [-1.15, -0.85]
+# wa: [-0.3,  0.3]
+# expfactor': [0.4, 1. ]
 
 if 'sigma8' in fit_params:
     info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.8090212289405192, 'scale': 0.01},
                                                     'latex': '\sigma_8', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['sigma8']['prior'] = {'min': 0.73, 'max': 0.9}
 elif args.sigma8 is not None:
     info['params']['sigma8'] = args.sigma8
 else:
@@ -76,6 +102,8 @@ if 'Omega_c' in fit_params:
     info['params']['Omega_c'] = {'prior': {'min': 0.05, 'max': 0.7},
                                                     'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
                                                     'latex': '\Omega_c', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['Omega_c']['prior'] = {'min': 0.19, 'max': 0.36}
 elif args.Omega_c is not None:
     info['params']['Omega_c'] = args.Omega_c
 else:
@@ -84,6 +112,8 @@ if 'Omega_b' in fit_params:
     info['params']['Omega_b'] = {'prior': {'min': 0.01, 'max': 0.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.049301692328524445, 'scale': 0.01},
                                                     'latex': '\Omega_b', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['Omega_b']['prior'] = {'min': 0.04, 'max': 0.06}
 elif args.Omega_b is not None:
     info['params']['Omega_b'] = args.Omega_b
 else:
@@ -92,6 +122,8 @@ if 'h' in fit_params:
     info['params']['h'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.6736, 'scale': 0.01},
                                                     'latex': 'h', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['h']['prior'] = {'min': 0.6, 'max': 0.8}
 elif args.h is not None:
     info['params']['h'] = args.h
 else:
@@ -100,51 +132,97 @@ if 'n_s' in fit_params:
     info['params']['n_s'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.9649, 'scale': 0.01},
                                                     'latex': 'n_s', 'proposal': 0.001}
+    if model == 'BACCO':
+        info['params']['n_s']['prior'] = {'min': 0.92, 'max': 1.01}
 elif args.n_s is not None:
     info['params']['n_s'] = args.n_s
 else:
     info['params']['n_s'] = 0.9649
 
 probes = args.probes
-info['likelihood']['cl_like.ClLike']['bins'] = [{'name': bin_name} for bin_name in args.bins]
-info['likelihood']['cl_like.ClLike']['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
+info['likelihood'][name_like]['bins'] = [{'name': bin_name} for bin_name in args.bins]
+info['likelihood'][name_like]['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
 n_bin = len(args.bins)
 bin_nos = [int(bin_name[-1])-1 for bin_name in args.bins if 'cl' in bin_name]
-
-# Template for bias parameters in yaml file
-cl_param = {'prior': {'min': -100.0, 'max': 100.0}, 
-        'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01}, 
-        'latex': 'blank', 'proposal': 0.001}
 
 # Set bias parameter types used in each model
 if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl',
                   'LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl',
-                  'BACCO', '3BACCO_bk2']:
-    bpar = ['1', '1p', '2', 's']#, '3nl', 'k2']
-else:
+                  'BACCO', '3BACCO_bk2', '3BACCO_bk2+bsn',
+                  'anzu', '3anzu_bk2', '3anzu_bk2+bsn']:
+    bpar = ['1', '1p', '2', 's', '3nl', 'k2', 'sn']
+elif bias_model == 'Linear':
     bpar = ['1','1p']
-    
-# Write bias parameters into yaml file
-for b in bpar:
-    for i in bin_nos:
-        param_name = 'cllike_cl'+str(i+1)+'_b'+b
-        if param_name in fit_params:
-            info['params'][param_name] = cl_param.copy()
-            info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
-            if b == '0' or b == '1':
-                info['params']['cllike_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+elif bias_model == 'HOD':
+    bpar = ['lMmin_0', 'lMmin_p',
+            'siglM_0', 'siglM_p',
+            'lM0_0', 'lM0_p',
+            'lM1_0', 'lM1_p',
+            'alpha_0', 'alpha_p']
+
+ref_bsn = args.ref_bsn
+if args.ref_bsn is not None:
+    ref_bsn = [0 for i in range(len(args.ref_bsn))]
+    for i, ref in enumerate(args.ref_bsn):
+        if ref != 'None':
+            ref_bsn[i] = float(ref)
         else:
-            if b == '0' or b == '1':
-                info['params']['cllike_cl'+str(i+1)+'_b'+b] = bias[i]
-            else:
-                info['params']['cllike_cl' + str(i + 1) + '_b' + b] = 0.
+            ref_bsn[i] = np.nan
+
+if bias_model != 'HOD':
+    # Template for bias parameters in yaml file
+    cl_param = {'prior': {'min': -100.0, 'max': 100.0},
+            'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
+            'latex': 'blank', 'proposal': 0.001}
+else:
+    HOD_means = [12.95, -2.0, 0.25, 0., 12.3, 0., 14.0, -1.5, 1.32, 0.]
+    cl_param = {'prior': {'min': -100.0, 'max': 100.0},
+            'ref': {'dist': 'norm', 'loc': 'blank', 'scale': 0.1},
+            'latex': 'blank', 'proposal': 0.001}
 
 # Add model and input file
-info['likelihood']['cl_like.ClLike']['bz_model'] = model
-info['likelihood']['cl_like.ClLike']['input_file'] = args.path2data
+info['likelihood'][name_like]['bz_model'] = model
+info['likelihood'][name_like]['input_file'] = args.path2data
+
+# Write bias parameters into yaml file
+input_params_prefix = info['likelihood'][name_like]['input_params_prefix']
+if bias_model != 'HOD':
+    for b in bpar:
+        for i in bin_nos:
+            param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
+            if param_name in fit_params:
+                info['params'][param_name] = cl_param.copy()
+                info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
+                if b == '0' or b == '1':
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+                elif b == 'sn':
+                    if ref_bsn is not None:
+                        mean = ref_bsn[i]
+                    else:
+                        mean = DEFAULT_REF_BSN
+
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['ref'] = {'dist': 'norm',
+                                                                                                  'loc': mean,
+                                                                                                  'scale': 0.1*np.abs(mean)}
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -2.*np.abs(mean),
+                                                                                                    'max': 2.*np.abs(mean)}
+            else:
+                if b == '0' or b == '1':
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = bias[i]
+                else:
+                    info['params'][input_params_prefix+'_cl' + str(i + 1) + '_b' + b] = 0.
+else:
+    for i, b in enumerate(bpar):
+        param_name = input_params_prefix + '_hod_' + b
+        if param_name in fit_params:
+            info['params'][param_name] = cl_param.copy()
+            info['params'][param_name]['latex'] = b + '\\,\\text{for HOD}'
+            info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': HOD_means[i], 'scale': 0.1}
+        else:
+            info['params'][param_name] = HOD_means[i]
 
 # Add kmax and output file
-info['likelihood']['cl_like.ClLike']['defaults']['kmax'] = float(k_max)
+info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)
 info['output'] = path2output
 
 # Save yaml file
@@ -182,10 +260,8 @@ F = fisher.Fisher_first_deri(model = model, parms = pf, fp_name = list(pf.keys()
                              step_factor = 0.01, method = 'five-stencil', full_expresssion = False)
 cov = F.get_cov()
 
-
 p0vals = list(p0.values())
 pfvals = list(pf.values())
 
-
 # Save data to file
-np.savez(info['output']+'.fisher.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov = cov)
+np.savez(info['output']+'.fisher.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)

@@ -2,18 +2,20 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pyccl as ccl
 # import pyccl.nl_pt as pt
-from . import tracers as pt
-from .lpt import LPTCalculator, get_lpt_pk2d
-from .ept import EPTCalculator, get_ept_pk2d
-from .bacco import BACCOCalculator, get_bacco_pk2d
-from .heft import HEFTCalculator, get_anzu_pk2d
+import sys
+sys.path.append('../likelihood/cl_like')
+import tracers as pt
+from lpt import LPTCalculator, get_lpt_pk2d
+from ept import EPTCalculator, get_ept_pk2d
+from bacco import BACCOCalculator, get_bacco_pk2d
+from heft import HEFTCalculator, get_anzu_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 from anzu.emu_funcs import LPTEmulator
 import baccoemu_beta as baccoemu
 
 
-class ClLike(Likelihood):
+class PkLike(Likelihood):
     # All parameters starting with this will be
     # identified as belonging to this stage.
     input_params_prefix: str = ""
@@ -41,8 +43,6 @@ class ClLike(Likelihood):
     def initialize(self):
         # Read SACC file
         self._read_data()
-        # Ell sampling for interpolation
-        self._get_ell_sampling()
         # Initialize emu to train it once
         if self.bz_model == 'anzu':
             self.emu = LPTEmulator(kecleft=True, extrap=False)
@@ -68,15 +68,8 @@ class ClLike(Likelihood):
             else:
                 raise ValueError(f'dtype not found for quantity {q}')
 
-        def get_lmax_from_kmax(cosmo, kmax, z, nz):
-            zmid = np.sum(z*nz)/np.sum(nz)
-            chi = ccl.comoving_radial_distance(cosmo, 1./(1+zmid))
-            lmax = np.max([10., kmax * chi - 0.5])
-            return lmax
-
         s = sacc.Sacc.load_fits(self.input_file)
         self.bin_properties = {}
-        cosmo_lcdm = ccl.CosmologyVanillaLCDM()
         kmax_default = self.defaults.get('kmax', 0.1)
         for b in self.bins:
             if b['name'] not in s.tracers:
@@ -86,85 +79,65 @@ class ClLike(Likelihood):
             self.bin_properties[b['name']] = {'z_fid': t.z,
                                               'nz_fid': t.nz,
                                               'zmean_fid': zmean}
-            # Ensure all tracers have ell_min
+            # Ensure all tracers have kmin
             if b['name'] not in self.defaults:
                 self.defaults[b['name']] = {}
-                self.defaults[b['name']]['lmin'] = self.defaults['lmin']
+                self.defaults[b['name']]['kmin'] = self.defaults['kmin']
 
-            # Give galaxy clustering an ell_max
+            # Give galaxy clustering an kmax
             if t.quantity == 'galaxy_density':
                 # Get lmax from kmax for galaxy clustering
-                if 'kmax' in self.defaults[b['name']]:
-                    kmax = self.defaults[b['name']]['kmax']
-                else:
-                    kmax = kmax_default
-                lmax = get_lmax_from_kmax(cosmo_lcdm,
-                                          kmax,
-                                          t.z, t.nz)
-                self.defaults[b['name']]['lmax'] = lmax
-
-            # Make sure everything else has an ell_max
-            if 'lmax' not in self.defaults[b['name']]:
-                self.defaults[b['name']]['lmax'] = self.defaults['lmax']
+                if 'kmax' not in self.defaults[b['name']]:
+                    self.defaults[b['name']]['kmax'] = kmax_default
 
         # First check which parts of the data vector to keep
         indices = []
-        for cl in self.twopoints:
-            tn1, tn2 = cl['bins']
-            lmin = np.max([self.defaults[tn1].get('lmin', 2),
-                           self.defaults[tn2].get('lmin', 2)])
-            lmax = np.min([self.defaults[tn1].get('lmax', 1E30),
-                           self.defaults[tn2].get('lmax', 1E30)])
+        for pk in self.twopoints:
+            tn1, tn2 = pk['bins']
+            kmin = np.max([self.defaults[tn1].get('kmin', 1e-4),
+                           self.defaults[tn2].get('kmin', 1e-4)])
+            kmax = np.min([self.defaults[tn1].get('kmax', 0.6),
+                           self.defaults[tn2].get('kmax', 0.6)])
             # Get the suffix for both tracers
-            cl_name1 = get_suffix_for_tr(s.tracers[tn1])
-            cl_name2 = get_suffix_for_tr(s.tracers[tn2])
-            ind = s.indices('cl_%s%s' % (cl_name1, cl_name2), (tn1, tn2),
-                            ell__gt=lmin, ell__lt=lmax)
+            pk_name1 = get_suffix_for_tr(s.tracers[tn1])
+            pk_name2 = get_suffix_for_tr(s.tracers[tn2])
+            ind = s.indices('cl_%s%s' % (pk_name1, pk_name2), (tn1, tn2),
+                            ell__gt=kmin, ell__lt=kmax)
             indices += list(ind)
         s.keep_indices(np.array(indices))
 
         # Now collect information about those
         # and put the C_ells in the right order
         indices = []
-        self.cl_meta = []
+        self.pk_meta = []
         id_sofar = 0
         self.used_tracers = {}
-        self.l_min_sample = 1E30
-        self.l_max_sample = -1E30
-        for cl in self.twopoints:
+        for pk in self.twopoints:
             # Get the suffix for both tracers
-            tn1, tn2 = cl['bins']
-            cl_name1 = get_suffix_for_tr(s.tracers[tn1])
-            cl_name2 = get_suffix_for_tr(s.tracers[tn2])
-            l, c_ell, cov, ind = s.get_ell_cl('cl_%s%s' % (cl_name1, cl_name2),
+            tn1, tn2 = pk['bins']
+            pk_name1 = get_suffix_for_tr(s.tracers[tn1])
+            pk_name2 = get_suffix_for_tr(s.tracers[tn2])
+            k, pk, cov, ind = s.get_ell_cl('cl_%s%s' % (pk_name1, pk_name2),
                                               tn1,
                                               tn2,
                                               return_cov=True,
                                               return_ind=True)
-            if c_ell.size > 0:
+            if pk.size > 0:
                 if tn1 not in self.used_tracers:
                     self.used_tracers[tn1] = s.tracers[tn1].quantity
                 if tn2 not in self.used_tracers:
                     self.used_tracers[tn2] = s.tracers[tn2].quantity
 
-            bpw = s.get_bandpower_windows(ind)
-            if np.amin(bpw.values) < self.l_min_sample:
-                self.l_min_sample = np.amin(bpw.values)
-            if np.amax(bpw.values) > self.l_max_sample:
-                self.l_max_sample = np.amax(bpw.values)
-
-            self.cl_meta.append({'bin_1': tn1,
+            self.pk_meta.append({'bin_1': tn1,
                                  'bin_2': tn2,
-                                 'l_eff': l,
-                                 'cl': c_ell,
+                                 'k': k,
+                                 'pk': pk,
                                  'cov': cov,
                                  'inds': (id_sofar +
-                                          np.arange(c_ell.size,
-                                                    dtype=int)),
-                                 'l_bpw': bpw.values,
-                                 'w_bpw': bpw.weight.T})
+                                          np.arange(pk.size,
+                                                    dtype=int))})
             indices += list(ind)
-            id_sofar += c_ell.size
+            id_sofar += pk.size
         indices = np.array(indices)
         # Reorder data vector and covariance
         self.data_vec = s.mean[indices]
@@ -175,34 +148,6 @@ class ClLike(Likelihood):
         self.ic_v = self.ic_v.T
         self.ic_w[self.ic_w < 0] = 0
         self.ndata = len(self.data_vec)
-
-    def _get_ell_sampling(self, nl_per_decade=30):
-        # Selects ell sampling.
-        # Ell max/min are set by the bandpower window ells.
-        # It currently uses simple log-spacing.
-        # nl_per_decade is currently fixed at 30
-        if self.l_min_sample == 0:
-            l_min_sample_here = 2
-        else:
-            l_min_sample_here = self.l_min_sample
-        nl_sample = int(np.log10(self.l_max_sample / l_min_sample_here) *
-                        nl_per_decade)
-        l_sample = np.unique(np.geomspace(l_min_sample_here,
-                                          self.l_max_sample+1,
-                                          nl_sample).astype(int)).astype(float)
-
-        if self.l_min_sample == 0:
-            self.l_sample = np.concatenate((np.array([0.]), l_sample))
-        else:
-            self.l_sample = l_sample
-
-    def _eval_interp_cl(self, cl_in, l_bpw, w_bpw):
-        """ Interpolates C_ell, evaluates it at bandpower window
-        ell values and convolves with window."""
-        f = interp1d(self.l_sample, cl_in)
-        cl_unbinned = f(l_bpw)
-        cl_binned = np.dot(w_bpw, cl_unbinned)
-        return cl_binned
 
     def _get_nz(self, cosmo, name, **pars):
         """ Get redshift distribution for a given tracer."""
@@ -367,54 +312,50 @@ class ClLike(Likelihood):
             raise LoggedError(self.log,
                               "Unknown bias model %s" % self.bz_model)
 
-    def _get_pkxy(self, cosmo, clm, pkd, trs, **pars):
+    def _get_pkxy(self, cosmo, pkm, pkd, trs, **pars):
         """ Get the P(k) between two tracers. """
-        q1 = self.used_tracers[clm['bin_1']]
-        q2 = self.used_tracers[clm['bin_2']]
+        q1 = self.used_tracers[pkm['bin_1']]
+        q2 = self.used_tracers[pkm['bin_2']]
 
         if (self.bz_model == 'Linear') or (self.bz_model == 'BzNone'):
             if (q1 == 'galaxy_density') and (q2 == 'galaxy_density'):
-                return pkd['pk_mm']  # galaxy-galaxy
+                pk_pt = pkd['pk_mm']  # galaxy-galaxy
             elif ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
-                return pkd['pk_mm']  # matter-matter
+                pk_pt = pkd['pk_mm']  # matter-matter
             else:
-                return pkd['pk_mm']  # galaxy-matter
+                pk_pt = pkd['pk_mm']  # galaxy-matter
         elif (self.bz_model == 'EulerianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
-                return pkd['pk_mm']  # matter-matter
+                pk_pt = pkd['pk_mm']  # matter-matter
             else:
-                ptt1 = trs[clm['bin_1']]['PT_tracer']
-                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                ptt1 = trs[pkm['bin_1']]['PT_tracer']
+                ptt2 = trs[pkm['bin_2']]['PT_tracer']
                 pk_pt = get_ept_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'], sub_lowk=False)
-                return pk_pt
         elif (self.bz_model == 'LagrangianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
-                return pkd['pk_mm']  # matter-matter
+                pk_pt = pkd['pk_mm']  # matter-matter
             else:
-                ptt1 = trs[clm['bin_1']]['PT_tracer']
-                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                ptt1 = trs[pkm['bin_1']]['PT_tracer']
+                ptt2 = trs[pkm['bin_2']]['PT_tracer']
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
-                return pk_pt
         elif (self.bz_model == 'BACCO'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
-                return pkd['pk_mm']  # matter-matter
+                pk_pt = pkd['pk_mm']  # matter-matter
             else:
-                ptt1 = trs[clm['bin_1']]['PT_tracer']
-                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                ptt1 = trs[pkm['bin_1']]['PT_tracer']
+                ptt2 = trs[pkm['bin_2']]['PT_tracer']
                 pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
-                return pk_pt
         elif (self.bz_model == 'anzu'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
-                return pkd['pk_mm']  # matter-matter
+                pk_pt = pkd['pk_mm']  # matter-matter
             else:
-                ptt1 = trs[clm['bin_1']]['PT_tracer']
-                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                ptt1 = trs[pkm['bin_1']]['PT_tracer']
+                ptt2 = trs[pkm['bin_2']]['PT_tracer']
                 pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
                                        ptc=pkd['ptc'])
-                return pk_pt
         elif (self.bz_model == 'HOD'):
             # Halo model calculation
             if ((q1 == 'galaxy_density') or (q2 == 'galaxy_density')):
@@ -436,8 +377,8 @@ class ClLike(Likelihood):
                     return 0.001
 
                 if ((q1 == 'galaxy_density') and (q2 == 'galaxy_density')):
-                    print(trs[clm['bin_1']])
-                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
+                    print(trs[pkm['bin_1']])
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[pkm['bin_1']]['HOD_params']))
                     pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg, prof_2pt=pgg,
                                                    prof2=pg,
                                                    normprof1=True, normprof2=True,
@@ -445,8 +386,8 @@ class ClLike(Likelihood):
                                                    smooth_transition=alpha_HMCODE,
                                                    supress_1h=k_supress)
                 elif ((q1 != 'galaxy_density') and (q2 == 'galaxy_density')):
-                    print(trs[clm['bin_2']])
-                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
+                    print(trs[pkm['bin_2']])
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[pkm['bin_2']]['HOD_params']))
                     pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg,
                                                    prof2=pm,
                                                    normprof1=True, normprof2=True,
@@ -454,7 +395,7 @@ class ClLike(Likelihood):
                                                    smooth_transition=alpha_HMCODE,
                                                    supress_1h=k_supress)
                 elif ((q1 == 'galaxy_density') and (q2 != 'galaxy_density')):
-                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[pkm['bin_1']]['HOD_params']))
                     pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg,
                                                    prof2=pm,
                                                    normprof1=True, normprof2=True,
@@ -463,27 +404,71 @@ class ClLike(Likelihood):
                                                    supress_1h=k_supress)
             elif ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
                 pk_pt = pkd['pk_mm']  # matter-matter
-            return pk_pt
         else:
             raise LoggedError(self.log,
                               "Unknown bias model %s" % self.bz_model)
 
-    def _get_cl_all(self, cosmo, pk, **pars):
+        if self.bin_properties[pkm['bin_1']]['zmean_fid'] == self.bin_properties[pkm['bin_2']]['zmean_fid']:
+            pk = pk_pt.eval(pkm['k'], 1./(1. + self.bin_properties[pkm['bin_1']]['zmean_fid']), cosmo)
+            # print(q1, q2)
+            # print(pkm['k'])
+            # print(self.bin_properties[pkm['bin_1']]['zmean_fid'], self.bin_properties[pkm['bin_2']]['zmean_fid'])
+            # print(pk)
+            # if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+            #     ptt1 = trs[pkm['bin_1']]['PT_tracer']
+            #     ptt2 = trs[pkm['bin_2']]['PT_tracer']
+            #
+            #     cosmology = {'omega_b': 0.02237,
+            #                  'omega_cdm': 0.12,
+            #                  'h': 0.6736,
+            #                  'A_s': 2.083e-09,
+            #                  'n_s': 0.9649,
+            #                  'alpha_s': 0.0,
+            #                  'N_ur': 2.0328,
+            #                  'N_ncdm': 1.0,
+            #                  'omega_ncdm': 0.0006442,
+            #                  'w0_fld': -1.0,
+            #                  'wa_fld': 0.0
+            #                  }
+            #     cosmo = ccl.Cosmology(Omega_c=cosmology['omega_cdm'] / cosmology['h'] ** 2,
+            #                           Omega_b=cosmology['omega_b'] / cosmology['h'] ** 2,
+            #                           h=cosmology['h'], A_s=cosmology['A_s'], n_s=cosmology['n_s'],
+            #                           m_nu=0.06)
+            #     sigma8 = ccl.sigma8(cosmo)
+            #     cosmo = ccl.Cosmology(Omega_c=cosmology['omega_cdm'] / cosmology['h'] ** 2,
+            #                           Omega_b=cosmology['omega_b'] / cosmology['h'] ** 2,
+            #                           h=cosmology['h'], sigma8=sigma8, n_s=cosmology['n_s'],
+            #                           m_nu=0.06)
+            #     cosmo.compute_linear_power()
+            #     cosmo.compute_nonlin_power()
+            #
+            #     pkd['ptc'].update_pk(cosmo)
+            #
+            #     pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
+            #                           ptc=pkd['ptc'])
+            #     pk = pk_pt.eval(pkm['k'], 1., cosmo)
+            #     print(pk)
+            #     pk = pkd['ptc'].bacco_table
+            #     print(pk[-1, 0, :])
+            #     pk = pk_pt.eval(pkm['k'], 1./(1. + self.bin_properties[pkm['bin_1']]['zmean_fid']), cosmo)
+            #     print(pk)
+        else:
+            pk = np.zeros_like(pkm['k'])
+
+        return pk
+
+    def _get_pk_all(self, cosmo, pk, **pars):
         """ Compute all C_ells."""
         # Gather all tracers
         trs = self._get_tracers(cosmo, **pars)
 
         # Correlate all needed pairs of tracers
-        cls = []
-        for clm in self.cl_meta:
-            pkxy = self._get_pkxy(cosmo, clm, pk, trs, **pars)
-            cl = ccl.angular_cl(cosmo,
-                                trs[clm['bin_1']]['ccl_tracer'],
-                                trs[clm['bin_2']]['ccl_tracer'],
-                                self.l_sample, p_of_k_a=pkxy)
-            clb = self._eval_interp_cl(cl, clm['l_bpw'], clm['w_bpw'])
-            cls.append(clb)
-        return cls
+        pks = []
+        for pkm in self.pk_meta:
+            pkxy = self._get_pkxy(cosmo, pkm, pk, trs, **pars)
+            # clb = self._eval_interp_cl(cl, clm['l_bpw'], clm['w_bpw'])
+            pks.append(pkxy)
+        return pks
 
     def _apply_shape_systematics(self, cls, **pars):
         if self.shape_model == 'ShapeMultiplicative':
@@ -504,7 +489,7 @@ class ClLike(Likelihood):
                 prefac = (1+m1) * (1+m2)
                 cls[i] *= prefac
 
-    def get_cls_theory(self, **pars):
+    def get_pks_theory(self, **pars):
         # Get cosmological model
         res = self.provider.get_CCL()
         cosmo = res['cosmo']
@@ -513,11 +498,11 @@ class ClLike(Likelihood):
         pkd = res['pk_data']
 
         # Then pass them on to convert them into C_ells
-        cls = self._get_cl_all(cosmo, pkd, **pars)
+        pks = self._get_pk_all(cosmo, pkd, **pars)
 
         # Multiplicative bias if needed
-        self._apply_shape_systematics(cls, **pars)
-        return cls
+        # self._apply_shape_systematics(cls, **pars)
+        return pks
 
     def _get_spin_component(self, tr):
         return 'e' if self.used_tracers[tr] == 'galaxy_shear' else '0'
@@ -542,27 +527,26 @@ class ClLike(Likelihood):
                              ell=np.arange(10), beam=np.ones(10))
 
         # Calculate power spectra
-        cls = self.get_cls_theory(**pars)
-        for clm, cl in zip(self.cl_meta, cls):
-            p1 = self._get_spin_component(clm['bin_1'])
-            p2 = self._get_spin_component(clm['bin_2'])
-            bpw = sacc.BandpowerWindow(clm['l_bpw'], clm['w_bpw'].T)
-            s.add_ell_cl(f'cl_{p1}{p2}', clm['bin_1'], clm['bin_2'],
-                         clm['l_eff'], cl, window=bpw)
+        pks = self.get_pks_theory(**pars)
+        for pkm, pk in zip(self.pk_meta, pks):
+            p1 = self._get_spin_component(pkm['bin_1'])
+            p2 = self._get_spin_component(pkm['bin_2'])
+            s.add_ell_cl(f'pk_{p1}{p2}', pkm['bin_1'], pkm['bin_2'],
+                         pkm['l_eff'], pk)
 
         s.add_covariance(self.cov)
         return s
 
     def _get_theory(self, **pars):
         """ Computes theory vector."""
-        cls = self.get_cls_theory(**pars)
+        pks = self.get_pks_theory(**pars)
 
         # Flattening into a 1D array
-        cl_out = np.zeros(self.ndata)
-        for clm, cl in zip(self.cl_meta, cls):
-            cl_out[clm['inds']] = cl
+        pk_out = np.zeros(self.ndata)
+        for pkm, pk in zip(self.pk_meta, pks):
+            pk_out[pkm['inds']] = pk
 
-        return cl_out
+        return pk_out
 
     def get_requirements(self):
         # By selecting `self._get_pk_data` as a `method` of CCL here,

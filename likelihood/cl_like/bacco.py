@@ -1,14 +1,15 @@
 import numpy as np
-from velocileptors.EPT.cleft_kexpanded_resummed_fftw import RKECLEFT
+import baccoemu_beta as baccoemu
 import pyccl as ccl
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-class LPTCalculator(object):
+class BACCOCalculator(object):
     """ This class implements a set of methods that can be
     used to compute the various components needed to estimate
-    perturbation theory correlations. These calculations are
-    currently based on velocileptors
-    (https://github.com/sfschen/velocileptors).
+    perturbation theory correlations using the BACCO emulator.
 
     Args:
         log10k_min (float): decimal logarithm of the minimum
@@ -17,114 +18,159 @@ class LPTCalculator(object):
         log10k_max (float): decimal logarithm of the maximum
             Fourier scale (in Mpc^-1) for which you want to
             calculate perturbation theory quantities.
-        a_arr (array_like): array of scale factors at which
-            growth/bias will be evaluated.
     """
-    def __init__(self, log10k_min=-4, log10k_max=2,
-                 nk_per_decade=20, a_arr=None, h=None, k_filter=None):
+    def __init__(self, bacco_emu=None, log10k_min=-2, log10k_max=0, nk_per_decade=20, h=None, k_filter=None):
+
+        self.h = h
+        if np.log10(10**log10k_min/self.h) < -2:
+            logger.info('Setting k_min to BACCO default.')
+            log10k_min = np.log10((1e-2)*self.h)
+        if np.log10(10**log10k_max/self.h) > np.log10(0.75):
+            logger.info('Setting k_max to BACCO default.')
+            log10k_max = np.log10(0.75*self.h)
         nk_total = int((log10k_max - log10k_min) * nk_per_decade)
         self.ks = np.logspace(log10k_min, log10k_max, nk_total)
-        if a_arr is None:
-            a_arr = 1./(1+np.linspace(0., 4., 30)[::-1])
-        self.a_s = a_arr
-        self.h = h
-        self.lpt_table = None
+
+        self.bacco_emu = bacco_emu
+        if self.bacco_emu is None:
+            self.bacco_emu = baccoemu.Lbias_expansion()
+        self.bacco_table = None
+
+        # redshifts for creating the Pk-2d object
+        z = np.array([1.5, 1.0, 0.85, 0.7, 0.55, 0.4, 0.25, 0.1, 0.0])
+        self.a_s = 1. / (1. + z)
         if k_filter is not None:
             self.wk_low = 1-np.exp(-(self.ks/k_filter)**2)
         else:
             self.wk_low = np.ones(nk_total)
 
-    def update_pk(self, pk, Dz):
+
+    def _cosmo_to_bacco(self, cosmo):
+        pars = {
+            'omega_matter': cosmo['Omega_b']+cosmo['Omega_c'], # No massive neutrinos
+            'omega_baryon': cosmo['Omega_b'],
+            'hubble': cosmo['H0']/100.,
+            'ns': cosmo['n_s'],
+            #TODO: Remove massive neutrinos from sigma_8
+            'sigma8': cosmo['sigma8'],
+            'neutrino_mass': np.sum(cosmo['m_nu']),
+            'w0': cosmo['w0'],
+            'wa': cosmo['wa'],
+            'expfactor': 1.  # random scale factor just to initialize
+        }
+        return pars
+
+    def update_pk(self, cosmo):
         """ Update the internal PT arrays.
 
         Args:
             pk (array_like): linear power spectrum sampled at the
                 internal `k` values used by this calculator.
         """
-        if pk.shape != self.ks.shape:
-            raise ValueError("Input spectrum has wrong shape")
-        if Dz.shape != self.a_s.shape:
-            raise ValueError("Input growth has wrong shape")
-        cleft = RKECLEFT(self.ks/self.h, pk*self.h**3)
-        self.lpt_table = []
-        for D in Dz:
-            cleft.make_ptable(D=D, kmin=self.ks[0]/self.h,
-                              kmax=self.ks[-1]/self.h, nk=self.ks.size)
-            self.lpt_table.append(cleft.pktable)
-        self.lpt_table = np.array(self.lpt_table)
-        self.lpt_table[:, :, 1:] /= self.h**3
 
-    def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2, b3nl1=None, b3nl2=None,
-                bk21=None, bk22=None, Pgrad=None):
-        if self.lpt_table is None:
-            raise ValueError("Please initialise CLEFT calculator")
+        # translate the pyccl cosmology parameters into bacco notation
+        pars = self._cosmo_to_bacco(cosmo)
+        # convert k_s [Mpc^-1] into h Mpc^-1 units just for the calculation
+        k = self.ks / pars['hubble']
+
+        # 10 redshifts, 15 combinations between bias params, and the ks (added b0)
+        num_comb = 15
+        pk2d_bacco = np.zeros((len(self.a_s), num_comb, len(self.ks)))
+
+        # compute the power for each redshift
+        # t1 = time.time()
+        for i in range(len(self.a_s)):
+            pars['expfactor'] = self.a_s[i]
+            # call the emulator of the nonlinear 15 lagrangian bias expansion terms, shape is (15, len(k))
+            # Use BACCO for z<=1.5
+            if self.a_s[i] >= 0.4:
+                _, pnn = self.bacco_emu.get_nonlinear_pnn(pars, k=k)
+                pk2d_bacco[i, :, :] = pnn
+            # Use LPT emulator for z>1.5
+            else:
+                plpt = self.bacco_emu.get_lpt_pk(pars, k=k)
+                pk2d_bacco[i, :, :] = plpt
+
+        # convert the spit out result from (Mpc/h)^3 to Mpc^3 (bacco uses h units, but pyccl doesn't)
+        pk2d_bacco /= pars['hubble'] ** 3
+        self.bacco_table = pk2d_bacco
+
+    def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2,
+                bk21=None, bk22=None, bsn1=None, bsn2=None, Pgrad=None):
+        if self.bacco_table is None:
+            raise ValueError("Please initialise BACCO calculator")
         # Clarification:
-        # CLEFT uses the followint expansion for the galaxy overdensity:
-        #   d_g = b1 d + b2 d2^2/2 + bs s^2
-        # (see Eq. 4.4 of https://arxiv.org/pdf/2005.00523.pdf).
-        # To add to the confusion, this is different from the prescription
-        # used by EPT, where s^2 is divided by 2 :-|
+        # BACCO uses the following expansion for the galaxy overdensity:
+        #   d_g = b1 d + b2 d2^2 + bs s^2 + bnabla2d nabla^2 d
+        # (see Eq. 1 of https://arxiv.org/abs/2101.12187).
         #
-        # The LPT table below contains the following power spectra
+        # The BACCO table below contains the following power spectra
         # in order:
-        #  <1,1>
-        #  2*<1,d>
-        #  <d,d>
-        #  2*<1,d^2/2>
-        #  2*<d,d^2/2>
-        #  <d^2/2,d^2/2> (!)
-        #  2*<1,s^2>
-        #  2*<d,s^2>
-        #  2*<d^2/2,s^2> (!)
-        #  <s^2,s^2> (!)
-        #  2*<1, O3>
-        #  2*<d, O3>
+        # <1,1>
+        # <1,d>
+        # <1,d^2>
+        # <1,s^2>
+        # <1,nabla^2 d>
+        # <d,d>
+        # <d,d^2>
+        # <d,s^2>
+        # <d,nabla^2 d>
+        # <d^2,d^2> (!)
+        # <d^2,s^2> (!)
+        # <d^2,nabla^2 d>
+        # <s^2,s^2> (!)
+        # <s^2,nabla^2 d>
+        # <nabla^2 d,nabla^2 d>
         #
         # EPT uses:
         #   d_g = b1 d + b2 d2^2/2 + bs s^2/2 + b3 psi/2 + bnabla nablad/2
         # So:
-        #   a) The cross-correlations need to be divided by 2.
-        #   b) The spectra involving b2 are for d^2/2, NOT d^2!!
-        #   c) The spectra invoving bs are for s^2, NOT s^2/2!!
-        #   d) The spectra involving b3 are for O3 - convert to O3/2
-        #   e) The spectra involving bnabla are for nablad - convert to nablad/2
+        #   a) The spectra involving b2 are for d^2 - convert to d^2/2
+        #   b) The spectra involving bs are for s^2 - convert to s^2/2
+        #   c) The spectra involving bnabla are for nablad - convert to nablad/2
         # Also, the spectra marked with (!) tend to a constant
         # as k-> 0, which we can suppress with a low-pass filter.
         #
-        # Importantly, we have corrected the spectra involving s2 to
-        # make the definition of bs equivalent in the EPT and LPT
-        # expansions.
+        # Importantly, we have corrected the spectra involving d^2 and s2 to
+        # make the definitions of b2, bs equivalent to what we have adopted for
+        # the EPT and LPT expansions.
         bL11 = b11-1
         bL12 = b12-1
         if Pnl is None:
-            Pdmdm = self.lpt_table[:, :, 1]
-            Pdmd1 = 0.5*self.lpt_table[:, :, 2]
-            Pd1d1 = self.lpt_table[:, :, 3]
+            Pdmdm = self.bacco_table[:, 0, :]
+            Pdmd1 = self.bacco_table[:, 1, :]
+            Pd1d1 = self.bacco_table[:, 5, :]
             pgg = (Pdmdm + (bL11+bL12)[:, None] * Pdmd1 +
                    (bL11*bL12)[:, None] * Pd1d1)
         else:
             pgg = (b11*b12)[:, None]*Pnl
-        Pdmd2 = 0.5*self.lpt_table[:, :, 4]
-        Pd1d2 = 0.5*self.lpt_table[:, :, 5]
-        Pd2d2 = self.lpt_table[:, :, 6]*self.wk_low[None, :]
-        Pdms2 = 0.25*self.lpt_table[:, :, 7]
-        Pd1s2 = 0.25*self.lpt_table[:, :, 8]
-        Pd2s2 = 0.25*self.lpt_table[:, :, 9]*self.wk_low[None, :]
-        Ps2s2 = 0.25*self.lpt_table[:, :, 10]*self.wk_low[None, :]
-        Pdmo3 = 0.25 * self.lpt_table[:, :, 11]
-        Pd1o3 = 0.25 * self.lpt_table[:, :, 12]
-        if Pgrad is None:
-            Pgrad = Pnl
-        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+        Pdmd2 = 0.5*self.bacco_table[:, 2, :]
+        Pd1d2 = 0.5*self.bacco_table[:, 6, :]
+        Pd2d2 = 0.25*self.bacco_table[:, 9, :]*self.wk_low[None, :]
+        Pdms2 = 0.5*self.bacco_table[:, 3, :]
+        Pd1s2 = 0.5*self.bacco_table[:, 7, :]
+        Pd2s2 = 0.25*self.bacco_table[:, 10, :]*self.wk_low[None, :]
+        Ps2s2 = 0.25*self.bacco_table[:, 12, :]*self.wk_low[None, :]
+        #TODO: OK to use low-pass filter?
 
-        if b3nl1 is None:
-            b3nl1 = np.zeros_like(self.a_s)
-        if b3nl2 is None:
-            b3nl2 = np.zeros_like(self.a_s)
+        #TODO: what to do with nonlocal bias?
+        if Pgrad is None:
+            Pdmn2 = 0.5 * self.bacco_table[:, 4, :]
+            Pd1n2 = 0.5 * self.bacco_table[:, 8, :]
+            Pd2n2 = 0.25 * self.bacco_table[:, 11, :]
+            Ps2n2 = 0.25 * self.bacco_table[:, 13, :]
+            Pn2n2 = 0.5 * self.bacco_table[:, 14, :]
+
+        else:
+            Pd1k2 = 0.5 * Pnl * (self.ks ** 2)[None, :]
         if bk21 is None:
             bk21 = np.zeros_like(self.a_s)
         if bk22 is None:
             bk22 = np.zeros_like(self.a_s)
+        if bsn1 is None:
+            bsn1 = np.zeros_like(self.a_s)
+        if bsn2 is None:
+            bsn2 = np.zeros_like(self.a_s)
 
         pgg += ((b21 + b22)[:, None] * Pdmd2 +
                 (bs1 + bs2)[:, None] * Pdms2 +
@@ -132,50 +178,64 @@ class LPTCalculator(object):
                 (bL11*bs2 + bL12*bs1)[:, None] * Pd1s2 +
                 (b21*b22)[:, None] * Pd2d2 +
                 (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
-                (bs1*bs2)[:, None] * Ps2s2 +
-                (b3nl1 + b3nl2)[:, None] * Pdmo3 +
-                (bL11*b3nl2 + bL12*b3nl1)[:, None] * Pd1o3 +
-                (b12*bk21+b11*bk22)[:, None] * Pd1k2)
+                (bs1*bs2)[:, None] * Ps2s2)
+
+        if Pgrad is None:
+            pgg += ((bk21 + bk22)[:, None] * Pdmn2 +
+                    (bL12 * bk21 + bL11 * bk22)[:, None] * Pd1n2 +
+                    (b22 * bk21 + b21 * bk22)[:, None] * Pd2n2 +
+                    (bs2 * bk21 + bs1 * bk22)[:, None] * Ps2n2 +
+                    (bk21 * bk22)[:, None] * Pn2n2)
+        else:
+            pgg += (b12 * bk21 + b11 * bk22)[:, None] * Pd1k2
+
+        #TODO: This is a terrible hack - need to think what to do about shot noise in x-corrs
+        pgg += bsn1[:, None]
 
         return pgg
 
-    def get_pgm(self, Pnl, b1, b2, bs, b3nl=None,
-                bk2=None, Pgrad=None):
-        if self.lpt_table is None:
-            raise ValueError("Please initialise CLEFT calculator")
+    def get_pgm(self, Pnl, b1, b2, bs, bk2=None, bsn=None, Pgrad=None):
+
+        if self.bacco_table is None:
+            raise ValueError("Please initialise BACCO calculator")
+
         bL1 = b1-1
         if Pnl is None:
-            Pdmdm = self.lpt_table[:, :, 1]
-            Pdmd1 = 0.5*self.lpt_table[:, :, 2]
+            Pdmdm = self.bacco_table[:, 0, :]
+            Pdmd1 = self.bacco_table[:, 1, :]
             pgm = Pdmdm + bL1[:, None] * Pdmd1
         else:
             pgm = b1[:, None]*Pnl
-        Pdmd2 = 0.5*self.lpt_table[:, :, 4]
-        Pdms2 = 0.25*self.lpt_table[:, :, 7]
-        Pdmo3 = 0.5 * self.lpt_table[:, :, 11]
+        Pdmd2 = 0.5*self.bacco_table[:, 2, :]
+        Pdms2 = 0.5*self.bacco_table[:, 3, :]
         if Pgrad is None:
-            Pgrad = Pnl
-        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+            Pdmn2 = 0.5 * self.bacco_table[:, 4, :]
+        else:
+            Pd1k2 = 0.5 * Pnl * (self.ks ** 2)[None, :]
 
         pgm += (b2[:, None] * Pdmd2 +
-                bs[:, None] * Pdms2 +
-                b3nl[:, None] * Pdmo3 +
-                bk2[:, None] * Pd1k2)
+                bs[:, None] * Pdms2)
+
+        if Pgrad is None:
+            pgm += bk2[:, None] * Pdmn2
+        else:
+            pgm += bk2[:, None] * Pd1k2
 
         return pgm
 
     def get_pmm(self):
-        if self.lpt_table is None:
-            raise ValueError("Please initialise CLEFT calculator")
 
-        pmm = self.lpt_table[:, :, 1]
+        if self.bacco_table is None:
+            raise ValueError("Please initialise BACCO calculator")
+
+        pmm = self.bacco_table[:, 0, :]
 
         return pmm
 
 
-def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
-                 nonlin_pk_type='nonlinear',
-                 nonloc_pk_type='nonlinear',
+def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
+                 nonlin_pk_type='spt',
+                 nonloc_pk_type='spt',
                  extrap_order_lok=1, extrap_order_hik=2):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
@@ -223,8 +283,8 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
     if not isinstance(tracer2, ccl.nl_pt.PTTracer):
         raise TypeError("tracer2 must be of type `ccl.nl_pt.PTTracer`")
 
-    if not isinstance(ptc, LPTCalculator):
-        raise TypeError("ptc should be of type `LPTCalculator`")
+    if not isinstance(ptc, BACCOCalculator):
+        raise TypeError("ptc should be of type `BACCOCalculator`")
     # z
     z_arr = 1. / ptc.a_s - 1
 
@@ -262,36 +322,35 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
         b11 = tracer1.b1(z_arr)
         b21 = tracer1.b2(z_arr)
         bs1 = tracer1.bs(z_arr)
-        if hasattr(tracer1, 'b3nl'):
-            b31 = tracer1.b3nl(z_arr)
-        else:
-            b31 = None
         if hasattr(tracer1, 'bk2'):
             bk21 = tracer1.bk2(z_arr)
         else:
             bk21 = None
+        if hasattr(tracer1, 'sn'):
+            bsn1 = tracer1.sn(z_arr)
+        else:
+            bsn1 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            if hasattr(tracer2, 'b3nl'):
-                b32 = tracer2.b3nl(z_arr)
-            else:
-                b32 = None
             if hasattr(tracer2, 'bk2'):
                 bk22 = tracer2.bk2(z_arr)
             else:
                 bk22 = None
+            if hasattr(tracer2, 'sn'):
+                bsn2 = tracer2.sn(z_arr)
+            else:
+                bsn2 = None
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1,
                                b12, b22, bs2,
-                               b31, b32,
                                bk21, bk22,
+                               bsn1, bsn2,
                                Pgrad)
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, b31,
-                bk21, Pgrad)
+            p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, bk21, bsn1, Pgrad)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -300,16 +359,15 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            if hasattr(tracer2, 'b3nl'):
-                b32 = tracer2.b3nl(z_arr)
-            else:
-                b32 = None
             if hasattr(tracer2, 'bk2'):
                 bk22 = tracer2.bk2(z_arr)
             else:
                 bk22 = None
-            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2, b32,
-                bk22, Pgrad)
+            if hasattr(tracer2, 'sn'):
+                bsn2 = tracer2.sn(z_arr)
+            else:
+                bsn2 = None
+            p_pt = ptc.get_pgm(Pnl, b12, b22, bs2, bk22, bsn2, Pgrad)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
