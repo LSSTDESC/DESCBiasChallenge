@@ -255,8 +255,16 @@ p0_chi2 = -2 * loglikes[0]
 loglikes, derived = model.loglikes(pf)
 pf_chi2 = -2 * loglikes[0]
 
+p_all = {}
+for p in info['params']:
+    if isinstance(info['params'][p], dict):
+        if 'ref' in info['params'][p]:
+            p_all[p] = bf[p]
+    else:
+        p_all[p] = info['params'][p]
+
 # Run error estimation fisher code
-F = fisher.Fisher_first_deri(model = model, parms = pf, fp_name = list(pf.keys()),
+F = fisher.Fisher_first_deri(model = model, parms = p_all, fp_name = list(pf.keys()),
                              step_factor = 0.01, method = 'five-stencil', full_expresssion = False)
 cov = F.get_cov()
 
