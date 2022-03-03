@@ -140,10 +140,60 @@ else:
     info['params']['n_s'] = 0.9649
 
 probes = args.probes
-info['likelihood'][name_like]['bins'] = [{'name': bin_name} for bin_name in args.bins]
-info['likelihood'][name_like]['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
-n_bin = len(args.bins)
-bin_nos = [int(bin_name[-1])-1 for bin_name in args.bins if 'cl' in bin_name]
+if probes != ['all']:
+    logger.info('Only fitting a subset of bins and probes.')
+    info['likelihood'][name_like]['bins'] = [{'name': bin_name} for bin_name in args.bins]
+    info['likelihood'][name_like]['twopoints'] = [{'bins': [probes[2*i], probes[2*i+1]]} for i in range(len(probes)//2)]
+    n_bin = len(args.bins)
+    bin_nos = [int(bin_name[-1])-1 for bin_name in args.bins if 'cl' in bin_name]
+else:
+    logger.info('Fitting all bins and probes.')
+    if 'red' in args.path2data:
+        logger.info('Looking at red sample with 6 clustering bins.')
+        info['likelihood'][name_like]['bins'] = [{'name': 'cl1'}, {'name': 'cl2'}, {'name': 'cl3'}, {'name': 'cl4'}, {'name': 'cl5'},\
+                                                 {'name': 'cl6'}, {'name': 'sh1'}, {'name': 'sh2'}, {'name': 'sh3'}, {'name': 'sh4'}, \
+                                                 {'name': 'sh5'}]
+        info['likelihood'][name_like]['twopoints'] = [{'bins': ['cl1', 'cl1']}, {'bins': ['cl2', 'cl2']}, {'bins': ['cl3', 'cl3']}, \
+                                                      {'bins': ['cl4', 'cl4']}, {'bins': ['cl5', 'cl5']}, {'bins': ['cl6', 'cl5']}, \
+                                                      {'bins': ['cl1', 'sh1']}, {'bins': ['cl1', 'sh2']}, {'bins': ['cl1', 'sh3']}, \
+                                                      {'bins': ['cl1', 'sh4']}, {'bins': ['cl1', 'sh5']}, {'bins': ['cl2', 'sh1']}, \
+                                                      {'bins': ['cl2', 'sh2']}, {'bins': ['cl2', 'sh3']}, {'bins': ['cl2', 'sh4']}, \
+                                                      {'bins': ['cl2', 'sh5']}, {'bins': ['cl3', 'sh1']}, {'bins': ['cl3', 'sh2']}, \
+                                                      {'bins': ['cl3', 'sh3']}, {'bins': ['cl3', 'sh4']}, {'bins': ['cl3', 'sh5']}, \
+                                                      {'bins': ['cl4', 'sh1']}, {'bins': ['cl4', 'sh2']}, {'bins': ['cl4', 'sh3']}, \
+                                                      {'bins': ['cl4', 'sh4']}, {'bins': ['cl4', 'sh5']}, {'bins': ['cl5', 'sh1']}, \
+                                                      {'bins': ['cl5', 'sh2']}, {'bins': ['cl5', 'sh3']}, {'bins': ['cl5', 'sh4']}, \
+                                                      {'bins': ['cl5', 'sh5']}, {'bins': ['cl6', 'sh1']}, {'bins': ['cl6', 'sh2']}, \
+                                                      {'bins': ['cl6', 'sh3']}, {'bins': ['cl6', 'sh4']}, {'bins': ['cl6', 'sh5']}, \
+                                                      {'bins': ['sh1', 'sh1']}, {'bins': ['sh1', 'sh2']}, {'bins': ['sh1', 'sh3']}, \
+                                                      {'bins': ['sh1', 'sh4']}, {'bins': ['sh1', 'sh5']}, {'bins': ['sh2', 'sh2']}, \
+                                                      {'bins': ['sh2', 'sh3']}, {'bins': ['sh2', 'sh4']}, {'bins': ['sh2', 'sh5']}, \
+                                                      {'bins': ['sh3', 'sh3']}, {'bins': ['sh3', 'sh4']}, {'bins': ['sh3', 'sh5']}, \
+                                                      {'bins': ['sh4', 'sh4']}, {'bins': ['sh4', 'sh5']}, {'bins': ['sh5', 'sh5']}]
+        n_bin = len(info['likelihood'][name_like]['bins'])
+        bin_nos = [int(bin_dict['name'][-1]) - 1 for bin_dict in info['likelihood'][name_like]['bins'] if 'cl' in bin_dict['name']]
+    elif 'HSC' in args.path2data:
+        logger.info('Looking at HSC sample with 5 clustering bins.')
+        info['likelihood'][name_like]['bins'] = [{'name': 'cl1'}, {'name': 'cl2'}, {'name': 'cl3'}, {'name': 'cl4'}, {'name': 'cl5'},\
+                                                 {'name': 'sh1'}, {'name': 'sh2'}, {'name': 'sh3'}, {'name': 'sh4'}, {'name': 'sh5'}]
+        info['likelihood'][name_like]['twopoints'] = [{'bins': ['cl1', 'cl1']}, {'bins': ['cl2', 'cl2']}, {'bins': ['cl3', 'cl3']}, \
+                                                      {'bins': ['cl4', 'cl4']}, {'bins': ['cl5', 'cl5']}, {'bins': ['cl6', 'cl5']}, \
+                                                      {'bins': ['cl1', 'sh1']}, {'bins': ['cl1', 'sh2']}, {'bins': ['cl1', 'sh3']}, \
+                                                      {'bins': ['cl1', 'sh4']}, {'bins': ['cl1', 'sh5']}, {'bins': ['cl2', 'sh1']}, \
+                                                      {'bins': ['cl2', 'sh2']}, {'bins': ['cl2', 'sh3']}, {'bins': ['cl2', 'sh4']}, \
+                                                      {'bins': ['cl2', 'sh5']}, {'bins': ['cl3', 'sh1']}, {'bins': ['cl3', 'sh2']}, \
+                                                      {'bins': ['cl3', 'sh3']}, {'bins': ['cl3', 'sh4']}, {'bins': ['cl3', 'sh5']}, \
+                                                      {'bins': ['cl4', 'sh1']}, {'bins': ['cl4', 'sh2']}, {'bins': ['cl4', 'sh3']}, \
+                                                      {'bins': ['cl4', 'sh4']}, {'bins': ['cl4', 'sh5']}, {'bins': ['cl5', 'sh1']}, \
+                                                      {'bins': ['cl5', 'sh2']}, {'bins': ['cl5', 'sh3']}, {'bins': ['cl5', 'sh4']}, \
+                                                      {'bins': ['cl5', 'sh5']}, {'bins': ['sh1', 'sh1']}, {'bins': ['sh1', 'sh2']}, \
+                                                      {'bins': ['sh1', 'sh3']}, {'bins': ['sh1', 'sh4']}, {'bins': ['sh1', 'sh5']}, \
+                                                      {'bins': ['sh2', 'sh2']}, {'bins': ['sh2', 'sh3']}, {'bins': ['sh2', 'sh4']}, \
+                                                      {'bins': ['sh2', 'sh5']}, {'bins': ['sh3', 'sh3']}, {'bins': ['sh3', 'sh4']}, \
+                                                      {'bins': ['sh3', 'sh5']}, {'bins': ['sh4', 'sh4']}, {'bins': ['sh4', 'sh5']}, \
+                                                      {'bins': ['sh5', 'sh5']}]
+        n_bin = len(info['likelihood'][name_like]['bins'])
+        bin_nos = [int(bin_dict['name'][-1]) - 1 for bin_dict in info['likelihood'][name_like]['bins'] if 'cl' in bin_dict['name']]
 
 # Set bias parameter types used in each model
 if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl',
