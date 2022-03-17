@@ -154,8 +154,8 @@ class DataGenerator(object):
         nls = np.zeros([n_tot, n_tot, ll['n_bpw']])
         sgamma = self.c.get('e_rms', 0.28)
         # Clustering first
-        for i in range(self.n_cl):
-            nls[i, i, :] = 1./self.ndens_cl[i]
+        # for i in range(self.n_cl):
+        #     nls[i, i, :] = 1./self.ndens_cl[i]
         # Then shear
         for i in range(self.n_sh):
             nls[i+self.n_cl, i+self.n_cl, :] = sgamma**2/self.ndens_sh[i]
@@ -300,20 +300,36 @@ class DataGenerator(object):
             print("Getting Abacus Pks")
             gtype = self.c['bias']['galtype']
             if gtype != 'h':
-                print('Reading galaxy power spectra from Abacus.')
-                d = np.load('AbacusData/pk2d-sn_abacus.npz')
+                if self.c['bias']['noise']:
+                    print('Reading noisy galaxy power spectra from Abacus.')
+                    d = np.load('AbacusData/pk2d-sn_abacus.npz')
+                else:
+                    print('Reading SN removed galaxy power spectra from Abacus.')
+                    d = np.load('AbacusData/pk2d_abacus.npz')
             else:
                 print('Reading halo power spectra from Abacus.')
                 assert 'massbin' in self.c['bias'], 'Must specify massbin.'
                 massbin = self.c['bias']['massbin']
-                if massbin == 1:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5-sn_abacus.npz')
-                elif massbin == 2:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13-sn_abacus.npz')
-                elif massbin == 3:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5-sn_abacus.npz')
+                if self.c['bias']['noise']:
+                    print('Reading noisy halo power spectra from Abacus.')
+                    if massbin == 1:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5-sn_abacus.npz')
+                    elif massbin == 2:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13-sn_abacus.npz')
+                    elif massbin == 3:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5-sn_abacus.npz')
+                    else:
+                        print('Only massbin = 1, 2, 3 suppoorted.')
                 else:
-                    print('Only massbin = 1, 2, 3 suppoorted.')
+                    print('Reading SN removed halo power spectra from Abacus.')
+                    if massbin == 1:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5_abacus.npz')
+                    elif massbin == 2:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13_abacus.npz')
+                    elif massbin == 3:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5_abacus.npz')
+                    else:
+                        print('Only massbin = 1, 2, 3 suppoorted.')
 
             # The red-red Pk is super noisy at z>1.7, so we remove that
             if gtype in ['red', 'red_AB']:
@@ -498,6 +514,8 @@ class DataGenerator(object):
         # Covariance
         print("Cov")
         nl = self._get_nls()
+        print(sl)
+        print(sl+nl)
         cov = self._get_covariance(sl+nl, unwrap=True)
         s.add_covariance(cov)
 
@@ -681,17 +699,32 @@ cospar = {'Omega_c': 0.25,
 #           'ndens_cl': 4.,
 #           'dNdz_file': 'data/dNdz_shear_red.npz',
 #           'e_rms': 0.28,
-#           'theor_err': True,
-#           'theor_err_rel': 0.01,
+#           # 'theor_err': True,
+#           # 'theor_err_rel': 0.01,
 #           'cosmology': 'Abacus',
 #           'bias': {'model': 'Abacus',
+#                    'noise': True,
 #                    'galtype': 'red'},
-#           'sacc_name': 'abacus_red_theory_err=0p01_abacus.fits'}
+#           'sacc_name': 'abacus_red-sn_cov=sim-noise_abacus.fits'}
 # if not os.path.isfile(config['sacc_name']):
 #     d = DataGenerator(config)
 #     s = d.get_sacc_file()
 #     d.save_config()
 #     print(" ")
+config = {'ndens_sh': 27.,
+      'ndens_cl': 4.,
+      'dNdz_file': 'data/dNdz_shear_red.npz',
+      'e_rms': 0.28,
+      'cosmology': 'Abacus',
+      'bias': {'model': 'Abacus',
+               'noise': True,
+               'galtype': 'all'},
+          'sacc_name': 'abacus_HSC-sn_bins=red_cov=sim-noise_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
 # Red Y1 errors (same HOD params)
 # config = {'ndens_sh': 10.,
 #           'ndens_cl': 1.5,
@@ -706,20 +739,96 @@ cospar = {'Omega_c': 0.25,
 #     s = d.get_sacc_file()
 #     d.save_config()
 #     print(" ")
-# # Red unnorm (same HOD params)
-config = {'ndens_sh': 27.,
+# Red unnorm (same HOD params)
+config_noise = {'ndens_sh': 27.,
           'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+          'dNdz_file': 'data/dNdz_shear_red.npz',
           'e_rms': 0.28,
           'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus_unnorm',
+          'bias': {'model': 'Abacus',
+                   'noise': True,
                    'galtype': 'red'},
-          'sacc_name': 'abacus_red-sn_unnorm_z=0p1-1p4_abacus.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
+          'sacc_name': 'abacus_red-sn_cov=noise_test_abacus.fits'}
+config_nonoise = {'ndens_sh': 27.,
+          'ndens_cl': 4.,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'noise': False,
+                   'galtype': 'red'},
+          'sacc_name': 'abacus_red-sn_cov=nonoise_abacus.fits'}
+
+# config_noise = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'noise': True,
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red-sn_cov=noise_test_unnorm_abacus.fits'}
+# config_nonoise = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_red.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'noise': False,
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red-sn_cov=nonoise_unnorm_abacus.fits'}
+
+# config_noise = {'ndens_sh': 27.,
+#           'ndens_cl': 27.,
+#           'dNdz_file': 'data/dNdz_shear_shear.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'noise': True,
+#                    'galtype': 'all'},
+#           'sacc_name': 'abacus_HSC-sn_cov=noise_temp_unnorm_abacus.fits'}
+# config_nonoise = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_shear_shear.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'noise': False,
+#                    'galtype': 'all'},
+#           'sacc_name': 'abacus_HSC-sn_cov=nonoise_unnorm_abacus.fits'}
+
+# if not os.path.isfile(config_noise['sacc_name']):
+
+# d_noise = DataGenerator(config_noise)
+# s_noise = d_noise.get_sacc_file()
+#
+# d_nonoise = DataGenerator(config_nonoise)
+# s_nonoise = d_nonoise.get_sacc_file()
+#
+# cov_nonoise = s_nonoise.covariance.covmat
+#
+# s_noise.add_covariance(cov_nonoise)
+#
+# print("Write")
+# s_noise.save_fits('abacus_red-sn_cov=noise_abacus.fits', overwrite=True)
+# #
+# d_noise.save_config()
+# print(" ")
+
+# Red unnorm (same HOD params)
+# config = {'ndens_sh': 27.,
+#           'ndens_cl': 4.,
+#           'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+#           'e_rms': 0.28,
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'galtype': 'red'},
+#           'sacc_name': 'abacus_red-sn_unnorm_z=0p1-1p4_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # Red all norm (same HOD params)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
@@ -768,10 +877,11 @@ if not os.path.isfile(config['sacc_name']):
 #           'dNdz_file': 'data/dNdz_shear_red.npz',
 #           'e_rms': 0.28,
 #           'cosmology': 'Abacus',
-#           'bias': {'model': 'Abacus_unnorm',
+#           'bias': {'model': 'Abacus',
+#                    'noise': True,
 #                    'galtype': 'h',
-#                    'massbin': 3},
-#           'sacc_name': 'abacus_halo-Mmin=13-Mmax=13p5-sn_unnorm_abacus.fits'}
+#                    'massbin': 1},
+#           'sacc_name': 'abacus_halo-Mmin=12-Mmax=12p5-sn_abacus.fits'}
 # if not os.path.isfile(config['sacc_name']):
 #     d = DataGenerator(config)
 #     s = d.get_sacc_file()
