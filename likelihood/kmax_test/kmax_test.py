@@ -31,7 +31,9 @@ parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed paramet
 parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
-parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='Shotnoise reference distribution (for initializtion).',
+parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='bsn reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_b1', dest='ref_b1', nargs='+', help='b1 reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
@@ -72,7 +74,7 @@ with open(config_fn, "r") as fin:
     info = yaml.load(fin, Loader=yaml.FullLoader)
 
 # Determine true bias parameters depending on input
-bias = np.array([2., 2., 2., 2., 2., 2.])
+DEFAULT_REF_B1 = 2.
 
 # Default reference value for bsn
 DEFAULT_REF_BSN = 1000.
@@ -218,6 +220,14 @@ if args.ref_bsn is not None:
             ref_bsn[i] = float(ref)
         else:
             ref_bsn[i] = np.nan
+ref_b1 = args.ref_b1
+if args.ref_b1 is not None:
+    ref_b1 = [0 for i in range(len(args.ref_b1))]
+    for i, ref in enumerate(args.ref_b1):
+        if ref != 'None':
+            ref_b1[i] = float(ref)
+        else:
+            ref_b1[i] = np.nan
 
 if bias_model != 'HOD':
     # Template for bias parameters in yaml file
@@ -244,7 +254,11 @@ if bias_model != 'HOD':
                 info['params'][param_name] = cl_param.copy()
                 info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
                 if b == '0' or b == '1':
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': bias[i], 'scale': 0.01}
+                    if ref_b1 is not None:
+                        mean = ref_b1[i]
+                    else:
+                        mean = DEFAULT_REF_B1
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.1}
                 elif b == 'sn':
                     if ref_bsn is not None:
                         mean = ref_bsn[i]
@@ -258,7 +272,7 @@ if bias_model != 'HOD':
                                                                                                     'max': 2.*np.abs(mean)}
             else:
                 if b == '0' or b == '1':
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = bias[i]
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = DEFAULT_REF_B1
                 else:
                     info['params'][input_params_prefix+'_cl' + str(i + 1) + '_b' + b] = 0.
 else:
