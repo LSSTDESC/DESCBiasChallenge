@@ -37,6 +37,8 @@ parser.add_argument('--ref_b1', dest='ref_b1', nargs='+', help='b1 reference dis
                     required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
+parser.add_argument('--sampler_type', dest='sampler_type', help='Type of sampler used.', default='minimizer',
+                    required=False)
 
 args = parser.parse_args()
 
@@ -305,35 +307,57 @@ for p in info['params']:
 print("params_dict = ", p0)
 
 # Run minimizer
-updated_info, sampler = run(info)
-bf = sampler.products()['minimum']
-np.save(info['output']+'.hessian.npy', sampler.products()['result_object'].hessian)
-pf = {k: bf[k] for k in p0.keys()}
-print("Final params: ")
-print(pf)
+if args.sampler_type == 'minimizer':
+    updated_info, sampler = run(info)
+    bf = sampler.products()['minimum']
+    np.save(info['output']+'.hessian.npy', sampler.products()['result_object'].hessian)
+    pf = {k: bf[k] for k in p0.keys()}
+    print("Final params: ")
+    print(pf)
 
-# Compute the likelihoods
-model = get_model(info)
-loglikes, derived = model.loglikes(p0)
-p0_chi2 = -2 * loglikes[0]
-loglikes, derived = model.loglikes(pf)
-pf_chi2 = -2 * loglikes[0]
+    # Compute the likelihoods
+    model = get_model(info)
+    loglikes, derived = model.loglikes(p0)
+    p0_chi2 = -2 * loglikes[0]
+    loglikes, derived = model.loglikes(pf)
+    pf_chi2 = -2 * loglikes[0]
 
-p_all = {}
-for p in info['params']:
-    if isinstance(info['params'][p], dict):
-        if 'ref' in info['params'][p]:
-            p_all[p] = bf[p]
-    else:
-        p_all[p] = info['params'][p]
+    p_all = {}
+    for p in info['params']:
+        if isinstance(info['params'][p], dict):
+            if 'ref' in info['params'][p]:
+                p_all[p] = bf[p]
+        else:
+            p_all[p] = info['params'][p]
 
-# Run error estimation fisher code
-F = fisher.Fisher_first_deri(model = model, parms = p_all, fp_name = list(pf.keys()),
-                             step_factor = 0.01, method = 'five-stencil', full_expresssion = False)
-cov = F.get_cov()
+    # Run error estimation fisher code
+    F = fisher.Fisher_first_deri(model = model, parms = p_all, fp_name = list(pf.keys()),
+                                 step_factor = 0.01, method = 'five-stencil', full_expresssion = False)
+    cov = F.get_cov()
 
-p0vals = list(p0.values())
-pfvals = list(pf.values())
+    p0vals = list(p0.values())
+    pfvals = list(pf.values())
 
-# Save data to file
-np.savez(info['output']+'.fisher.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+    # Save data to file
+    np.savez(info['output']+'.fisher.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+elif args.sampler_type == 'mcmc':
+    from mpi4py import MPI
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
+    from cobaya.run import run
+    from cobaya.log import LoggedError
+
+    success = False
+    try:
+        upd_info, mcmc = run(info)
+        success = True
+    except LoggedError as err:
+        pass
+
+    # Did it work? (e.g. did not get stuck)
+    success = all(comm.allgather(success))
+
+    if not success and rank == 0:
+        print("Sampling failed!")
