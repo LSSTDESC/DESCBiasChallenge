@@ -256,13 +256,13 @@ if bias_model != 'HOD':
                 info['params'][param_name] = cl_param.copy()
                 info['params'][param_name]['latex'] = 'b_'+b+'\\,\\text{for}\\,C_{l,'+str(i+1)+'}'
                 if b == '0' or b == '1':
-                    if ref_b1 is not None:
+                    if ref_b1[i] is not None:
                         mean = ref_b1[i]
                     else:
                         mean = DEFAULT_REF_B1
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.1}
                 elif b == 'sn':
-                    if ref_bsn is not None:
+                    if ref_bsn[i] is not None:
                         mean = ref_bsn[i]
                     else:
                         mean = DEFAULT_REF_BSN
