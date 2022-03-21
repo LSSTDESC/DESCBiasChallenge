@@ -221,7 +221,7 @@ if args.ref_bsn is not None:
         if ref != 'None':
             ref_bsn[i] = float(ref)
         else:
-            ref_bsn[i] = np.nan
+            ref_bsn[i] = None
 ref_b1 = args.ref_b1
 if args.ref_b1 is not None:
     ref_b1 = [0 for i in range(len(args.ref_b1))]
@@ -229,7 +229,7 @@ if args.ref_b1 is not None:
         if ref != 'None':
             ref_b1[i] = float(ref)
         else:
-            ref_b1[i] = np.nan
+            ref_b1[i] = None
 
 if bias_model != 'HOD':
     # Template for bias parameters in yaml file
