@@ -1,8 +1,14 @@
 sampler:
   minimize:
+    # method: scipy
     ignore_prior: True
-    max_evals: 10000
-    best_of: 5
+    max_evals: 100000000
+    override_bobyqa:
+      # option: value
+      # More stringent convergence criterion
+      rhoend: 0.00001
+      user_params:
+        slow.max_slow_iters: 1000
 
 params:
   m_nu: 0.0
