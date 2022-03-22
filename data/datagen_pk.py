@@ -88,7 +88,14 @@ class DataGenerator(object):
         z_arr = np.tile(self.z_cl, self.nz_cl.shape[0]).reshape(self.nz_cl.shape[0], -1)
         zmean_cl = np.average(z_arr, axis=1, weights=self.nz_cl)
         norms_cl = simps(self.nz_cl, x=self.z_cl)
-        self.ndens_cl = self.c['ndens_cl']*norms_cl/np.sum(norms_cl)
+        if 'ndens_cl' not in self.c:
+            self.ndens_cl = None
+        else:
+            if self.c['ndens_cl'] is None:
+                self.ndens_cl = None
+            else:
+                self.ndens_cl = self.c['ndens_cl']*norms_cl/np.sum(norms_cl)
+                self.ndens_cl *= (180*60/np.pi)**2
         self.z_sh = d['z_sh']
         self.nz_sh = d['dNdz_sh'].T
         z_arr = np.tile(self.z_sh, self.nz_sh.shape[0]).reshape(self.nz_sh.shape[0], -1)
@@ -234,8 +241,10 @@ class DataGenerator(object):
         n_tot = self.n_cl + self.n_sh
         nls = np.zeros([n_tot, n_tot, kk['n_bpw']])
         # Clustering first
-        for i in range(self.n_cl):
-            nls[i, i, :] = 1./self.ndens_cl[i]
+        if self.ndens_cl is not None:
+            logger.info('Adding survey noise to clustering cls.')
+            for i in range(self.n_cl):
+                nls[i, i, :] = 1./self.ndens_cl[i]
         return nls
 
     def _get_shear_tracers(self):
@@ -302,23 +311,39 @@ class DataGenerator(object):
             b = ccl.halos.halomod_bias_1pt(self.cosmo, hmc, 1E-4, 1/(1+z), pg, normprof=True)
             return b
         elif self.bias_model == 'Abacus' or self.bias_model == 'Abacus_unnorm':
-            print("Getting Abacus Pks")
+            logger.info("Getting Abacus Pks")
             gtype = self.c['bias']['galtype']
             if gtype != 'h':
-                print('Reading galaxy power spectra from Abacus.')
-                d = np.load('AbacusData/pk2d_abacus.npz')
+                if self.c['bias']['noise']:
+                    logger.info('Reading noisy galaxy power spectra from Abacus.')
+                    d = np.load('AbacusData/pk2d-sn_abacus.npz')
+                else:
+                    logger.info('Reading SN removed galaxy power spectra from Abacus.')
+                    d = np.load('AbacusData/pk2d_abacus.npz')
             else:
-                print('Reading halo power spectra from Abacus.')
+                logger.info('Reading halo power spectra from Abacus.')
                 assert 'massbin' in self.c['bias'], 'Must specify massbin.'
                 massbin = self.c['bias']['massbin']
-                if massbin == 1:
-                    d = np.load('AbacusData/pk2d_halo_abacus.npz')
-                elif massbin == 2:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13_abacus.npz')
-                elif massbin == 3:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5_abacus.npz')
+                if self.c['bias']['noise']:
+                    logger.info('Reading noisy halo power spectra from Abacus.')
+                    if massbin == 1:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5-sn_abacus.npz')
+                    elif massbin == 2:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13-sn_abacus.npz')
+                    elif massbin == 3:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5-sn_abacus.npz')
+                    else:
+                        logger.info('Only massbin = 1, 2, 3 suppoorted.')
                 else:
-                    print('Only massbin = 1, 2, 3 suppoorted.')
+                    logger.info('Reading SN removed halo power spectra from Abacus.')
+                    if massbin == 1:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5_abacus.npz')
+                    elif massbin == 2:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13_abacus.npz')
+                    elif massbin == 3:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5_abacus.npz')
+                    else:
+                        logger.info('Only massbin = 1, 2, 3 supported.')
             ids = d['k_s'] < 0.1
             pkgg = d[f'{gtype}_{gtype}'][:, ids]
             pkmm = d['m_m'][:, ids]
@@ -339,7 +364,7 @@ class DataGenerator(object):
             pk_gm = None
         elif self.bias_model == 'HOD':
             # Halo model calculation
-            print("Getting HOD Pks")
+            logger.info("Getting HOD Pks")
             md = ccl.halos.MassDef200m()
             cm = ccl.halos.ConcentrationDuffy08(mdef=md)
             mf = ccl.halos.MassFuncTinker08(self.cosmo, mass_def=md)
@@ -374,23 +399,39 @@ class DataGenerator(object):
             # If using Abacus, read all the smooth power spectra
             # (generated in AbacusData.ipynb), and interpolate
             # in k and a.
-            print("Getting Abacus Pks")
+            logger.info("Getting Abacus Pks")
             gtype = self.c['bias']['galtype']
             if gtype != 'h':
-                print('Reading galaxy power spectra from Abacus.')
-                d = np.load('AbacusData/pk2d-sn_abacus.npz')
+                if self.c['bias']['noise']:
+                    logger.info('Reading noisy galaxy power spectra from Abacus.')
+                    d = np.load('AbacusData/pk2d-sn_abacus.npz')
+                else:
+                    logger.info('Reading SN removed galaxy power spectra from Abacus.')
+                    d = np.load('AbacusData/pk2d_abacus.npz')
             else:
-                print('Reading halo power spectra from Abacus.')
+                logger.info('Reading halo power spectra from Abacus.')
                 assert 'massbin' in self.c['bias'], 'Must specify massbin.'
                 massbin = self.c['bias']['massbin']
-                if massbin == 1:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5-sn_abacus.npz')
-                elif massbin == 2:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13-sn_abacus.npz')
-                elif massbin == 3:
-                    d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5-sn_abacus.npz')
+                if self.c['bias']['noise']:
+                    logger.info('Reading noisy halo power spectra from Abacus.')
+                    if massbin == 1:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5-sn_abacus.npz')
+                    elif massbin == 2:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13-sn_abacus.npz')
+                    elif massbin == 3:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5-sn_abacus.npz')
+                    else:
+                        logger.info('Only massbin = 1, 2, 3 suppoorted.')
                 else:
-                    print('Only massbin = 1, 2, 3 supported.')
+                    logger.info('Reading SN removed halo power spectra from Abacus.')
+                    if massbin == 1:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12-Mmax=12p5_abacus.npz')
+                    elif massbin == 2:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=12p5-Mmax=13_abacus.npz')
+                    elif massbin == 3:
+                        d = np.load('AbacusData/pk2d_halo_Mmin=13-Mmax=13p5_abacus.npz')
+                    else:
+                        logger.info('Only massbin = 1, 2, 3 supported.')
 
             # The red-red Pk is super noisy at z>1.7, so we remove that
             if gtype in ['red', 'red_AB']:
@@ -469,12 +510,14 @@ class DataGenerator(object):
                     continue
                 if self.bias_model not in ['BACCO', 'anzu']:
                     if self.bias_model != 'Abacus_unnorm':
+                        print('Using halofit Pmm.')
                         a_s = 1. / (1 + np.linspace(0., 4., 30)[::-1])
                         k_s = np.logspace(-4, 2, 200)
                         phf = np.array([ccl.nonlin_matter_power(self.cosmo, k_s, a)
                                         for a in a_s])
                         pk = ccl.Pk2D(a_arr=a_s, lk_arr=np.log(k_s), pk_arr=np.log(phf), is_logp=True)
                     else:
+                        print('Using Pmm from sims.')
                         pk = pks['mm']
                     if i1 < self.n_cl:
                         if i2 < self.n_cl:
@@ -568,8 +611,6 @@ class DataGenerator(object):
         print("Pks")
         pk_th = self._get_pk_all()
         for i1, i2, icl, n1, n2, pkt in self._get_indices(self.n_cl+self.n_sh):
-            print(i1, i2)
-            print(pk_th[i1, i2])
             s.add_ell_cl(pkt, n1, n2, kk['ks'], pk_th[i1, i2])
 
         # Covariance
@@ -577,7 +618,6 @@ class DataGenerator(object):
         nl = self._get_nls()
         cov = self._get_covariance(pk_th+nl, unwrap=True)
         s.add_covariance(cov)
-        print(cov)
 
         if self.c.get('add_noise', False):
             s.mean = np.random.multivariate_normal(s.mean, cov)
@@ -772,7 +812,38 @@ cospar = {'Omega_c': 0.25,
 #     s = d.get_sacc_file()
     # d.save_config()
     # print(" ")
-# Halo
+# HSC (same HOD params)
+# config = {'ndens_cl': None,
+#           'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+#           # 'zmean_cl': np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
+#           # 'zmean_sh': np.array([0.1, 0.2, 0.3, 0.4, 0.5]),
+#           # 'theor_err': True,
+#           # 'theor_err_rel': 0.01,
+#           # 'rescale_errs': True,
+#           # 'err_file': 'data/clerr-pkerr-ratio_red-sn_unnorm_kmin=0p06_z=0p1-1p4.npz',
+#           'cosmology': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
+#                    'galtype': 'red',
+#                    'noise': True},
+#           'sacc_name': 'abacus_red-sn_unnorm_pk_lens=source_kmin=0p06_z=0p1-1p4_cov=sim-noise_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+config = {'ndens_cl': None,
+          'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'galtype': 'red',
+                   'noise': True},
+          'sacc_name': 'abacus_red-sn_pk_lens=source_kmin=0p06_z=0p1-1p4_cov=sim-noise_abacus.fits'}
+if not os.path.isfile(config['sacc_name']):
+    d = DataGenerator(config)
+    s = d.get_sacc_file()
+    d.save_config()
+    print(" ")
+    # Halo
 # config = {'ndens_cl': 2e-3,
 #           'dNdz_file': 'data/dNdz_lens=source_red.npz',
 #           # 'zmean_cl': np.array([0.8, 1.1, 1.4, 1.7, 2., 2.5]),
@@ -796,12 +867,13 @@ cospar = {'Omega_c': 0.25,
 #           # 'zmean_cl': np.array([0.59]),
 #           # 'zmean_sh': np.array([0.59]),
 #           # 'use_custom_zmean': True,
+#           'sample_type': 'UNIT',
 #           'rescale_errs': True,
 #           'err_file': 'data/clerr-pkerr-ratio_red-sn_unnorm_kmin=0p06_z=0p5.npz',
 #           'cosmology': 'UNIT',
 #           'bias': {'model': 'UNIT',
 #                    'galtype': 'h'},
-#           'sacc_name': 'unit_redmagic-sn_pk_lens=source_kmin=0p06_z=0p59_err=cl-resc_unit_test-cov.fits'}
+#           'sacc_name': 'unit_redmagic-sn_pk-h-1Mpc_lens=source_kmin=0p06_z=0p59_cov=unit.fits'}
 # if not os.path.isfile(config['sacc_name']):
 #     d = DataGenerator(config)
 #     s = d.get_sacc_file()
@@ -891,36 +963,36 @@ cospar = {'Omega_c': 0.25,
 #           'bias': {'model': 'UNIT',
 #                    'galtype': 'h'},
 #           'sacc_name': }
-config = {'ndens_cl': 2e-3,
-          'dNdz_file': 'data/dNdz_lens=source_z=0p59.npz',
-          'cosmology': 'UNIT',
-          'sample_type': 'UNIT',
-          'bias': {'model': 'anzu',
-                   'k_filter': None,
-                   'bias_params':
-                       {'cl1_b1': 1.792437866,
-                                   'cl1_b1p': 0.0,
-                                   'cl1_b2': 0.5191489176,
-                                   'cl1_bs': -1.071675707,
-                                   'cl1_bk2': -2.466574255,
-                                   'cl1_bsn': 5688.966683,
-                                   'cl1_b3nl': 0.0,
-
-                                    # {'cl1_b1': 1.770209978,
-                                    #  'cl1_b2': 0.4169077275,
-                                    #  'cl1_bs': 0.4525840974,
-                                    #  'cl1_bk2': -4.689898773,
-                                    #  'cl1_bsn': 5625.766264,
-                                    #  'cl1_b1p': 0.0,
-                                    #  'cl1_b3nl': 0.0,
-
-                                  }},
-          'sacc_name': 'unit_redmagic-sn_pk_lens=source_kmin=0p06_z=0p59_err=unit-cov_model=anzu.fits'}
-if not os.path.isfile(config['sacc_name']):
-    d = DataGenerator(config)
-    s = d.get_sacc_file()
-    d.save_config()
-    print(" ")
+# config = {'ndens_cl': 2e-3,
+#           'dNdz_file': 'data/dNdz_lens=source_z=0p59.npz',
+#           'cosmology': 'UNIT',
+#           'sample_type': 'UNIT',
+#           'bias': {'model': 'anzu',
+#                    'k_filter': None,
+#                    'bias_params':
+#                        {'cl1_b1': 1.792437866,
+#                                    'cl1_b1p': 0.0,
+#                                    'cl1_b2': 0.5191489176,
+#                                    'cl1_bs': -1.071675707,
+#                                    'cl1_bk2': -2.466574255,
+#                                    'cl1_bsn': 5688.966683,
+#                                    'cl1_b3nl': 0.0,
+#
+#                                     # {'cl1_b1': 1.770209978,
+#                                     #  'cl1_b2': 0.4169077275,
+#                                     #  'cl1_bs': 0.4525840974,
+#                                     #  'cl1_bk2': -4.689898773,
+#                                     #  'cl1_bsn': 5625.766264,
+#                                     #  'cl1_b1p': 0.0,
+#                                     #  'cl1_b3nl': 0.0,
+#
+#                                   }},
+#           'sacc_name': 'unit_redmagic-sn_pk_lens=source_kmin=0p06_z=0p59_err=unit-cov_model=anzu.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # 6. From anzu
 # Red (same HOD params)
 # config = {'ndens_sh': 27.,

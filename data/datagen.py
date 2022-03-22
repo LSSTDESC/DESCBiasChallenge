@@ -51,14 +51,21 @@ class DataGenerator(object):
         self.z_cl = d['z_cl']
         self.nz_cl = d['dNdz_cl'].T
         norms_cl = simps(self.nz_cl, x=self.z_cl)
-        self.ndens_cl = self.c['ndens_cl']*norms_cl/np.sum(norms_cl)
-        self.ndens_cl *= (180*60/np.pi)**2
+        if 'ndens_cl' not in self.c:
+            self.ndens_cl = None
+        else:
+            if self.c['ndens_cl'] is None:
+                self.ndens_cl = None
+            else:
+                self.ndens_cl = self.c['ndens_cl']*norms_cl/np.sum(norms_cl)
+                self.ndens_cl *= (180*60/np.pi)**2
         self.z_sh = d['z_sh']
         self.nz_sh = d['dNdz_sh'].T
         norms_sh = simps(self.nz_sh, x=self.z_sh)
         self.ndens_sh = self.c['ndens_sh']*norms_sh/np.sum(norms_sh)
         self.ndens_sh *= (180*60/np.pi)**2
-        self.n_cl = len(self.ndens_cl)
+        self.n_cl = self.nz_cl.shape[0]
+        print(self.n_cl)
         self.n_sh = len(self.ndens_sh)
         if 'theor_err' not in self.c:
             self.c['theor_err'] = False
@@ -98,13 +105,17 @@ class DataGenerator(object):
                 cli1j2 = cls[i1, j2]
                 cli2j1 = cls[i2, j1]
                 cli2j2 = cls[i2, j2]
-                if not self.c['theor_err']:
-                    cov[icl, :, jcl, :] = np.diag((cli1j1*cli2j2 +
-                                                   cli1j2*cli2j1)/nmodes)
-                else:
+                if 'sh' in nj1 and 'sh' in nj2:
                     cov[icl, :, jcl, :] = np.diag((cli1j1 * cli2j2 +
-                                                   cli1j2 * cli2j1) / nmodes) \
-                                          + self.c['theor_err_rel']**2*np.diag(cls[i1, i2]*cls[j1, j2])
+                                                   cli1j2 * cli2j1) / nmodes)
+                else:
+                    if not self.c['theor_err']:
+                        cov[icl, :, jcl, :] = np.diag((cli1j1*cli2j2 +
+                                                       cli1j2*cli2j1)/nmodes)
+                    else:
+                        cov[icl, :, jcl, :] = np.diag((cli1j1 * cli2j2 +
+                                                       cli1j2 * cli2j1) / nmodes) \
+                                              + self.c['theor_err_rel']**2*np.diag(cls[i1, i2]*cls[j1, j2])
         if unwrap:
             cov = cov.reshape([ncl*nl, ncl*nl])
         return cov
@@ -154,10 +165,13 @@ class DataGenerator(object):
         nls = np.zeros([n_tot, n_tot, ll['n_bpw']])
         sgamma = self.c.get('e_rms', 0.28)
         # Clustering first
-        # for i in range(self.n_cl):
-        #     nls[i, i, :] = 1./self.ndens_cl[i]
+        if self.ndens_cl is not None:
+            print('Adding survey noise to clustering cls.')
+            for i in range(self.n_cl):
+                nls[i, i, :] = 1./self.ndens_cl[i]
         # Then shear
         for i in range(self.n_sh):
+            print('Adding survey noise to shear cls.')
             nls[i+self.n_cl, i+self.n_cl, :] = sgamma**2/self.ndens_sh[i]
         return nls
 
@@ -514,8 +528,6 @@ class DataGenerator(object):
         # Covariance
         print("Cov")
         nl = self._get_nls()
-        print(sl)
-        print(sl+nl)
         cov = self._get_covariance(sl+nl, unwrap=True)
         s.add_covariance(cov)
 
@@ -699,27 +711,29 @@ cospar = {'Omega_c': 0.25,
 #           'ndens_cl': 4.,
 #           'dNdz_file': 'data/dNdz_shear_red.npz',
 #           'e_rms': 0.28,
-#           # 'theor_err': True,
-#           # 'theor_err_rel': 0.01,
+#           'theor_err': True,
+#           'theor_err_rel': 0.01,
 #           'cosmology': 'Abacus',
 #           'bias': {'model': 'Abacus',
 #                    'noise': True,
 #                    'galtype': 'red'},
-#           'sacc_name': 'abacus_red-sn_cov=sim-noise_abacus.fits'}
+#           'sacc_name': 'abacus_red-sn_cov=sim-noise+theor-err_abacus.fits'}
 # if not os.path.isfile(config['sacc_name']):
 #     d = DataGenerator(config)
 #     s = d.get_sacc_file()
 #     d.save_config()
 #     print(" ")
 config = {'ndens_sh': 27.,
-      'ndens_cl': 4.,
+      'ndens_cl': None,
       'dNdz_file': 'data/dNdz_shear_red.npz',
       'e_rms': 0.28,
+      'theor_err': True,
+      'theor_err_rel': 0.01,
       'cosmology': 'Abacus',
       'bias': {'model': 'Abacus',
                'noise': True,
                'galtype': 'all'},
-          'sacc_name': 'abacus_HSC-sn_bins=red_cov=sim-noise_abacus.fits'}
+          'sacc_name': 'abacus_HSC-sn_bins=red_cov=sim-noise+theor-err_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
