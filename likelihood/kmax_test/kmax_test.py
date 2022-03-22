@@ -95,7 +95,7 @@ DEFAULT_REF_BSN = 1000.
 if 'sigma8' in fit_params:
     info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.8090212289405192, 'scale': 0.01},
-                                                    'latex': '\sigma_8', 'proposal': 0.001}
+                                                    'latex': '\sigma_8', 'proposal': 0.1}
     if model == 'BACCO':
         info['params']['sigma8']['prior'] = {'min': 0.73, 'max': 0.9}
 elif args.sigma8 is not None:
@@ -105,7 +105,7 @@ else:
 if 'Omega_c' in fit_params:
     info['params']['Omega_c'] = {'prior': {'min': 0.05, 'max': 0.7},
                                                     'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
-                                                    'latex': '\Omega_c', 'proposal': 0.001}
+                                                    'latex': '\Omega_c', 'proposal': 0.1}
     if model == 'BACCO':
         info['params']['Omega_c']['prior'] = {'min': 0.19, 'max': 0.36}
 elif args.Omega_c is not None:
@@ -115,7 +115,7 @@ else:
 if 'Omega_b' in fit_params:
     info['params']['Omega_b'] = {'prior': {'min': 0.01, 'max': 0.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.049301692328524445, 'scale': 0.01},
-                                                    'latex': '\Omega_b', 'proposal': 0.001}
+                                                    'latex': '\Omega_b', 'proposal': 0.1}
     if model == 'BACCO':
         info['params']['Omega_b']['prior'] = {'min': 0.04, 'max': 0.06}
 elif args.Omega_b is not None:
@@ -125,7 +125,7 @@ else:
 if 'h' in fit_params:
     info['params']['h'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.6736, 'scale': 0.01},
-                                                    'latex': 'h', 'proposal': 0.001}
+                                                    'latex': 'h', 'proposal': 0.1}
     if model == 'BACCO':
         info['params']['h']['prior'] = {'min': 0.6, 'max': 0.8}
 elif args.h is not None:
@@ -135,7 +135,7 @@ else:
 if 'n_s' in fit_params:
     info['params']['n_s'] = {'prior': {'min': 0.1, 'max': 1.2},
                                                     'ref': {'dist': 'norm', 'loc': 0.9649, 'scale': 0.01},
-                                                    'latex': 'n_s', 'proposal': 0.001}
+                                                    'latex': 'n_s', 'proposal': 0.1}
     if model == 'BACCO':
         info['params']['n_s']['prior'] = {'min': 0.92, 'max': 1.01}
 elif args.n_s is not None:
@@ -239,12 +239,12 @@ if bias_model != 'HOD':
     # Template for bias parameters in yaml file
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
             'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
-            'latex': 'blank', 'proposal': 0.001}
+            'latex': 'blank', 'proposal': 0.1}
 else:
     HOD_means = [12.95, -2.0, 0.25, 0., 12.3, 0., 14.0, -1.5, 1.32, 0.]
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
             'ref': {'dist': 'norm', 'loc': 'blank', 'scale': 0.1},
-            'latex': 'blank', 'proposal': 0.001}
+            'latex': 'blank', 'proposal': 0.1}
 
 # Add model and input file
 info['likelihood'][name_like]['bz_model'] = model
@@ -276,6 +276,7 @@ if bias_model != 'HOD':
                                                                                                   'scale': 0.1*np.abs(mean)}
                     info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -2.*np.abs(mean),
                                                                                                     'max': 2.*np.abs(mean)}
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['poposal'] = 0.1*np.abs(mean)
             else:
                 if b == '0' or b == '1':
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = DEFAULT_REF_B1
