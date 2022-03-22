@@ -276,7 +276,7 @@ if bias_model != 'HOD':
                                                                                                   'scale': 0.1*np.abs(mean)}
                     info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -2.*np.abs(mean),
                                                                                                     'max': 2.*np.abs(mean)}
-                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['poposal'] = 0.1*np.abs(mean)
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['proposal'] = 0.1*np.abs(mean)
             else:
                 if b == '0' or b == '1':
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = DEFAULT_REF_B1
