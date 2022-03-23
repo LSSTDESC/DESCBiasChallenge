@@ -475,12 +475,15 @@ class ClLike(Likelihood):
 
         # Correlate all needed pairs of tracers
         cls = []
+        clfs = []
         for clm in self.cl_meta:
             pkxy = self._get_pkxy(cosmo, clm, pk, trs, **pars)
             cl = ccl.angular_cl(cosmo,
                                 trs[clm['bin_1']]['ccl_tracer'],
                                 trs[clm['bin_2']]['ccl_tracer'],
                                 self.l_sample, p_of_k_a=pkxy)
+            clfs.append(cl)
+        for clm, cl in zip(self.cl_meta, clfs):
             clb = self._eval_interp_cl(cl, clm['l_bpw'], clm['w_bpw'])
             cls.append(clb)
         return cls
@@ -576,6 +579,11 @@ class ClLike(Likelihood):
         """
         t = self._get_theory(**pars)
         r = t - self.data_vec
+        # print(r.shape)
+        # print(t)
+        # print(self.data_vec)
+        # print(np.abs(r)/np.sqrt(np.diag(self.cov)))
+        # print(np.sqrt(np.diag(self.cov))/self.data_vec)
         # t = np.random.multivariate_normal(t, self.cov)
         # chi2 = np.dot(r, self.inv_cov.dot(r))
         re = np.dot(self.ic_v, r)
