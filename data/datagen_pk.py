@@ -68,7 +68,8 @@ def get_UNIT_cosmo():
                  'wa_fld': 0.0
                  }
 
-    cosmo = ccl.Cosmology(Omega_c=cosmology['Omega_cdm'], Omega_b=cosmology['Omega_b'],
+    # Note the CMB temperature was just to match the settings in ccl.py when trying to compare the two scripts
+    cosmo = ccl.Cosmology(T_CMB=2.7255, Omega_c=cosmology['Omega_cdm'], Omega_b=cosmology['Omega_b'],
                           h=cosmology['h'], sigma8=cosmology['sigma8'], n_s=cosmology['n_s'])
     cosmo.compute_linear_power()
     cosmo.compute_nonlin_power()
