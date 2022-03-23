@@ -181,7 +181,7 @@ else:
         info['likelihood'][name_like]['bins'] = [{'name': 'cl1'}, {'name': 'cl2'}, {'name': 'cl3'}, {'name': 'cl4'}, {'name': 'cl5'},\
                                                  {'name': 'sh1'}, {'name': 'sh2'}, {'name': 'sh3'}, {'name': 'sh4'}, {'name': 'sh5'}]
         info['likelihood'][name_like]['twopoints'] = [{'bins': ['cl1', 'cl1']}, {'bins': ['cl2', 'cl2']}, {'bins': ['cl3', 'cl3']}, \
-                                                      {'bins': ['cl4', 'cl4']}, {'bins': ['cl5', 'cl5']}, {'bins': ['cl6', 'cl5']}, \
+                                                      {'bins': ['cl4', 'cl4']}, {'bins': ['cl5', 'cl5']}, \
                                                       {'bins': ['cl1', 'sh1']}, {'bins': ['cl1', 'sh2']}, {'bins': ['cl1', 'sh3']}, \
                                                       {'bins': ['cl1', 'sh4']}, {'bins': ['cl1', 'sh5']}, {'bins': ['cl2', 'sh1']}, \
                                                       {'bins': ['cl2', 'sh2']}, {'bins': ['cl2', 'sh3']}, {'bins': ['cl2', 'sh4']}, \
