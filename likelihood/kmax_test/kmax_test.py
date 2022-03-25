@@ -340,6 +340,7 @@ if args.sampler_type == 'minimizer':
             p_all[p] = info['params'][p]
 
     # Run error estimation fisher code
+    # Method: first derivative
     F = fisher.Fisher_first_deri(model = model, parms = p_all, fp_name = list(pf.keys()),
                                  step_factor = 0.01, method = 'five-stencil', full_expresssion = False)
     cov = F.get_cov()
@@ -348,7 +349,19 @@ if args.sampler_type == 'minimizer':
     pfvals = list(pf.values())
 
     # Save data to file
-    np.savez(info['output']+'.fisher.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+    np.savez(info['output']+'.fisher_sd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+
+    # Method: second derivative
+    # Run error estimation fisher code
+    F = fisher.Fisher_second_deri(model, p_all, list(pf.keys()), 0.01)
+    cov = F.get_cov()
+
+    p0vals = list(p0.values())
+    pfvals = list(pf.values())
+
+    # Save data to file
+    np.savez(info['output']+'.fisher_fd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+
 elif args.sampler_type == 'mcmc':
     from mpi4py import MPI
 

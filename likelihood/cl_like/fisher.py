@@ -317,7 +317,11 @@ class Fisher_second_deri():
                pref+"_cl1_b2": 0.1,pref+"_cl2_b2": 0.1,pref+"_cl3_b2": 0.1,
                pref+"_cl4_b2": 0.1,pref+"_cl5_b2": 0.1,pref+"_cl6_b2": 0.1, 
                pref+"_cl1_bs": 0.1,pref+"_cl2_bs": 0.1,pref+"_cl3_bs": 0.1,
-               pref+"_cl4_bs": 0.1,pref+"_cl5_bs": 0.1,pref+"_cl6_bs": 0.1} 
+               pref+"_cl4_bs": 0.1,pref+"_cl5_bs": 0.1,pref+"_cl6_bs": 0.1,
+               pref + "_cl1_bk2": 0.1, pref + "_cl2_bk2": 0.1, pref + "_cl3_bk2": 0.1,
+               pref + "_cl4_bk2": 0.1, pref + "_cl5_bk2": 0.1, pref + "_cl6_bk2": 0.1,
+               pref + "_cl1_bsn": 0.1, pref + "_cl2_bsn": 0.1, pref + "_cl3_bsn": 0.1,
+               pref + "_cl4_bsn": 0.1, pref + "_cl5_bsn": 0.1, pref + "_cl6_bsn": 0.1}
 
         #theta = list(self.pf.keys())  # array containing parameter names
         theta = self.pf_name
@@ -339,3 +343,10 @@ class Fisher_second_deri():
         covar = LA.inv(self.calc_Fisher())  # covariance matrix
         err = np.sqrt(np.diag(covar))  # estimated parameter errors
         return err
+
+    def get_cov(self):
+        '''
+        Get covariance
+        '''
+        covar = LA.inv(self.calc_Fisher())  # covariance matrix
+        return covar
