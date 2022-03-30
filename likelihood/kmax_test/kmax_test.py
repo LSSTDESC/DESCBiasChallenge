@@ -31,9 +31,17 @@ parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed paramet
 parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
-parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='bsn reference distribution (for initializtion).',
-                    required=False)
 parser.add_argument('--ref_b1', dest='ref_b1', nargs='+', help='b1 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_b1p', dest='ref_b1p', nargs='+', help='b1p reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_b2', dest='ref_b2', nargs='+', help='b2 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_bs', dest='ref_bs', nargs='+', help='bs reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_bk2', dest='ref_bk2', nargs='+', help='bk2 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='bsn reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
@@ -234,6 +242,46 @@ if args.ref_b1 is not None:
             ref_b1[i] = None
 else:
     ref_b1 = [None for i in range(7)]
+ref_b1p = args.ref_b1p
+if args.ref_b1p is not None:
+    ref_b1p = [0 for i in range(len(args.ref_b1p))]
+    for i, ref in enumerate(args.ref_b1p):
+        if ref != 'None':
+            ref_b1p[i] = float(ref)
+        else:
+            ref_b1p[i] = None
+else:
+    ref_b1p = [None for i in range(7)]
+ref_b2 = args.ref_b2
+if args.ref_b2 is not None:
+    ref_b2 = [0 for i in range(len(args.ref_b2))]
+    for i, ref in enumerate(args.ref_b2):
+        if ref != 'None':
+            ref_b2[i] = float(ref)
+        else:
+            ref_b2[i] = None
+else:
+    ref_b2 = [None for i in range(7)]
+ref_bs = args.ref_bs
+if args.ref_bs is not None:
+    ref_bs = [0 for i in range(len(args.ref_bs))]
+    for i, ref in enumerate(args.ref_bs):
+        if ref != 'None':
+            ref_bs[i] = float(ref)
+        else:
+            ref_bs[i] = None
+else:
+    ref_bs = [None for i in range(7)]
+ref_bk2 = args.ref_bk2
+if args.ref_bk2 is not None:
+    ref_bk2 = [0 for i in range(len(args.ref_bk2))]
+    for i, ref in enumerate(args.ref_bk2):
+        if ref != 'None':
+            ref_bk2[i] = float(ref)
+        else:
+            ref_bk2[i] = None
+else:
+    ref_bk2 = [None for i in range(7)]
 
 if bias_model != 'HOD':
     # Template for bias parameters in yaml file
@@ -264,7 +312,31 @@ if bias_model != 'HOD':
                         mean = ref_b1[i]
                     else:
                         mean = DEFAULT_REF_B1
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.1}
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                elif b == '1p':
+                    if ref_b1p[i] is not None:
+                        mean = ref_b1p[i]
+                    else:
+                        mean = 0.
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                elif b == '2':
+                    if ref_b2[i] is not None:
+                        mean = ref_b2[i]
+                    else:
+                        mean = 0.
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                elif b == 's':
+                    if ref_bs[i] is not None:
+                        mean = ref_bs[i]
+                    else:
+                        mean = 0.
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                elif b == 'k2':
+                    if ref_bk2[i] is not None:
+                        mean = ref_bk2[i]
+                    else:
+                        mean = 0.
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 elif b == 'sn':
                     if ref_bsn[i] is not None:
                         mean = ref_bsn[i]
