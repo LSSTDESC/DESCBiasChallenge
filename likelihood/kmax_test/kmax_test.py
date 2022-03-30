@@ -347,8 +347,8 @@ if bias_model != 'HOD':
                                                                                                   'loc': mean,
                                                                                                   'scale': 0.1*np.abs(mean)}
                     if args.sampler_type == 'minimizer':
-                        info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -2.*np.abs(mean),
-                                                                                                    'max': 2.*np.abs(mean)}
+                        info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -5.*np.abs(mean),
+                                                                                                    'max': 5.*np.abs(mean)}
                     elif args.sampler_type == 'mcmc':
                         info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -100000.,
                                                                                                     'max': 100000.}
