@@ -61,7 +61,7 @@ Interpolators = [LastJourney_Interpolator(cosmo, s,mb = 0) for s in steps]
 
 def get_pk2d_LJ():
     h = cosmo['h']
-    a_s = (1/201. + (1 - 1/120)/500 * (np.array(steps) + 1))
+    a_s = (1/201. + (1 - 1/201.)/500 * (np.array(steps) + 1))
     k_s = np.geomspace(1E-3, 1.2, 512)
     tr_combs = [('m','m'),
                 ('h','h'),
