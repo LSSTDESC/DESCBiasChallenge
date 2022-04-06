@@ -1,0 +1,27 @@
+bias:
+  HOD_params:
+    a_pivot: 0.6060606060606061
+    alpha_0: 1.32
+    alpha_p: 0.0
+    lM0_0: 12.3
+    lM0_p: 0.0
+    lM1_0: 14.0
+    lM1_p: -1.5
+    lMmin_0: 12.95
+    lMmin_p: -2.0
+    siglM_0: 0.25
+    siglM_p: 0.0
+  model: HOD
+cosmology:
+  Omega_b: 0.05
+  Omega_c: 0.25
+  h: 0.7
+  n_s: 0.96
+  sigma8: 0.81
+  transfer_function: eisenstein_hu
+  w0: -1
+dNdz_file: data/dNdz_shear_red.npz
+e_rms: 0.28
+ndens_cl: 4.0
+ndens_sh: 27.0
+sacc_name: fid_red_HOD.fits

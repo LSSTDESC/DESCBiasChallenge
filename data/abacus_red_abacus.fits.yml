@@ -1,0 +1,9 @@
+bias:
+  galtype: red
+  model: Abacus
+cosmology: Abacus
+dNdz_file: data/dNdz_shear_red.npz
+e_rms: 0.28
+ndens_cl: 4.0
+ndens_sh: 27.0
+sacc_name: abacus_red_abacus.fits

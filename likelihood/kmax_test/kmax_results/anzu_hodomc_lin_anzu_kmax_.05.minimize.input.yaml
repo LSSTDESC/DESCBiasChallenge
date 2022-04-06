@@ -1,0 +1,233 @@
+theory:
+  cl_like.CCL:
+    transfer_function: eisenstein_hu
+    matter_pk: halofit
+    baryons_pk: nobaryons
+likelihood:
+  cl_like.ClLike:
+    input_file: ../../data/fid_red_HOD.fits
+    bins:
+    - name: cl1
+    - name: cl2
+    - name: cl3
+    - name: cl4
+    - name: cl5
+    - name: cl6
+    twopoints:
+    - bins:
+      - cl1
+      - cl1
+    - bins:
+      - cl2
+      - cl2
+    - bins:
+      - cl3
+      - cl3
+    - bins:
+      - cl4
+      - cl4
+    - bins:
+      - cl5
+      - cl5
+    - bins:
+      - cl6
+      - cl6
+    defaults:
+      kmax: 0.05
+      lmin: 0
+      lmax: 2000
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+    input_params_prefix: cllike
+    ia_model: IANone
+    nz_model: NzNone
+    shape_model: ShapeNone
+    bz_model: anzu
+params:
+  sigma8:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+    latex: \sigma_8
+    proposal: 0.001
+  Omega_c:
+    prior:
+      min: 0.05
+      max: 0.7
+    ref:
+      dist: norm
+      loc: 0.26447041034523616
+      scale: 0.01
+    latex: \Omega_c
+    proposal: 0.001
+  Omega_b: 0.049301692328524445
+  h: 0.6736
+  n_s: 0.9649
+  m_nu: 0.0
+  cllike_cl1_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl2_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,2}
+    proposal: 0.01
+  cllike_cl3_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,3}
+    proposal: 0.01
+  cllike_cl4_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,4}
+    proposal: 0.01
+  cllike_cl5_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,5}
+    proposal: 0.01
+  cllike_cl6_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl2_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,2}
+    proposal: 0.01
+  cllike_cl3_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,3}
+    proposal: 0.01
+  cllike_cl4_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,4}
+    proposal: 0.01
+  cllike_cl5_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,5}
+    proposal: 0.01
+  cllike_cl6_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_b2: 0.0
+  cllike_cl2_b2: 0.0
+  cllike_cl3_b2: 0.0
+  cllike_cl4_b2: 0.0
+  cllike_cl5_b2: 0.0
+  cllike_cl6_b2: 0.0
+  cllike_cl1_bs: 0.0
+  cllike_cl2_bs: 0.0
+  cllike_cl3_bs: 0.0
+  cllike_cl4_bs: 0.0
+  cllike_cl5_bs: 0.0
+  cllike_cl6_bs: 0.0
+  cllike_cl1_b3nl: 0.0
+  cllike_cl2_b3nl: 0.0
+  cllike_cl3_b3nl: 0.0
+  cllike_cl4_b3nl: 0.0
+  cllike_cl5_b3nl: 0.0
+  cllike_cl6_b3nl: 0.0
+  cllike_cl1_bk2: 0.0
+  cllike_cl2_bk2: 0.0
+  cllike_cl3_bk2: 0.0
+  cllike_cl4_bk2: 0.0
+  cllike_cl5_bk2: 0.0
+  cllike_cl6_bk2: 0.0
+  cllike_cl1_bsn: 0.0
+  cllike_cl2_bsn: 0.0
+  cllike_cl3_bsn: 0.0
+  cllike_cl4_bsn: 0.0
+  cllike_cl5_bsn: 0.0
+  cllike_cl6_bsn: 0.0
+sampler:
+  minimize:
+    ignore_prior: true
+    max_evals: 10000
+output: anzu_hodomc_lin_anzu_kmax_.05

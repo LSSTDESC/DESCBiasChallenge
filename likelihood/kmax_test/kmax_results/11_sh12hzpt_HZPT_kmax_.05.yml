@@ -1,0 +1,146 @@
+debug: true
+likelihood:
+  cl_like.ClLike:
+    bins:
+    - name: cl1
+    - name: sh1
+    - name: sh2
+    bz_model: HZPT
+    defaults:
+      kmax: 0.05
+      lmax: 2000
+      lmin: 0
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+    ia_model: IANone
+    input_file: ../../data/abacus_red_abacus.fits
+    input_params_prefix: cllike
+    nz_model: NzNone
+    shape_model: ShapeNone
+    twopoints:
+    - bins:
+      - cl1
+      - cl1
+    - bins:
+      - cl1
+      - sh1
+    - bins:
+      - sh1
+      - sh1
+    - bins:
+      - cl1
+      - sh2
+    - bins:
+      - sh2
+      - sh2
+    - bins:
+      - sh1
+      - sh2
+output: ./kmax_results/11_sh12hzpt_HZPT_kmax_.05
+params:
+  Omega_b: 0.049301692328524445
+  Omega_c:
+    latex: \Omega_c
+    prior:
+      max: 0.7
+      min: 0.05
+    proposal: 0.001
+    ref:
+      dist: norm
+      loc: 0.26447041034523616
+      scale: 0.01
+  cllike_cl1_A0gg:
+    latex: b_A0gg\,\text{for}\,C_{l,1}
+    prior: &id001
+      max: 2000.0
+      min: 0.0
+    proposal: 700.0
+    ref: &id002
+      dist: norm
+      loc: 700.0
+      scale: 100.0
+  cllike_cl1_A0gm:
+    latex: b_A0gm\,\text{for}\,C_{l,1}
+    prior: *id001
+    proposal: 700.0
+    ref: *id002
+  cllike_cl1_R1hgg:
+    latex: b_R1hgg\,\text{for}\,C_{l,1}
+    prior: &id003
+      max: 20.0
+      min: 0.0
+    proposal: 2.0
+    ref: &id004
+      dist: norm
+      loc: 2.0
+      scale: 2.0
+  cllike_cl1_R1hgm:
+    latex: b_R1hgm\,\text{for}\,C_{l,1}
+    prior: *id003
+    proposal: 2.0
+    ref: *id004
+  cllike_cl1_Rgg:
+    latex: b_Rgg\,\text{for}\,C_{l,1}
+    prior: &id005
+      max: 100.0
+      min: 0.0
+    proposal: 30.0
+    ref: &id006
+      dist: norm
+      loc: 30.0
+      scale: 10.0
+  cllike_cl1_Rgm:
+    latex: b_Rgm\,\text{for}\,C_{l,1}
+    prior: *id005
+    proposal: 30.0
+    ref: *id006
+  cllike_cl1_b1:
+    latex: b_b1\,\text{for}\,C_{l,1}
+    prior:
+      max: 100.0
+      min: -100.0
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl1_sngg:
+    latex: b_sngg\,\text{for}\,C_{l,1}
+    prior:
+      max: 50000.0
+      min: 10.0
+    proposal: 1000.0
+    ref:
+      dist: norm
+      loc: 1000.0
+      scale: 200.0
+  h: 0.6736
+  m_nu: 0.0
+  n_s: 0.9649
+  sigma8:
+    latex: \sigma_8
+    prior:
+      max: 1.2
+      min: 0.1
+    proposal: 0.001
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+sampler:
+  minimize:
+    ignore_prior: true
+    max_evals: 10000
+theory:
+  cl_like.CCL:
+    baryons_pk: nobaryons
+    matter_pk: halofit
+    transfer_function: eisenstein_hu

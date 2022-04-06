@@ -1,0 +1,14 @@
+ -log(Like) = 13.539857975868898
+  chi-sq    = 27.079715951737796
+
+    1  7.887515417e-01   sigma8                 \sigma_8
+    7  1.697910347e+00   cllike_cl1_b1          b_1\,\text{for}\,C_{l,1}
+    8  -4.693691785e+00  cllike_cl1_b1p         b_1p\,\text{for}\,C_{l,1}
+
+    2  2.644704103e-01   Omega_c                Omega\ c
+    3  4.930169233e-02   Omega_b                Omega\ b
+    4  0.6736            h                      h
+    5  0.9649            n_s                    n\ s
+    6  0.0               m_nu                   m\ nu
+
+    9  5.695826126e+00   chi2__cl_like.ClLike   \chi^2_{\rm cl\ like.ClLike}

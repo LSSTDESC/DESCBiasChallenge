@@ -1,0 +1,368 @@
+theory:
+  cl_like.CCL:
+    transfer_function: eisenstein_hu
+    matter_pk: halofit
+    baryons_pk: nobaryons
+    params:
+      Omega_c: null
+      Omega_b: null
+      h: null
+      n_s: null
+      sigma8: null
+      m_nu: null
+    speed: -1
+    stop_at_error: false
+    version: null
+    input_params:
+    - sigma8
+    - Omega_c
+    - Omega_b
+    - h
+    - n_s
+    - m_nu
+    output_params: []
+likelihood:
+  cl_like.ClLike:
+    input_params_prefix: cllike
+    input_file: ../../data/fid_red_HOD.fits
+    ia_model: IANone
+    nz_model: NzNone
+    bz_model: anzu
+    shape_model: ShapeNone
+    bins:
+    - name: cl1
+    - name: cl2
+    - name: cl3
+    - name: cl4
+    - name: cl5
+    - name: cl6
+    defaults:
+      kmax: 0.05
+      lmin: 0
+      lmax: 2000
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+      cl1:
+        lmin: 0
+        lmax: 50.431840334627374
+      cl2:
+        lmin: 0
+        lmax: 78.94988035579266
+      cl3:
+        lmin: 0
+        lmax: 108.70063316775534
+      cl4:
+        lmin: 0
+        lmax: 138.5830002890787
+      cl5:
+        lmin: 0
+        lmax: 167.25359072792082
+      cl6:
+        lmin: 0
+        lmax: 192.81356170947828
+    twopoints:
+    - bins:
+      - cl1
+      - cl1
+    - bins:
+      - cl2
+      - cl2
+    - bins:
+      - cl3
+      - cl3
+    - bins:
+      - cl4
+      - cl4
+    - bins:
+      - cl5
+      - cl5
+    - bins:
+      - cl6
+      - cl6
+    k_pt_filter: 0.0
+    type: []
+    speed: -1
+    stop_at_error: false
+    version: null
+    input_params:
+    - cllike_cl1_b1
+    - cllike_cl2_b1
+    - cllike_cl3_b1
+    - cllike_cl4_b1
+    - cllike_cl5_b1
+    - cllike_cl6_b1
+    - cllike_cl1_b1p
+    - cllike_cl2_b1p
+    - cllike_cl3_b1p
+    - cllike_cl4_b1p
+    - cllike_cl5_b1p
+    - cllike_cl6_b1p
+    - cllike_cl1_b2
+    - cllike_cl2_b2
+    - cllike_cl3_b2
+    - cllike_cl4_b2
+    - cllike_cl5_b2
+    - cllike_cl6_b2
+    - cllike_cl1_bs
+    - cllike_cl2_bs
+    - cllike_cl3_bs
+    - cllike_cl4_bs
+    - cllike_cl5_bs
+    - cllike_cl6_bs
+    - cllike_cl1_b3nl
+    - cllike_cl2_b3nl
+    - cllike_cl3_b3nl
+    - cllike_cl4_b3nl
+    - cllike_cl5_b3nl
+    - cllike_cl6_b3nl
+    - cllike_cl1_bk2
+    - cllike_cl2_bk2
+    - cllike_cl3_bk2
+    - cllike_cl4_bk2
+    - cllike_cl5_bk2
+    - cllike_cl6_bk2
+    - cllike_cl1_bsn
+    - cllike_cl2_bsn
+    - cllike_cl3_bsn
+    - cllike_cl4_bsn
+    - cllike_cl5_bsn
+    - cllike_cl6_bsn
+    output_params: []
+params:
+  sigma8:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+    latex: \sigma_8
+    proposal: 0.001
+  Omega_c:
+    prior:
+      min: 0.05
+      max: 0.7
+    ref:
+      dist: norm
+      loc: 0.26447041034523616
+      scale: 0.01
+    latex: \Omega_c
+    proposal: 0.001
+  Omega_b:
+    derived: false
+    value: 0.049301692328524445
+  h:
+    derived: false
+    value: 0.6736
+  n_s:
+    derived: false
+    value: 0.9649
+  m_nu:
+    derived: false
+    value: 0.0
+  cllike_cl1_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl2_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,2}
+    proposal: 0.01
+  cllike_cl3_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,3}
+    proposal: 0.01
+  cllike_cl4_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,4}
+    proposal: 0.01
+  cllike_cl5_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,5}
+    proposal: 0.01
+  cllike_cl6_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl2_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,2}
+    proposal: 0.01
+  cllike_cl3_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,3}
+    proposal: 0.01
+  cllike_cl4_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,4}
+    proposal: 0.01
+  cllike_cl5_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,5}
+    proposal: 0.01
+  cllike_cl6_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_b2:
+    value: 0.0
+  cllike_cl2_b2:
+    value: 0.0
+  cllike_cl3_b2:
+    value: 0.0
+  cllike_cl4_b2:
+    value: 0.0
+  cllike_cl5_b2:
+    value: 0.0
+  cllike_cl6_b2:
+    value: 0.0
+  cllike_cl1_bs:
+    value: 0.0
+  cllike_cl2_bs:
+    value: 0.0
+  cllike_cl3_bs:
+    value: 0.0
+  cllike_cl4_bs:
+    value: 0.0
+  cllike_cl5_bs:
+    value: 0.0
+  cllike_cl6_bs:
+    value: 0.0
+  cllike_cl1_b3nl:
+    value: 0.0
+  cllike_cl2_b3nl:
+    value: 0.0
+  cllike_cl3_b3nl:
+    value: 0.0
+  cllike_cl4_b3nl:
+    value: 0.0
+  cllike_cl5_b3nl:
+    value: 0.0
+  cllike_cl6_b3nl:
+    value: 0.0
+  cllike_cl1_bk2:
+    value: 0.0
+  cllike_cl2_bk2:
+    value: 0.0
+  cllike_cl3_bk2:
+    value: 0.0
+  cllike_cl4_bk2:
+    value: 0.0
+  cllike_cl5_bk2:
+    value: 0.0
+  cllike_cl6_bk2:
+    value: 0.0
+  cllike_cl1_bsn:
+    value: 0.0
+  cllike_cl2_bsn:
+    value: 0.0
+  cllike_cl3_bsn:
+    value: 0.0
+  cllike_cl4_bsn:
+    value: 0.0
+  cllike_cl5_bsn:
+    value: 0.0
+  cllike_cl6_bsn:
+    value: 0.0
+sampler:
+  minimize:
+    method: bobyqa
+    ignore_prior: true
+    max_evals: 10000
+    best_of: 2
+    confidence_for_unbounded: 0.9999995
+    seed: null
+    override_scipy: null
+    override_bobyqa:
+      rhoend: 0.05
+    covmat: null
+    covmat_params: null
+    version: null
+    fallback_covmat_scale: 4
+output: anzu_hodomc_lin_anzu_kmax_.05
+version: 3.1.1

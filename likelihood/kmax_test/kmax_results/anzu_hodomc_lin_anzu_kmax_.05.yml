@@ -1,0 +1,212 @@
+debug: true
+likelihood:
+  cl_like.ClLike:
+    bins:
+    - name: cl1
+    - name: cl2
+    - name: cl3
+    - name: cl4
+    - name: cl5
+    - name: cl6
+    bz_model: anzu
+    defaults:
+      kmax: 0.05
+      lmax: 2000
+      lmin: 0
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+    ia_model: IANone
+    input_file: ../../data/fid_red_HOD.fits
+    input_params_prefix: cllike
+    nz_model: NzNone
+    shape_model: ShapeNone
+    twopoints:
+    - bins:
+      - cl1
+      - cl1
+    - bins:
+      - cl2
+      - cl2
+    - bins:
+      - cl3
+      - cl3
+    - bins:
+      - cl4
+      - cl4
+    - bins:
+      - cl5
+      - cl5
+    - bins:
+      - cl6
+      - cl6
+output: ./kmax_results/anzu_hodomc_lin_anzu_kmax_.05
+params:
+  Omega_b: 0.049301692328524445
+  Omega_c:
+    latex: \Omega_c
+    prior:
+      max: 0.7
+      min: 0.05
+    proposal: 0.001
+    ref:
+      dist: norm
+      loc: 0.26447041034523616
+      scale: 0.01
+  cllike_cl1_b1:
+    latex: b_1\,\text{for}\,C_{l,1}
+    prior: &id001
+      max: 100.0
+      min: -100.0
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+  cllike_cl1_b1p:
+    latex: b_1p\,\text{for}\,C_{l,1}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl1_b2: 0.0
+  cllike_cl1_b3nl: 0.0
+  cllike_cl1_bk2: 0.0
+  cllike_cl1_bs: 0.0
+  cllike_cl1_bsn: 0.0
+  cllike_cl2_b1:
+    latex: b_1\,\text{for}\,C_{l,2}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+  cllike_cl2_b1p:
+    latex: b_1p\,\text{for}\,C_{l,2}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl2_b2: 0.0
+  cllike_cl2_b3nl: 0.0
+  cllike_cl2_bk2: 0.0
+  cllike_cl2_bs: 0.0
+  cllike_cl2_bsn: 0.0
+  cllike_cl3_b1:
+    latex: b_1\,\text{for}\,C_{l,3}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+  cllike_cl3_b1p:
+    latex: b_1p\,\text{for}\,C_{l,3}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl3_b2: 0.0
+  cllike_cl3_b3nl: 0.0
+  cllike_cl3_bk2: 0.0
+  cllike_cl3_bs: 0.0
+  cllike_cl3_bsn: 0.0
+  cllike_cl4_b1:
+    latex: b_1\,\text{for}\,C_{l,4}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+  cllike_cl4_b1p:
+    latex: b_1p\,\text{for}\,C_{l,4}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl4_b2: 0.0
+  cllike_cl4_b3nl: 0.0
+  cllike_cl4_bk2: 0.0
+  cllike_cl4_bs: 0.0
+  cllike_cl4_bsn: 0.0
+  cllike_cl5_b1:
+    latex: b_1\,\text{for}\,C_{l,5}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+  cllike_cl5_b1p:
+    latex: b_1p\,\text{for}\,C_{l,5}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl5_b2: 0.0
+  cllike_cl5_b3nl: 0.0
+  cllike_cl5_bk2: 0.0
+  cllike_cl5_bs: 0.0
+  cllike_cl5_bsn: 0.0
+  cllike_cl6_b1:
+    latex: b_1\,\text{for}\,C_{l,6}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+  cllike_cl6_b1p:
+    latex: b_1p\,\text{for}\,C_{l,6}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl6_b2: 0.0
+  cllike_cl6_b3nl: 0.0
+  cllike_cl6_bk2: 0.0
+  cllike_cl6_bs: 0.0
+  cllike_cl6_bsn: 0.0
+  h: 0.6736
+  m_nu: 0.0
+  n_s: 0.9649
+  sigma8:
+    latex: \sigma_8
+    prior:
+      max: 1.2
+      min: 0.1
+    proposal: 0.001
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+sampler:
+  minimize:
+    ignore_prior: true
+    max_evals: 10000
+theory:
+  cl_like.CCL:
+    baryons_pk: nobaryons
+    matter_pk: halofit
+    transfer_function: eisenstein_hu

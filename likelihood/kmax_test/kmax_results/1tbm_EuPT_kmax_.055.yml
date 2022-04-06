@@ -1,0 +1,134 @@
+debug: true
+likelihood:
+  cl_like.ClLike:
+    bins:
+    - name: sh1
+    - name: cl1
+    bz_model: EulerianPT
+    defaults:
+      kmax: 0.055
+      lmax: 2000
+      lmin: 0
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+    ia_model: IANone
+    input_file: ../../data/abacus_red_abacus.fits
+    input_params_prefix: cllike
+    nz_model: NzNone
+    shape_model: ShapeNone
+    twopoints:
+    - bins:
+      - cl1
+      - sh1
+output: ./kmax_results/1tbm_EuPT_kmax_.055
+params:
+  Omega_b: 0.049301692328524445
+  Omega_c: 0.26447041034523616
+  cllike_cl1_b1:
+    latex: b_1\,\text{for}\,C_{l,1}
+    prior: &id001
+      max: 100.0
+      min: -100.0
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+  cllike_cl1_b1p:
+    latex: b_1p\,\text{for}\,C_{l,1}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl1_b2:
+    latex: b_2\,\text{for}\,C_{l,1}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl1_b3nl: 0.0
+  cllike_cl1_bk2:
+    latex: b_k2\,\text{for}\,C_{l,1}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl1_bs:
+    latex: b_s\,\text{for}\,C_{l,1}
+    prior: *id001
+    proposal: 0.01
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+  cllike_cl1_bsn:
+    latex: b_sn\,\text{for}\,C_{l,1}
+    prior:
+      max: !!python/object/apply:numpy.core.multiarray.scalar
+      - &id002 !!python/object/apply:numpy.dtype
+        args:
+        - f8
+        - false
+        - true
+        state: !!python/tuple
+        - 3
+        - <
+        - null
+        - null
+        - null
+        - -1
+        - -1
+        - 0
+      - !!binary |
+        AAAAAACIs0A=
+      min: !!python/object/apply:numpy.core.multiarray.scalar
+      - *id002
+      - !!binary |
+        AAAAAACIs8A=
+    proposal: !!python/object/apply:numpy.core.multiarray.scalar
+    - *id002
+    - !!binary |
+      AAAAAAAAWUA=
+    ref:
+      dist: norm
+      loc: 1000.0
+      scale: !!python/object/apply:numpy.core.multiarray.scalar
+      - *id002
+      - !!binary |
+        AAAAAAAAWUA=
+  h: 0.6736
+  m_nu: 0.0
+  n_s: 0.9649
+  sigma8:
+    latex: \sigma_8
+    prior:
+      max: 1.2
+      min: 0.1
+    proposal: 0.001
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+sampler:
+  minimize:
+    ignore_prior: true
+    max_evals: 10000
+theory:
+  cl_like.CCL:
+    baryons_pk: nobaryons
+    matter_pk: halofit
+    transfer_function: eisenstein_hu

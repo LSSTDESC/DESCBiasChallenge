@@ -1,0 +1,24 @@
+ -log(Like) = 131.93805767484895
+  chi-sq    = 263.8761153496979
+
+    1  7.959678670e-01   sigma8                 \sigma_8
+    2  2.618200744e-01   Omega_c                \Omega_c
+    7  1.764445089e+00   cllike_cl1_b1          b_1\,\text{for}\,C_{l,1}
+    8  1.917580917e+00   cllike_cl2_b1          b_1\,\text{for}\,C_{l,2}
+    9  2.163827776e+00   cllike_cl3_b1          b_1\,\text{for}\,C_{l,3}
+   10  2.530094558e+00   cllike_cl4_b1          b_1\,\text{for}\,C_{l,4}
+   11  3.050471557e+00   cllike_cl5_b1          b_1\,\text{for}\,C_{l,5}
+   12  3.706946864e+00   cllike_cl6_b1          b_1\,\text{for}\,C_{l,6}
+   13  4.188622108e-01   cllike_cl1_b1p         b_1p\,\text{for}\,C_{l,1}
+   14  1.291380900e-01   cllike_cl2_b1p         b_1p\,\text{for}\,C_{l,2}
+   15  -2.983370445e-01  cllike_cl3_b1p         b_1p\,\text{for}\,C_{l,3}
+   16  -1.165426503e+00  cllike_cl4_b1p         b_1p\,\text{for}\,C_{l,4}
+   17  4.859310078e-01   cllike_cl5_b1p         b_1p\,\text{for}\,C_{l,5}
+   18  2.245924085e-01   cllike_cl6_b1p         b_1p\,\text{for}\,C_{l,6}
+
+    3  4.930169233e-02   Omega_b                Omega\ b
+    4  0.6736            h                      h
+    5  0.9649            n_s                    n\ s
+    6  0.0               m_nu                   m\ nu
+
+   19  1.373874440e+02   chi2__cl_like.ClLike   \chi^2_{\rm cl\ like.ClLike}

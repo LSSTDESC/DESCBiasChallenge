@@ -1,0 +1,2 @@
+#        weight    minuslogpost          sigma8         Omega_c   cllike_cl1_b1  cllike_cl1_b1p   minuslogprior minuslogprior__0            chi2 chi2__cl_like.ClLike
+              1        13.08272      0.78292551      0.26836538       1.7183298      -4.9603562       10.261162        10.261162       5.6431169            5.6431169

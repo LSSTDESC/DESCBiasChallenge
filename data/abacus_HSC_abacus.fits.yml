@@ -1,0 +1,9 @@
+bias:
+  galtype: all
+  model: Abacus
+cosmology: Abacus
+dNdz_file: data/dNdz_shear_shear.npz
+e_rms: 0.28
+ndens_cl: 27.0
+ndens_sh: 27.0
+sacc_name: abacus_HSC_abacus.fits

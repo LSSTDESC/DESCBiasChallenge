@@ -1,0 +1,2 @@
+#        weight    minuslogpost          sigma8   cllike_cl1_b1  cllike_cl1_b1p   cllike_cl1_b2  cllike_cl1_bsn   minuslogprior minuslogprior__0            chi2 chi2__cl_like.ClLike
+              1       27.994766      0.78875262       1.6966914      -4.9459946     0.046617886           -5000       25.200603        25.200603       5.5883262            5.5883262

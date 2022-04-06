@@ -1,0 +1,16 @@
+bias:
+  constant_bias: 0.95
+  model: HSC_linear
+cosmology:
+  Omega_b: 0.05
+  Omega_c: 0.25
+  h: 0.7
+  n_s: 0.96
+  sigma8: 0.81
+  transfer_function: eisenstein_hu
+  w0: -1
+dNdz_file: data/dNdz_shear_shear.npz
+e_rms: 0.28
+ndens_cl: 27.0
+ndens_sh: 27.0
+sacc_name: fid_HSC_linear.fits

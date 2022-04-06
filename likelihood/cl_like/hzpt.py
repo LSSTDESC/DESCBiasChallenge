@@ -3,7 +3,6 @@ import numpy as np
 import pyccl as ccl
 from gzpt import hzpt,tracers
 from copy import copy
-import time
 #structure stolen directly from lpt.py/ept.py
 
 
@@ -51,31 +50,17 @@ class HZPTCalculator(object):
         #FIXME make this more efficient by using their structure,
         #can refactor hzpt to operate BB on all z at once and separately keep ZA table
         pk_use = pk*self.h3#*Dz**2 #assuming normed to 1 at z=0, encode right linear evoln...
-        t0=time.perf_counter()
         hzpt_model = hzpt(self.ksh,pk_use,config=False)
-        t1=time.perf_counter()
         for D in Dz:
-            if(D==Dz[0]):
-                t0i=time.perf_counter()
 
             hzpt_model.update_redshift(Dz=D)
-            if(D==Dz[0]):
-                t0ii=time.perf_counter()
             tmp = copy(hzpt_model)
             # pk_hzpt = hzpt_model.
             # cleft.make_ptable(D=D, kmin=self.ks[0]/self.h,
             #                   kmax=self.ks[-1]/self.h, nk=self.ks.size)
             self.models.append(tmp) #shallow copy to avoid re-running SBF integrals
-            if(D==Dz[0]):
-                t0iii=time.perf_counter()
         # self.models = np.array(self.pt_table)
         # self.pt_table /= self.h3
-        t2=time.perf_counter()
-        print("HZPT: time to do 1 pktable: ", t0ii-t0i)
-        print("HZPT: time to do 1 copy+append: ", t0iii-t0ii)
-        print("HZPT: time to do first model: ", t1-t0)
-        print("HZPT: time to do all redshift models: ", t2-t1)
-        print("len(k)",len(self.ksh))
     def get_pgg(self, gg_params):
         #Needs to return a pt_table of size nz*nk
         if self.pt_table is None:
@@ -141,7 +126,6 @@ def get_hzpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
     # z
     z_arr = 1. / ptc.a_s - 1
     #FIXME: We don't (yet) have redshift evolution of HZPT params...constant for now...
-
     #FIXME throw an error if tracer1 and tracer2 are NCs without overlap
     if (tracer1.type == 'NC'):
         if (tracer2.type == 'NC'):

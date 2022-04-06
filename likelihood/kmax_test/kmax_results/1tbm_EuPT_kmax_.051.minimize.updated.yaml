@@ -1,0 +1,173 @@
+theory:
+  cl_like.CCL:
+    transfer_function: eisenstein_hu
+    matter_pk: halofit
+    baryons_pk: nobaryons
+    params:
+      Omega_c: null
+      Omega_b: null
+      h: null
+      n_s: null
+      sigma8: null
+      m_nu: null
+    speed: -1
+    stop_at_error: false
+    version: null
+    input_params:
+    - sigma8
+    - Omega_c
+    - Omega_b
+    - h
+    - n_s
+    - m_nu
+    output_params: []
+likelihood:
+  cl_like.ClLike:
+    input_params_prefix: cllike
+    input_file: ../../data/fid_red_HOD.fits
+    ia_model: IANone
+    nz_model: NzNone
+    bz_model: EulerianPT
+    shape_model: ShapeNone
+    bins:
+    - name: cl1
+    - name: sh1
+    - name: sh2
+    defaults:
+      kmax: 0.051
+      lmin: 0
+      lmax: 2000
+      sh1:
+        lmin: 30
+        lmax: 2000
+      sh2:
+        lmin: 30
+        lmax: 2000
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+      cl1:
+        lmin: 0
+        lmax: 51.450477141319915
+    twopoints:
+    - bins:
+      - cl1
+      - cl1
+    - bins:
+      - cl1
+      - sh1
+    - bins:
+      - sh1
+      - sh1
+    - bins:
+      - cl1
+      - sh2
+    - bins:
+      - sh2
+      - sh2
+    k_pt_filter: 0.0
+    type: []
+    speed: -1
+    stop_at_error: false
+    version: null
+    input_params:
+    - cllike_cl1_b1
+    - cllike_cl1_b1p
+    - cllike_cl1_b2
+    - cllike_cl1_bs
+    - cllike_cl1_b3nl
+    - cllike_cl1_bk2
+    - cllike_cl1_bsn
+    output_params: []
+params:
+  sigma8:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+    latex: \sigma_8
+    proposal: 0.001
+  Omega_c:
+    derived: false
+    value: 0.26447041034523616
+  Omega_b:
+    derived: false
+    value: 0.049301692328524445
+  h:
+    derived: false
+    value: 0.6736
+  n_s:
+    derived: false
+    value: 0.9649
+  m_nu:
+    derived: false
+    value: 0.0
+  cllike_cl1_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl1_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl1_b2:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl1_bs:
+    value: 0.0
+  cllike_cl1_b3nl:
+    value: 0.0
+  cllike_cl1_bk2:
+    value: 0.0
+  cllike_cl1_bsn:
+    prior:
+      min: -5000.0
+      max: 5000.0
+    ref:
+      dist: norm
+      loc: 1000.0
+      scale: 100.0
+    latex: b_sn\,\text{for}\,C_{l,1}
+    proposal: 100.0
+sampler:
+  minimize:
+    method: bobyqa
+    ignore_prior: true
+    max_evals: 10000
+    best_of: 2
+    confidence_for_unbounded: 0.9999995
+    seed: null
+    override_scipy: null
+    override_bobyqa:
+      rhoend: 0.05
+    covmat: null
+    covmat_params: null
+    version: null
+    fallback_covmat_scale: 4
+output: 1tbm_EuPT_kmax_.051
+version: 3.1.1

@@ -1,97 +1,17 @@
 import numpy as np
 from scipy.interpolate import interp1d
 import pyccl as ccl
-import pyccl.nl_pt as pt
+# import pyccl.nl_pt as pt
+from . import tracers as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
 from .ept import EPTCalculator, get_ept_pk2d
 from .hzpt import HZPTCalculator, get_hzpt_pk2d
+#from .bacco import BACCOCalculator, get_bacco_pk2d
+from .heft import HEFTCalculator, get_anzu_pk2d
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
-import time
-
-#Following Nick...need a custom tracer
-class HZPTNumberCountsTracer(pt.PTTracer):
-    """:class:`PTTracer` representing number count fluctuations.
-    These are provided as floating
-    point numbers or tuples of (reshift,bias) arrays.
-    If a number is provided, a constant bias is assumed.
-    If `None`, a bias of zero is assumed.
-
-    Args:
-        b1 (float or tuple of arrays): a single number or a
-            tuple of arrays (z, b(z)) giving the first-order
-            bias.
-        sngg (float or tuple of arrays): as above for the
-            tracer shot noise.
-        A0gg (float or tuple of arrays): as above for the
-            HZPT gg BB amplitude.
-        Rgg (float or tuple of arrays): as above for the
-            HZPT gg BB compensation.
-        R1hgg (float or tuple of arrays): as above for the
-            first HZPT gg BB profile parameter.
-        A0gm (float or tuple of arrays): as above for the
-            HZPT gm BB amplitude.
-        Rgm (float or tuple of arrays): as above for the
-            HZPT gm BB compensation.
-        R1hgm (float or tuple of arrays): as above for the
-            first HZPT gm BB profile parameter.
-        R1gm (float or tuple of arrays): as above for the
-            second HZPT gm BB profile parameter.
-        R12gm (float or tuple of arrays): as above for the
-            third HZPT gm BB profile parameter.
-    """
-    def __init__(self, b1, sngg=None,A0gg=None,Rgg=None,R1hgg=None,
-                           A0gm=None,Rgm=None,R1hgm=None,R1gm=None,R12gm=None
-                           ):
-        self.biases = {}
-        self.type = 'NC'
-
-        # Initialize b1
-        self.biases['b1'] = self._get_bias_function(b1)
-        self.biases['sngg'] = self._get_bias_function(sngg)
-        self.biases['A0gg'] = self._get_bias_function(A0gg)
-        self.biases['Rgg'] = self._get_bias_function(Rgg)
-        self.biases['R1hgg'] = self._get_bias_function(R1hgg)
-        self.biases['A0gm'] = self._get_bias_function(A0gm)
-        self.biases['Rgm'] = self._get_bias_function(Rgm)
-        self.biases['R1hgm'] = self._get_bias_function(R1hgm)
-        #FIXME: fix scaling relation
-        self.biases['R1gm'] = self._get_bias_function(R1gm)
-        self.biases['R12gm'] = self._get_bias_function(R12gm)
-
-
-    @property
-    def b1(self):
-        """Internal first-order bias function.
-        """
-        return self.biases['b1']
-    @property
-    def sngg(self):
-        return self.biases['sngg']
-    @property
-    def A0gg(self):
-        return self.biases['A0gg']
-    @property
-    def Rgg(self):
-        return self.biases['Rgg']
-    @property
-    def R1hgg(self):
-        return self.biases['R1hgg']
-    @property
-    def A0gm(self):
-        return self.biases['A0gm']
-    @property
-    def Rgm(self):
-        return self.biases['Rgm']
-    @property
-    def R1hgm(self):
-        return self.biases['R1hgm']
-    @property
-    def R1gm(self):
-        return self.biases['R1gm']
-    @property
-    def R12gm(self):
-        return self.biases['R12gm']
+from anzu.emu_funcs import LPTEmulator
+#import baccoemu_beta as baccoemu
 
 
 class ClLike(Likelihood):
@@ -117,13 +37,18 @@ class ClLike(Likelihood):
     # List of two-point functions that make up the data vector
     twopoints: list = []
     # Low-pass filter for PT
-    k_pt_filter: float = 0.01
+    k_pt_filter: float = 0.
 
     def initialize(self):
         # Read SACC file
         self._read_data()
         # Ell sampling for interpolation
         self._get_ell_sampling()
+        # Initialize emu to train it once
+        if self.bz_model == 'anzu':
+            self.emu = LPTEmulator(kecleft=True, extrap=False)
+        if self.bz_model == 'BACCO':
+            self.emu = baccoemu.Lbias_expansion()
 
     def _read_data(self):
         """
@@ -328,8 +253,9 @@ class ClLike(Likelihood):
         """ Transforms all used tracers into CCL tracers for the
         current set of parameters."""
         trs = {}
-        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT','HZPT']
+        is_PT_bias = self.bz_model in ['LagrangianPT', 'EulerianPT', 'BACCO', 'anzu','HZPT']
         for name, q in self.used_tracers.items():
+            trs[name] = {}
             if q == 'galaxy_density':
                 nz = self._get_nz(cosmo, name, **pars)
                 bz = self._get_bz(cosmo, name, **pars)
@@ -339,6 +265,7 @@ class ClLike(Likelihood):
                     z = self.bin_properties[name]['z_fid']
                     zmean = self.bin_properties[name]['zmean_fid']
                     pref = self.input_params_prefix + '_' + name
+                    print('pref: ',pref)
                     b1 = pars[pref + '_b1']
                     if(self.bz_model !='HZPT'):
                         b1p = pars[pref + '_b1p']
@@ -346,13 +273,19 @@ class ClLike(Likelihood):
                         b2 = pars[pref + '_b2']
                         bs = pars[pref + '_bs']
                         bk2 = pars.get(pref + '_bk2', None)
-
-                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
-                                                      bs=bs, bk2=bk2)
-
+                        b3nl = pars.get(pref + '_b3nl', None)
+                        bsn = pars.get(pref + '_bsn', None)
+                        if bk2 is not None or b3nl is not None:
+                            ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                                                          bs=bs, bk2=bk2, b3nl=b3nl, sn=bsn)
+                        else:
+                            ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                                                          bs=bs)
                     else:
                         sngg = pars.get(pref + '_sngg', None)
-                        A0gg = pars.get(pref + '_A0gg', None)
+                        print('sngg: ',sngg)
+                        A0gg = pars.get(pref + 'A0gg', None)
+                        print('A0gg: ',A0gg)
                         Rgg = pars.get(pref + '_Rgg', None)
                         R1hgg = pars.get(pref + '_R1hgg', None)
                         A0gm = pars.get(pref + '_A0gm', None)
@@ -361,11 +294,25 @@ class ClLike(Likelihood):
                         R1gm = pars.get(pref + '_R1gm', None)
                         R12gm = pars.get(pref + '_R12gm', None)
 
-                        ptt = HZPTNumberCountsTracer(b1 = b1, sngg = sngg,
+                        ptt = pt.HZPTNumberCountsTracer(b1 = b1, sngg = sngg,
                                                  A0gg = A0gg, Rgg = Rgg, R1hgg = R1hgg,
                                                  A0gm = A0gm, Rgm = Rgm, R1hgm = R1hgm, R1gm = R1gm, R12gm = R12gm
                                                  )
-
+                elif self.bz_model == 'HOD':
+                    pref = self.input_params_prefix + '_hod_'
+                    trs[name] = {'HOD_params': {
+                                                'lMmin_0': pars[pref + 'lMmin_0'],
+                                                'lMmin_p': pars[pref + 'lMmin_p'],
+                                                'siglM_0': pars[pref + 'siglM_0'],
+                                                'siglM_p': pars.get(pref + 'siglM_p', 0.),
+                                                'lM0_0': pars[pref + 'lM0_0'],
+                                                'lM0_p': pars[pref + 'lM0_p'],
+                                                'lM1_0': pars[pref + 'lM1_0'],
+                                                'lM1_p': pars[pref + 'lM1_p'],
+                                                'alpha_0': pars[pref + 'alpha_0'],
+                                                'alpha_p': pars.get(pref + 'alpha_p', 0.)
+                                                }
+                                }
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
@@ -377,7 +324,6 @@ class ClLike(Likelihood):
                 t = ccl.CMBLensingTracer(cosmo, z_source=1100)
                 if is_PT_bias:
                     ptt = pt.PTMatterTracer()
-            trs[name] = {}
             trs[name]['ccl_tracer'] = t
             if is_PT_bias:
                 trs[name]['PT_tracer'] = ptt
@@ -389,7 +335,7 @@ class ClLike(Likelihood):
         For linear bias, this is just the matter power spectrum.
         """
         # Get P(k)s from CCL
-        if self.bz_model == 'Linear':
+        if self.bz_model == 'Linear' or self.bz_model == 'HOD':
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             return {'pk_mm': pkmm}
@@ -415,20 +361,38 @@ class ClLike(Likelihood):
                                     a_arr=a_s, k_filter=k_filter)
             else:
                 raise ValueError("Bias model not implemented")
-
-            Dz = ccl.growth_factor(cosmo, ptc.a_s)
-            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
-            t0 = time.perf_counter()
-            ptc.update_pk(pk_lin_z0, Dz)
-            t1 = time.perf_counter()
-            print("update pk time: ", t1-t0)
-            #mm stuff, not touching...
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
+            pk_lin_z0 = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
+            Dz = ccl.growth_factor(cosmo, ptc.a_s)
+            ptc.update_pk(pk_lin_z0, Dz)
+            return {'ptc': ptc, 'pk_mm': pkmm}
+        elif self.bz_model == 'BACCO':
+            if self.k_pt_filter > 0:
+                k_filter = self.k_pt_filter
+            else:
+                k_filter = None
+            ptc = BACCOCalculator(bacco_emu=self.emu, log10k_min=np.log10(1e-2*cosmo['h']), log10k_max=np.log10(0.75*cosmo['h']),
+                                  nk_per_decade=20, h=cosmo['h'], k_filter=k_filter)
+            cosmo.compute_nonlin_power()
+            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
+            ptc.update_pk(cosmo)
+            return {'ptc': ptc, 'pk_mm': pkmm}
+        elif self.bz_model == 'anzu':
+            a_s = 1. / (1 + np.linspace(0., 4., 30)[::-1])
+            # TODO: Implement k_filter in anzu
+            if self.k_pt_filter > 0:
+                k_filter = self.k_pt_filter
+            else:
+                k_filter = None
+            ptc = HEFTCalculator(self.emu, cosmo, a_arr=a_s)
+            cosmo.compute_nonlin_power()
+            pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
+            ptc.update_pk(cosmo)
             return {'ptc': ptc, 'pk_mm': pkmm}
         else:
             raise LoggedError(self.log,
-                              "cclk 1: Unknown bias model %s" % self.bz_model)
+                              "Unknown bias model %s" % self.bz_model)
 
     def _get_pkxy(self, cosmo, clm, pkd, trs, **pars):
         """ Get the P(k) between two tracers. """
@@ -457,11 +421,8 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
-                t0 = time.perf_counter()
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
-                t1 = time.perf_counter()
-                print("LPT pk2d time: ", t1-t0)
                 return pk_pt
         elif (self.bz_model == 'HZPT'):
             """jms - hmm this will be slightly complicated by the fact that tracers
@@ -473,15 +434,79 @@ class ClLike(Likelihood):
                    values of the input bias parameters for each redshift bin in the yaml"""
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
-                t0 = time.perf_counter()
                 pk_pt = get_hzpt_pk2d(cosmo, ptt1, tracer2=ptt2,
                                      ptc=pkd['ptc'])
-                t1 = time.perf_counter()
-                print("HZPT pk2d time: ", t1-t0)
                 return pk_pt
+        elif (self.bz_model == 'BACCO'):
+            if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                return pkd['pk_mm']  # matter-matter
+            else:
+                ptt1 = trs[clm['bin_1']]['PT_tracer']
+                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
+                                     ptc=pkd['ptc'])
+                return pk_pt
+        elif (self.bz_model == 'anzu'):
+            if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                return pkd['pk_mm']  # matter-matter
+            else:
+                ptt1 = trs[clm['bin_1']]['PT_tracer']
+                ptt2 = trs[clm['bin_2']]['PT_tracer']
+                pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
+                                       ptc=pkd['ptc'])
+                return pk_pt
+        elif (self.bz_model == 'HOD'):
+            # Halo model calculation
+            if ((q1 == 'galaxy_density') or (q2 == 'galaxy_density')):
+                md = ccl.halos.MassDef200m()
+                cm = ccl.halos.ConcentrationDuffy08(mdef=md)
+                mf = ccl.halos.MassFuncTinker08(cosmo, mass_def=md)
+                bm = ccl.halos.HaloBiasTinker10(cosmo, mass_def=md)
+                pgg = ccl.halos.Profile2ptHOD()
+                pm = ccl.halos.HaloProfileNFW(cm)
+                hmc = ccl.halos.HMCalculator(cosmo, mf, bm, md)
+                k_s = np.geomspace(1E-4, 1E2, 512)
+                lk_s = np.log(k_s)
+                a_s = 1. / (1 + np.linspace(0., 2., 30)[::-1])
+
+                def alpha_HMCODE(a):
+                    return 0.7
+
+                def k_supress(a):
+                    return 0.001
+
+                if ((q1 == 'galaxy_density') and (q2 == 'galaxy_density')):
+                    print(trs[clm['bin_1']])
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
+                    pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg, prof_2pt=pgg,
+                                                   prof2=pg,
+                                                   normprof1=True, normprof2=True,
+                                                   lk_arr=lk_s, a_arr=a_s,
+                                                   smooth_transition=alpha_HMCODE,
+                                                   supress_1h=k_supress)
+                elif ((q1 != 'galaxy_density') and (q2 == 'galaxy_density')):
+                    print(trs[clm['bin_2']])
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
+                    pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg,
+                                                   prof2=pm,
+                                                   normprof1=True, normprof2=True,
+                                                   lk_arr=lk_s, a_arr=a_s,
+                                                   smooth_transition=alpha_HMCODE,
+                                                   supress_1h=k_supress)
+                elif ((q1 == 'galaxy_density') and (q2 != 'galaxy_density')):
+                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
+                    pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg,
+                                                   prof2=pm,
+                                                   normprof1=True, normprof2=True,
+                                                   lk_arr=lk_s, a_arr=a_s,
+                                                   smooth_transition=alpha_HMCODE,
+                                                   supress_1h=k_supress)
+            elif ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
+                pk_pt = pkd['pk_mm']  # matter-matter
+            return pk_pt
         else:
             raise LoggedError(self.log,
-                              "cllk 2: Unknown bias model %s" % self.bz_model)
+                              "Unknown bias model %s" % self.bz_model)
 
     def _get_cl_all(self, cosmo, pk, **pars):
         """ Compute all C_ells."""
@@ -490,12 +515,15 @@ class ClLike(Likelihood):
 
         # Correlate all needed pairs of tracers
         cls = []
+        clfs = []
         for clm in self.cl_meta:
             pkxy = self._get_pkxy(cosmo, clm, pk, trs, **pars)
             cl = ccl.angular_cl(cosmo,
                                 trs[clm['bin_1']]['ccl_tracer'],
                                 trs[clm['bin_2']]['ccl_tracer'],
                                 self.l_sample, p_of_k_a=pkxy)
+            clfs.append(cl)
+        for clm, cl in zip(self.cl_meta, clfs):
             clb = self._eval_interp_cl(cl, clm['l_bpw'], clm['w_bpw'])
             cls.append(clb)
         return cls
@@ -570,10 +598,7 @@ class ClLike(Likelihood):
 
     def _get_theory(self, **pars):
         """ Computes theory vector."""
-        t0 = time.perf_counter()
         cls = self.get_cls_theory(**pars)
-        t1 = time.perf_counter()
-        print("Time to evalute all cls: ", t1-t0)
 
         # Flattening into a 1D array
         cl_out = np.zeros(self.ndata)
@@ -594,6 +619,11 @@ class ClLike(Likelihood):
         """
         t = self._get_theory(**pars)
         r = t - self.data_vec
+        # print(r.shape)
+        # print(t)
+        # print(self.data_vec)
+        # print(np.abs(r)/np.sqrt(np.diag(self.cov)))
+        # print(np.sqrt(np.diag(self.cov))/self.data_vec)
         # t = np.random.multivariate_normal(t, self.cov)
         # chi2 = np.dot(r, self.inv_cov.dot(r))
         re = np.dot(self.ic_v, r)

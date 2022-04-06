@@ -1,0 +1,178 @@
+theory:
+  cl_like.CCL:
+    transfer_function: eisenstein_hu
+    matter_pk: halofit
+    baryons_pk: nobaryons
+likelihood:
+  cl_like.ClLike:
+    input_file: ../../data/abacus_red_abacus.fits
+    bins:
+    - name: cl6
+    - name: sh1
+    - name: cl1
+    twopoints:
+    - bins:
+      - cl1
+      - sh1
+    defaults:
+      kmax: 0.05
+      lmin: 0
+      lmax: 2000
+      sh1:
+        lmin: 30
+      sh2:
+        lmin: 30
+      sh3:
+        lmin: 30
+      sh4:
+        lmin: 30
+      sh5:
+        lmin: 30
+    input_params_prefix: cllike
+    ia_model: IANone
+    nz_model: NzNone
+    shape_model: ShapeNone
+    bz_model: EulerianPT
+params:
+  sigma8:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+    latex: \sigma_8
+    proposal: 0.001
+  Omega_c: 0.26447041034523616
+  Omega_b: 0.049301692328524445
+  h: 0.6736
+  n_s: 0.9649
+  m_nu: 0.0
+  cllike_cl6_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.0
+      scale: 0.01
+    latex: b_1\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl6_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_1p\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl6_b2:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_b2:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_2\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl6_bs:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_bs:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_s\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl6_b3nl: 0.0
+  cllike_cl1_b3nl: 0.0
+  cllike_cl6_bk2:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_k2\,\text{for}\,C_{l,6}
+    proposal: 0.01
+  cllike_cl1_bk2:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.0
+      scale: 0.01
+    latex: b_k2\,\text{for}\,C_{l,1}
+    proposal: 0.01
+  cllike_cl6_bsn:
+    prior:
+      min: -5000.0
+      max: 5000.0
+    ref:
+      dist: norm
+      loc: 1000.0
+      scale: 100.0
+    latex: b_sn\,\text{for}\,C_{l,6}
+    proposal: 100.0
+  cllike_cl1_bsn:
+    prior:
+      min: -5000.0
+      max: 5000.0
+    ref:
+      dist: norm
+      loc: 1000.0
+      scale: 100.0
+    latex: b_sn\,\text{for}\,C_{l,1}
+    proposal: 100.0
+sampler:
+  minimize:
+    ignore_prior: true
+    max_evals: 10000
+output: tbm_EuPT_kmax_.05
