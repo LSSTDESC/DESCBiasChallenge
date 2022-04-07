@@ -60,13 +60,13 @@ name_like = args.name_like
 # Set model
 if bias_model == 'lin':
     model = 'Linear'
-elif bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl']:
+elif 'EuPT' in bias_model:
     model = 'EulerianPT'
-elif bias_model in ['LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl']:
+elif 'LPT' in bias_model:
     model = 'LagrangianPT'
-elif bias_model in ['BACCO', '3BACCO_bk2', '3BACCO_bk2+bsn']:
+elif 'BACCO' in bias_model:
     model = 'BACCO'
-elif bias_model in ['anzu', '3anzu_bk2', '3anzu_bk2+bsn']:
+elif 'anzu' in bias_model:
     model = 'anzu'
 elif bias_model == 'HOD':
     model = 'HOD'
@@ -421,7 +421,7 @@ if args.sampler_type == 'minimizer':
     pfvals = list(pf.values())
 
     # Save data to file
-    np.savez(info['output']+'.fisher_sd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+    np.savez(info['output']+'.fisher_fd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
 
     # Method: second derivative
     # Run error estimation fisher code
@@ -432,7 +432,7 @@ if args.sampler_type == 'minimizer':
     pfvals = list(pf.values())
 
     # Save data to file
-    np.savez(info['output']+'.fisher_fd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
+    np.savez(info['output']+'.fisher_sd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov)
 
 elif args.sampler_type == 'mcmc':
     from mpi4py import MPI
