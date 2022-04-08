@@ -208,14 +208,11 @@ else:
         bin_nos = [int(bin_dict['name'][-1]) - 1 for bin_dict in info['likelihood'][name_like]['bins'] if 'cl' in bin_dict['name']]
 
 # Set bias parameter types used in each model
-if bias_model in ['EuPT', '3EuPT', '3EuPT_bk2', '3EuPT_b3nl',
-                  'LPT', '3LPT', '3LPT_bk2', '3LPT_b3nl',
-                  'BACCO', '3BACCO_bk2', '3BACCO_bk2+bsn',
-                  'anzu', '3anzu_bk2', '3anzu_bk2+bsn']:
+if model == 'BACCO' or model == 'anzu' or model == 'EulerianPT' or model == 'LagrangianPT':
     bpar = ['1', '1p', '2', 's', '3nl', 'k2', 'sn']
-elif bias_model == 'Linear':
+elif model == 'Linear':
     bpar = ['1','1p']
-elif bias_model == 'HOD':
+elif model == 'HOD':
     bpar = ['lMmin_0', 'lMmin_p',
             'siglM_0', 'siglM_p',
             'lM0_0', 'lM0_p',
@@ -283,7 +280,7 @@ if args.ref_bk2 is not None:
 else:
     ref_bk2 = [None for i in range(7)]
 
-if bias_model != 'HOD':
+if model != 'HOD':
     # Template for bias parameters in yaml file
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
             'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
@@ -300,7 +297,7 @@ info['likelihood'][name_like]['input_file'] = args.path2data
 
 # Write bias parameters into yaml file
 input_params_prefix = info['likelihood'][name_like]['input_params_prefix']
-if bias_model != 'HOD':
+if model != 'HOD':
     for b in bpar:
         for i in bin_nos:
             param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
@@ -413,8 +410,8 @@ if args.sampler_type == 'minimizer':
 
     # Run error estimation fisher code
     # Method: first derivative
-    F = fisher.Fisher_first_deri(model = model, parms = p_all, fp_name = list(pf.keys()),
-                                 step_factor = 0.01, method = 'five-stencil', full_expresssion = False)
+    F = fisher.Fisher_first_deri(model=model, parms=p_all, fp_name=list(pf.keys()),
+                                 step_factor=0.01, method='five-stencil', full_expresssion=False)
     cov = F.get_cov()
 
     p0vals = list(p0.values())
