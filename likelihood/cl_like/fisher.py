@@ -250,8 +250,11 @@ class Fisher_first_deri():
         '''
         Get covariance
         '''
-        covar = LA.inv(self.get_fisher())  # covariance matrix
-        return covar
+
+        fisher = self.get_fisher()
+        covar = LA.inv(fisher)  # covariance matrix
+
+        return covar, fisher
     
     
     
@@ -348,5 +351,8 @@ class Fisher_second_deri():
         '''
         Get covariance
         '''
-        covar = LA.inv(self.calc_Fisher())  # covariance matrix
-        return covar
+
+        fisher = self.calc_Fisher()
+        covar = LA.inv(fisher)  # covariance matrix
+
+        return covar, fisher
