@@ -2,8 +2,8 @@ import numpy as np
 import pyccl as ccl
 import sys
 sys.path.append('../likelihood/cl_like')
-from bacco import BACCOCalculator, get_bacco_pk2d
-from heft import HEFTCalculator, get_anzu_pk2d
+#from bacco import BACCOCalculator, get_bacco_pk2d
+#from heft import HEFTCalculator, get_anzu_pk2d
 import tracers as pt
 from scipy.integrate import simps
 import os
@@ -38,6 +38,24 @@ def get_abacus_cosmo():
     cosmo.compute_nonlin_power()
     return cosmo, cosmology
 
+def get_LastJourney_cosmo():
+    cosmology = {'Omega_b': 0.049,
+                 'Omega_cdm': 0.49,
+                 'h': 0.6766,
+                 'A_s': np.e**3.047/1e10,
+                 'n_s': 0.9665,
+                 'sigma8': 0.8102
+                }
+
+    cosmo = ccl.Cosmology(Omega_c=cosmology['Omega_cdm'],
+                          Omega_b=cosmology['Omega_b'],
+                          h=cosmology['h'], A_s=cosmology['A_s'], n_s=cosmology['n_s'],
+                          m_nu=0.0)
+
+
+    cosmo.compute_linear_power()
+    cosmo.compute_nonlin_power()
+    return cosmo,cosmology
 
 class DataGenerator(object):
     lmax = 5000
@@ -45,20 +63,37 @@ class DataGenerator(object):
     def __init__(self, config):
         self.c = config
         print(self.c['sacc_name'])
+        # Bias model
+        self.bias_model = self.c['bias']['model']
         # Read redshift distributions and compute number densities
         # for all redshift bins
         d = np.load(self.c['dNdz_file'])
         self.z_cl = d['z_cl']
-        self.nz_cl = d['dNdz_cl'].T
+        if self.bias_model == 'LastJourney':
+            self.nz_cl = d['dNdz_cl']
+        else:
+            self.nz_cl = d['dNdz_cl'].T
         norms_cl = simps(self.nz_cl, x=self.z_cl)
-        self.ndens_cl = self.c['ndens_cl']*norms_cl/np.sum(norms_cl)
-        self.ndens_cl *= (180*60/np.pi)**2
+        
+        if 'ndens_cl' not in self.c:
+             self.ndens_cl = None
+        else:
+            if self.c['ndens_cl'] is None:
+                self.ndens_cl = None
+            else:
+                self.ndens_cl = self.c['ndens_cl']*norms_cl/np.sum(norms_cl)
+                self.ndens_cl *= (180*60/np.pi)**2
         self.z_sh = d['z_sh']
-        self.nz_sh = d['dNdz_sh'].T
+        if self.bias_model == 'LastJourney':
+            self.nz_sh = d['dNdz_sh']
+        else:
+            self.nz_sh = d['dNdz_sh'].T
         norms_sh = simps(self.nz_sh, x=self.z_sh)
+        
         self.ndens_sh = self.c['ndens_sh']*norms_sh/np.sum(norms_sh)
         self.ndens_sh *= (180*60/np.pi)**2
-        self.n_cl = len(self.ndens_cl)
+        self.n_cl = self.nz_cl.shape[0]
+        print('n_cl: ', self.n_cl)
         self.n_sh = len(self.ndens_sh)
         if 'theor_err' not in self.c:
             self.c['theor_err'] = False
@@ -71,14 +106,17 @@ class DataGenerator(object):
                 if self.c['cosmology'] == 'Abacus':
                     self.cosmo, cosmo_dict = get_abacus_cosmo()
                     self.c['cosmology'] = cosmo_dict
+                    
+                elif  self.c['cosmology'] == 'LastJourney':
+                    self.cosmo, cosmo_dict = get_LastJourney_cosmo()
+                    self.c['cosmology'] = cosmo_dict                    
                 else:
                     raise ValueError('Unknown cosmology')
         else:
             self.cosmo = ccl.CosmologyVanillaLCDM()
         ccl.sigma8(self.cosmo)
 
-        # Bias model
-        self.bias_model = self.c['bias']['model']
+
         self.ll = None
 
     def _get_covariance(self, cls, unwrap=True):
@@ -154,10 +192,13 @@ class DataGenerator(object):
         nls = np.zeros([n_tot, n_tot, ll['n_bpw']])
         sgamma = self.c.get('e_rms', 0.28)
         # Clustering first
-        for i in range(self.n_cl):
-            nls[i, i, :] = 1./self.ndens_cl[i]
+        if self.ndens_cl is not None:
+            print('Adding survey noise to clustering cls.')
+            for i in range(self.n_cl):
+                nls[i, i, :] = 1./self.ndens_cl[i]
         # Then shear
         for i in range(self.n_sh):
+            print('Adding survey noise to shear cls.')
             nls[i+self.n_cl, i+self.n_cl, :] = sgamma**2/self.ndens_sh[i]
         return nls
 
@@ -250,6 +291,27 @@ class DataGenerator(object):
             from scipy.interpolate import interp1d
             bf = interp1d(zz[::-1], bz[::-1], fill_value='extrapolate', bounds_error=False)
             return bf(z)
+        elif self.bias_model == 'LastJourney':
+            print('Getting LastJourney Pks')
+            gtype = self.c['bias']['galtype']
+            if gtype != 'halo':
+                 raise ValueError('Only halo are avaliable for LastJourney as gtype!')
+            else:
+                print('Reading noisy halo power spectra from LastJourney.')
+                assert 'massbin' in self.c['bias'], 'Must specify massbin.'                
+                massbin = self.c['bias']['massbin']
+                if massbin == 1:
+                    d = np.load('LastJourneyData/pk2d_halo_Mmin=12-Max=12p5_LJ.npz')
+                else:
+                    raise ValueError('Only massbin = 1 suppoorted.')
+            ids = d['k_s'] < 0.1
+            pkgg = d[f'{gtype}_{gtype}'][:, ids]
+            pkmm = d['m_m'][:, ids]
+            bz = np.mean(np.sqrt(pkgg/pkmm), axis=1)
+            zz = 1./d['a_s']-1
+            from scipy.interpolate import interp1d
+            bf = interp1d(zz[::-1], bz[::-1],fill_value='extrapolate', bounds_error=False)
+            return bf(z)
 
     def _get_pks(self):
         """ Computes P_gg(k, z) and P_gm(k, z)
@@ -337,10 +399,39 @@ class DataGenerator(object):
             pk_mm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
                              pk_arr=np.log(d[f'm_m']),
                              is_logp=True)
+        elif self.bias_model == 'LastJourney':
+            print("Getting LastJourney Pks")
+            gtype = self.c['bias']['galtype']
+            if gtype != 'halo': 
+                raise ValueError('Only halo are avaliable for LastJourney as gtype!')
+            else:
+                print('Reading halo power spectra from LastJourney.')
+                assert 'massbin' in self.c['bias'], 'Must specify massbin.'
+                massbin = self.c['bias']['massbin']
+                if massbin == 1:
+                    d = np.load('LastJourneyData/pk2d_halo_Mmin=12-Max=12p5_LJ.npz')
+                else:
+                    raise ValueError('Only massbin = 1 suppoorted.') 
+                imin = 0
+
+            # Interpolation done internally in the Pk2D objects
+            pk_gg = ccl.Pk2D(a_arr=d['a_s'][imin:], lk_arr=np.log(d['k_s']),
+                             pk_arr=np.log(d[f'{gtype}_{gtype}'][imin:, :]),
+                             is_logp=True)
+            pgm = d[f'{gtype}_m']
+
+            pk_gm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
+                             pk_arr=np.log(pgm),
+                             is_logp=True)
+            pk_mm = ccl.Pk2D(a_arr=d['a_s'], lk_arr=np.log(d['k_s']),
+                             pk_arr=np.log(d[f'm_m']),
+                             is_logp=True)
+            
+            
         else:
             raise NotImplementedError("Bias model " + self.bias_model +
                                       " not implemented.")
-        if 'Abacus' not in self.bias_model:
+        if 'Abacus' not in self.bias_model and 'LastJourney' not in self.bias_model:
             return {'gg': pk_gg,
                     'gm': pk_gm}
         else:
@@ -385,7 +476,7 @@ class DataGenerator(object):
                 if i2 < i1:
                     continue
                 if self.bias_model not in ['BACCO', 'anzu']:
-                    if self.bias_model != 'Abacus_unnorm':
+                    if self.bias_model != 'Abacus_unnorm' and self.bias_model != 'LastJourney':
                         print('Using halofit Pmm.')
                         pk = None
                     else:
@@ -707,19 +798,37 @@ cospar = {'Omega_c': 0.25,
 #     d.save_config()
 #     print(" ")
 # # Red unnorm (same HOD params)
+#config = {'ndens_sh': 27.,
+#          'ndens_cl': 4.,
+#          'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+#          'e_rms': 0.28,
+#          'cosmology': 'Abacus',
+#          'bias': {'model': 'Abacus_unnorm',
+#                   'galtype': 'red'},
+#          'sacc_name': 'abacus_red-sn_unnorm_z=0p1-1p4_abacus.fits'}
+#if not os.path.isfile(config['sacc_name']):
+#    d = DataGenerator(config)
+#    s = d.get_sacc_file()
+#    d.save_config()
+#    print(" ")
+    
+    
+# LastJourney red 0.24-0.5
+# # Red unnorm (same HOD params)
 config = {'ndens_sh': 27.,
-          'ndens_cl': 4.,
-          'dNdz_file': 'data/dNdz_lens=source_z=0p1-1p4.npz',
+          'ndens_cl': None,
+          'dNdz_file': 'LastJourneyData/dNdz_red_0.25-0.5.npz',
           'e_rms': 0.28,
-          'cosmology': 'Abacus',
-          'bias': {'model': 'Abacus_unnorm',
-                   'galtype': 'red'},
-          'sacc_name': 'abacus_red-sn_unnorm_z=0p1-1p4_abacus.fits'}
+          'cosmology': 'LastJourney',
+          'bias': {'model': 'LastJourney',
+                   'galtype': 'halo',
+                   'massbin': 1},
+          'sacc_name': 'LastJourney_halo-Mmin=12-Mmax=12p5-LastJourney.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
     d.save_config()
-    print(" ")
+print("File successfully saved.")
 # Red all norm (same HOD params)
 # config = {'ndens_sh': 27.,
 #           'ndens_cl': 4.,
