@@ -268,6 +268,10 @@ class ClLike(Likelihood):
                     b1p = pars[pref + '_b1p']
                     bz = b1 + b1p * (z - zmean)
                     b2 = pars[pref + '_b2']
+                    b2p = pars.get(pref + '_b2p', None)
+                    if b2p is not None and b2p != 0.:
+                        b2z = b2 + b2p*(z-zmean)
+                        b2 = (z, b2z)
                     bs = pars[pref + '_bs']
                     bk2 = pars.get(pref + '_bk2', None)
                     b3nl = pars.get(pref + '_b3nl', None)

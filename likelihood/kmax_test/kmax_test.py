@@ -37,6 +37,8 @@ parser.add_argument('--ref_b1p', dest='ref_b1p', nargs='+', help='b1p reference 
                     required=False)
 parser.add_argument('--ref_b2', dest='ref_b2', nargs='+', help='b2 reference distribution (for initializtion).',
                     required=False)
+parser.add_argument('--ref_b2p', dest='ref_b2p', nargs='+', help='b2p reference distribution (for initializtion).',
+                    required=False)
 parser.add_argument('--ref_bs', dest='ref_bs', nargs='+', help='bs reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--ref_bk2', dest='ref_bk2', nargs='+', help='bk2 reference distribution (for initializtion).',
@@ -209,7 +211,7 @@ else:
 
 # Set bias parameter types used in each model
 if model == 'BACCO' or model == 'anzu' or model == 'EulerianPT' or model == 'LagrangianPT':
-    bpar = ['1', '1p', '2', 's', '3nl', 'k2', 'sn']
+    bpar = ['1', '1p', '2', '2p', 's', '3nl', 'k2', 'sn']
 elif model == 'Linear':
     bpar = ['1','1p']
 elif model == 'HOD':
@@ -259,6 +261,15 @@ if args.ref_b2 is not None:
             ref_b2[i] = None
 else:
     ref_b2 = [None for i in range(7)]
+if args.ref_b2p is not None:
+    ref_b2p = [0 for i in range(len(args.ref_b2p))]
+    for i, ref in enumerate(args.ref_b2p):
+        if ref != 'None':
+            ref_b2p[i] = float(ref)
+        else:
+            ref_b2p[i] = None
+else:
+    ref_b2p = [None for i in range(7)]
 ref_bs = args.ref_bs
 if args.ref_bs is not None:
     ref_bs = [0 for i in range(len(args.ref_bs))]
@@ -319,6 +330,12 @@ if model != 'HOD':
                 elif b == '2':
                     if ref_b2[i] is not None:
                         mean = ref_b2[i]
+                    else:
+                        mean = 0.
+                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                elif b == '2p':
+                    if ref_b2p[i] is not None:
+                        mean = ref_b2p[i]
                     else:
                         mean = 0.
                     info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
