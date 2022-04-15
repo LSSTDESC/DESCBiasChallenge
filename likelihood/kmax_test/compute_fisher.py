@@ -26,7 +26,7 @@ model = get_model(info)
 bestfit = np.loadtxt(path2output+'.bestfit', skiprows=2, usecols=1)
 keys = np.loadtxt(path2output+'.bestfit', skiprows=2, usecols=2, dtype='U1012')
 
-max_ind = keys[:np.where(keys=='m_nu')[0][0]]
+max_ind = np.where(keys=='m_nu')[0][0]
 logger.info('Number of fitted parameters = {}.'.format(max_ind))
 bestfit = bestfit[:max_ind]
 keys = keys[:max_ind]
