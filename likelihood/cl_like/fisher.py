@@ -43,7 +43,7 @@ class Fisher_first_deri():
         self.parms = parms
 
         # inverse of date covariance
-        self.data_invc = self.ClLike.inv_cov
+        self.data_invc = np.linalg.inv(self.ClLike.cov)
         
         # inv_cov check
         if not np.allclose(self.data_invc, self.data_invc.T):
@@ -107,19 +107,13 @@ class Fisher_first_deri():
         step_factor: float
             The factor that determine the step size of finite difference.
         '''
-        
-        # typical variations of each parameter
-        pref = self.ClLike.input_params_prefix
-        
-        # hard-coded typical variations of cosmology
-        typ_var = {"sigma8": 0.1,"Omega_c":0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1}
-        
+
         # step_size for differentiation
-        if pref in par_name:
-            # step_size for bias parameters with 0.1 typical variation 
-            step_size = 0.1*step_factor
+        if self.parms[par_name] != 0.:
+            # step_size for nonzero parameters
+            step_size = self.parms[par_name]*step_factor
         else:
-            step_size = typ_var[par_name]*step_factor
+            step_size = step_factor
         
         if self.method == 'five-stencil':
             # Five point stencils
