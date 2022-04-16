@@ -265,22 +265,24 @@ class ClLike(Likelihood):
                     zmean = self.bin_properties[name]['zmean_fid']
                     pref = self.input_params_prefix + '_' + name
                     b1 = pars[pref + '_b1']
-                    b1p = pars[pref + '_b1p']
-                    bz = b1 + b1p * (z - zmean)
+                    b1p = pars.get(pref + '_b1p', None)
+                    if b1p is not None and b1p != 0.:
+                        b1z = b1 + b1p * (z - zmean)
+                        b1 = (z, b1z)
                     b2 = pars[pref + '_b2']
                     b2p = pars.get(pref + '_b2p', None)
                     if b2p is not None and b2p != 0.:
                         b2z = b2 + b2p*(z-zmean)
                         b2 = (z, b2z)
-                    bs = pars[pref + '_bs']
+                    bs = pars.get(pref + '_bs', None)
                     bk2 = pars.get(pref + '_bk2', None)
                     b3nl = pars.get(pref + '_b3nl', None)
                     bsn = pars.get(pref + '_bsn', None)
                     if bk2 is not None or b3nl is not None:
-                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                        ptt = pt.PTNumberCountsTracer(b1=b1, b2=b2,
                                                       bs=bs, bk2=bk2, b3nl=b3nl, sn=bsn)
                     else:
-                        ptt = pt.PTNumberCountsTracer(b1=(z, bz), b2=b2,
+                        ptt = pt.PTNumberCountsTracer(b1=b1, b2=b2,
                                                       bs=bs)
                 elif self.bz_model == 'HOD':
                     pref = self.input_params_prefix + '_hod_'
