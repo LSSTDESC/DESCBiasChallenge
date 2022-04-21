@@ -49,6 +49,8 @@ parser.add_argument('--name_like', dest='name_like', type=str, help='Name of lik
                     default='cl_like.ClLike')
 parser.add_argument('--sampler_type', dest='sampler_type', help='Type of sampler used.', default='minimizer',
                     required=False)
+parser.add_argument('--mcmc_method', dest='mcmc_method', help='Method used to run MCMC.', default='MH',
+                    required=False)
 
 args = parser.parse_args()
 
@@ -296,6 +298,10 @@ if model != 'HOD':
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
             'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
             'latex': 'blank', 'proposal': 0.01}
+    if args.sampler_type == 'mcmc' and args.mcmc_method == 'polychord':
+        cl_param = {'prior': {'min': -5.0, 'max': 5.0},
+                    'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
+                    'latex': 'blank', 'proposal': 0.01}
 else:
     HOD_means = [12.95, -2.0, 0.25, 0., 12.3, 0., 14.0, -1.5, 1.32, 0.]
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
@@ -364,8 +370,14 @@ if model != 'HOD':
                         info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -5.*np.abs(mean),
                                                                                                     'max': 5.*np.abs(mean)}
                     elif args.sampler_type == 'mcmc':
-                        info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -100000.,
-                                                                                                    'max': 100000.}
+                        if args.mcmc_method == 'MH':
+                            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -100000.,
+                                                                                                        'max': 100000.}
+                        elif args.mcmc_method == 'polychord':
+                            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': 0.,
+                                                                                                        'max': 2*np.abs(mean)}
+                        else:
+                            raise NotImplementedError()
                     info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['proposal'] = 0.1*np.abs(mean)
             else:
                 if b == '0' or b == '1':
