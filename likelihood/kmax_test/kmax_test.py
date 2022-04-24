@@ -418,8 +418,8 @@ if model != 'HOD':
                     else:
                         mean = DEFAULT_REF_BSN
                 else:
-                    raise ValueError('Bias parameter not recognized.')
-                
+                    mean = 0.
+
                 info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b] = mean
 else:
     for i, b in enumerate(bpar):
