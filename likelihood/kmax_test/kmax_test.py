@@ -383,9 +383,44 @@ if model != 'HOD':
                     info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['proposal'] = 0.1*np.abs(mean)
             else:
                 if b == '0' or b == '1':
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b] = DEFAULT_REF_B1
+                    if ref_b1[i] is not None:
+                        mean = ref_b1[i]
+                    else:
+                        mean = DEFAULT_REF_B1
+                elif b == '1p':
+                    if ref_b1p[i] is not None:
+                        mean = ref_b1p[i]
+                    else:
+                        mean = 0.
+                elif b == '2':
+                    if ref_b2[i] is not None:
+                        mean = ref_b2[i]
+                    else:
+                        mean = 0.
+                elif b == '2p':
+                    if ref_b2p[i] is not None:
+                        mean = ref_b2p[i]
+                    else:
+                        mean = 0.
+                elif b == 's':
+                    if ref_bs[i] is not None:
+                        mean = ref_bs[i]
+                    else:
+                        mean = 0.
+                elif b == 'k2':
+                    if ref_bk2[i] is not None:
+                        mean = ref_bk2[i]
+                    else:
+                        mean = 0.
+                elif b == 'sn':
+                    if ref_bsn[i] is not None:
+                        mean = ref_bsn[i]
+                    else:
+                        mean = DEFAULT_REF_BSN
                 else:
-                    info['params'][input_params_prefix+'_cl' + str(i + 1) + '_b' + b] = 0.
+                    raise ValueError('Bias parameter not recognized.')
+                
+                info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b] = mean
 else:
     for i, b in enumerate(bpar):
         param_name = input_params_prefix + '_hod_' + b
