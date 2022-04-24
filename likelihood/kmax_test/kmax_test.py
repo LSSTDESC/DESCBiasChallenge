@@ -51,7 +51,7 @@ parser.add_argument('--sampler_type', dest='sampler_type', help='Type of sampler
                     required=False)
 parser.add_argument('--mcmc_method', dest='mcmc_method', help='Method used to run MCMC.', default='MH',
                     required=False)
-parser.add_argument('--rerun', dest='rerun', help='Flag indicating if to rerun MCMC.', default=False,
+parser.add_argument('--resume', dest='resume', help='Flag indicating if to resume MCMC.', default=False,
                     required=False)
 
 args = parser.parse_args()
@@ -510,7 +510,7 @@ elif args.sampler_type == 'mcmc':
 
     success = False
     try:
-        upd_info, mcmc = run(info, rerun=args.rerun)
+        upd_info, mcmc = run(info, resume=args.resume)
         success = True
     except LoggedError as err:
         pass
