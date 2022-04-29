@@ -278,7 +278,7 @@ class ClLike(Likelihood):
                     bk2 = pars.get(pref + '_bk2', None)
                     b3nl = pars.get(pref + '_b3nl', None)
                     bsn = pars.get(pref + '_bsn', None)
-                    if bk2 is not None or b3nl is not None:
+                    if bk2 is not None or b3nl is not None or bsn is not None:
                         ptt = pt.PTNumberCountsTracer(b1=b1, b2=b2,
                                                       bs=bs, bk2=bk2, b3nl=b3nl, sn=bsn)
                     else:

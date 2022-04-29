@@ -150,7 +150,7 @@ class EPTCalculator(object):
     def get_pgg(self, Pnl,
                 b11, b21, bs1, b12, b22, bs2,
                 sub_lowk, b3nl1=None, b3nl2=None,
-                bk21=None, bk22=None, Pgrad=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, Pgrad=None):
         """ Get the number counts auto-spectrum at the internal
         set of wavenumbers (given by this object's `ks` attribute)
         and a number of redshift values.
@@ -225,6 +225,10 @@ class EPTCalculator(object):
             bk21 = np.zeros_like(self.g4)
         if bk22 is None:
             bk22 = np.zeros_like(self.g4)
+        if bsn1 is None:
+            bsn1 = np.zeros_like(self.g4)
+        if bsn2 is None:
+            bsn2 = np.zeros_like(self.g4)
 
         s4 = 0.
         if sub_lowk:
@@ -238,7 +242,8 @@ class EPTCalculator(object):
                0.25*(b21*bs2 + b22*bs1)[:, None] * (Pd2s2 - (4./3.)*s4) +
                0.25*(bs1*bs2)[:, None] * (Ps2s2 - (8./9.)*s4) +
                0.5*(b12*b3nl1+b11*b3nl2)[:, None] * Pd1d3 +
-               0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2)
+               0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2 +
+               bsn1[:, None])
 
         return pgg*self.exp_cutoff
 
@@ -284,7 +289,7 @@ class EPTCalculator(object):
         return pgi*self.exp_cutoff
 
     def get_pgm(self, Pnl, b1, b2, bs, b3nl=None,
-                bk2=None, Pgrad=None):
+                bk2=None, bsn=None, Pgrad=None):
         """ Get the number counts - matter cross-spectrum at the
         internal set of wavenumbers (given by this object's `ks`
         attribute) and a number of redshift values.
@@ -331,6 +336,8 @@ class EPTCalculator(object):
             b3nl = np.zeros_like(self.g4)
         if bk2 is None:
             bk2 = np.zeros_like(self.g4)
+        if bsn is None:
+            bsn = np.zeros_like(self.g4)
 
         pgm = (b1[:, None] * Pnl +
                0.5 * b2[:, None] * Pd1d2 +
@@ -578,6 +585,10 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             bk21 = tracer1.bk2(z_arr)
         else:
             bk21 = None
+        if hasattr(tracer1, 'sn'):
+            bsn1 = tracer1.sn(z_arr)
+        else:
+            bsn1 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
@@ -590,11 +601,16 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                 bk22 = tracer2.bk2(z_arr)
             else:
                 bk22 = None
+            if hasattr(tracer2, 'sn'):
+                bsn2 = tracer2.sn(z_arr)
+            else:
+                bsn2 = None
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1, b12, b22, bs2,
                                sub_lowk, b3nl1=b31, b3nl2=b32,
                                bk21=bk21, bk22=bk22,
+                               bsn1=bsn1, bsn2=bsn2,
                                Pgrad=Pgrad)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)
@@ -604,7 +620,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                                b11, b21, bs1, c12, c22, cd2)
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pgm(Pnl,
-                               b11, b21, bs1, b3nl=b31, bk2=bk21,
+                               b11, b21, bs1, b3nl=b31, bk2=bk21, bsn=bsn1,
                                Pgrad=Pgrad)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
@@ -655,8 +671,13 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                 bk22 = tracer2.bk2(z_arr)
             else:
                 bk22 = None
+            if hasattr(tracer2, 'sn'):
+                bsn2 = tracer2.sn(z_arr)
+            else:
+                bsn2 = None
+
             p_pt = ptc.get_pgm(Pnl,
-                               b12, b22, bs2, b3nl=b32, bk2=bk22,
+                               b12, b22, bs2, b3nl=b32, bk2=bk22, bsn=bsn2,
                                Pgrad=Pgrad)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)

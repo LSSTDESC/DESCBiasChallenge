@@ -282,7 +282,7 @@ class HEFTCalculator(object):
 
         return p_hh, p_sn
 
-    def get_pgm(self, b1, b2, bs, bk2=None, sn=None):
+    def get_pgm(self, b1, b2, bs, bk2=None, bsn=None):
         """ Get P_gm for a set of bias parameters from the heft component spectra
        
           Inputs: 
@@ -293,9 +293,9 @@ class HEFTCalculator(object):
         """
 
         if bk2 is None:
-            bk2 = np.zeros_like(self.a_s)
-        if sn is None:
-            sn = np.zeros_like(self.a_s)
+            bk2 = np.zeros_like(self.a_arr)
+        if bsn is None:
+            bsn = np.zeros_like(self.a_arr)
 
         bL1 = b1 - 1.
 
