@@ -45,6 +45,18 @@ parser.add_argument('--ref_bk2', dest='ref_bk2', nargs='+', help='bk2 reference 
                     required=False)
 parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='bsn reference distribution (for initializtion).',
                     required=False)
+parser.add_argument('--ref_HOD', dest='ref_HOD', nargs='+', help='HOD reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_lMmin_0', dest='ref_lMmin_0', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_siglM_0', dest='ref_siglM_0', nargs='+', help='siglM_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_lM0_0', dest='ref_lM0_0', nargs='+', help='lM0_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_lM1_0', dest='ref_lM1_0', nargs='+', help='lM1_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_alpha_0', dest='ref_alpha_0', nargs='+', help='alpha_0 reference distribution (for initializtion).',
+                    required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
 parser.add_argument('--sampler_type', dest='sampler_type', help='Type of sampler used.', default='minimizer',
@@ -94,6 +106,9 @@ DEFAULT_REF_B1 = 2.
 
 # Default reference value for bsn
 DEFAULT_REF_BSN = 1000.
+
+# Default reference values for HOD parameters (here assume single set for all redshift bins)
+DEFAULT_REF_HOD = [12.95, -2.0, 0.25, 0., 12.3, 0., 14.0, -1.5, 1.32, 0.]
 
 # Note: we need to hard-code the BACCO parameter bounds:
 # omega_matter: [0.23, 0.4 ]
@@ -294,6 +309,16 @@ if args.ref_bk2 is not None:
             ref_bk2[i] = None
 else:
     ref_bk2 = [None for i in range(7)]
+ref_HOD = args.ref_HOD
+if args.ref_HOD is not None:
+    ref_HOD = [0 for i in range(len(args.ref_HOD))]
+    for i, ref in enumerate(args.ref_HOD):
+        if ref != 'None':
+            ref_HOD[i] = float(ref)
+        else:
+            ref_HOD[i] = None
+else:
+    ref_HOD = [None for i in range(10)]
 
 if model != 'HOD':
     # Template for bias parameters in yaml file
@@ -305,7 +330,6 @@ if model != 'HOD':
                     'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
                     'latex': 'blank', 'proposal': 0.01}
 else:
-    HOD_means = [12.95, -2.0, 0.25, 0., 12.3, 0., 14.0, -1.5, 1.32, 0.]
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
             'ref': {'dist': 'norm', 'loc': 'blank', 'scale': 0.1},
             'latex': 'blank', 'proposal': 0.01}
@@ -427,9 +451,17 @@ else:
         if param_name in fit_params:
             info['params'][param_name] = cl_param.copy()
             info['params'][param_name]['latex'] = b + '\\,\\text{for HOD}'
-            info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': HOD_means[i], 'scale': 0.1}
+            if ref_HOD[i] is not None:
+                mean = ref_HOD[i]
+            else:
+                mean = DEFAULT_REF_HOD[i]
+            info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
         else:
-            info['params'][param_name] = HOD_means[i]
+            if ref_HOD[i] is not None:
+                mean = ref_HOD[i]
+            else:
+                mean = DEFAULT_REF_HOD[i]
+            info['params'][param_name] = mean
 
 # Add kmax and output file
 info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)
