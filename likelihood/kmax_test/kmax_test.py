@@ -465,7 +465,7 @@ else:
     # Add shot noise
     b = 'sn'
     for i in bin_nos:
-        param_name = input_params_prefix + '_cl' + str(i + 1) + 'b_' + b
+        param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
         if param_name in fit_params:
             info['params'][param_name] = cl_param.copy()
             info['params'][param_name]['latex'] = 'b_' + b + '\\,\\text{for}\\,C_{l,' + str(i + 1) + '}'
