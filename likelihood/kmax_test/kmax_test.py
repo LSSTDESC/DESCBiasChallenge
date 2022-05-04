@@ -86,7 +86,7 @@ elif 'BACCO' in bias_model:
     model = 'BACCO'
 elif 'anzu' in bias_model:
     model = 'anzu'
-elif bias_model == 'HOD':
+elif 'HOD' in bias_model:
     model = 'HOD'
 else:
     raise ValueError("Unknown bias model")
