@@ -463,8 +463,9 @@ else:
                 mean = DEFAULT_REF_HOD[i]
             info['params'][param_name] = mean
     # Add shot noise
+    b = 'sn'
     for i in bin_nos:
-        param_name = input_params_prefix + '_cl' + str(i + 1) + '_bsn'
+        param_name = input_params_prefix + '_cl' + str(i + 1) + 'b_' + b
         if param_name in fit_params:
             info['params'][param_name] = cl_param.copy()
             info['params'][param_name]['latex'] = 'b_' + b + '\\,\\text{for}\\,C_{l,' + str(i + 1) + '}'
@@ -472,11 +473,30 @@ else:
                 mean = ref_bsn[i]
             else:
                 mean = DEFAULT_REF_BSN
+            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['ref'] = {'dist': 'norm',
+                                                                                          'loc': mean,
+                                                                                          'scale': 0.1 * np.abs(mean)}
+            if args.sampler_type == 'minimizer':
+                info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {
+                    'min': -5. * np.abs(mean),
+                    'max': 5. * np.abs(mean)}
+            elif args.sampler_type == 'mcmc':
+                if args.mcmc_method == 'MH':
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -100000.,
+                                                                                                    'max': 100000.}
+                elif args.mcmc_method == 'polychord':
+                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': 0.,
+                                                                                                    'max': 2 * np.abs(
+                                                                                                        mean)}
+                else:
+                    raise NotImplementedError()
+            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['proposal'] = 0.1 * np.abs(mean)
         else:
             if ref_bsn[i] is not None:
                 mean = ref_bsn[i]
             else:
                 mean = DEFAULT_REF_BSN
+            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b] = mean
 
 # Add kmax and output file
 info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)
