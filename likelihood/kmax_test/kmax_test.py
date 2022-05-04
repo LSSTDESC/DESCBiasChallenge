@@ -462,6 +462,21 @@ else:
             else:
                 mean = DEFAULT_REF_HOD[i]
             info['params'][param_name] = mean
+    # Add shot noise
+    for i in bin_nos:
+        param_name = input_params_prefix + '_cl' + str(i + 1) + '_bsn'
+        if param_name in fit_params:
+            info['params'][param_name] = cl_param.copy()
+            info['params'][param_name]['latex'] = 'b_' + b + '\\,\\text{for}\\,C_{l,' + str(i + 1) + '}'
+            if ref_bsn[i] is not None:
+                mean = ref_bsn[i]
+            else:
+                mean = DEFAULT_REF_BSN
+        else:
+            if ref_bsn[i] is not None:
+                mean = ref_bsn[i]
+            else:
+                mean = DEFAULT_REF_BSN
 
 # Add kmax and output file
 info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)
