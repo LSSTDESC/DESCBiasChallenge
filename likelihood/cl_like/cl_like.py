@@ -11,6 +11,7 @@ from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 from anzu.emu_funcs import LPTEmulator
 import baccoemu_beta as baccoemu
+from pyccl.pk2d import Pk2D
 
 
 class ClLike(Likelihood):
@@ -391,8 +392,15 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
+
+                if clm['bin_1'] != clm['bin_2']:
+                    pref = clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsn', None)
+                else:
+                    bsnx = None
+
                 pk_pt = get_ept_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'], sub_lowk=False)
+                                     ptc=pkd['ptc'], sub_lowk=False, bsnx=bsnx)
                 return pk_pt
         elif (self.bz_model == 'LagrangianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
@@ -400,8 +408,15 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
+
+                if clm['bin_1'] != clm['bin_2']:
+                    pref = clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsn', None)
+                else:
+                    bsnx = None
+
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'])
+                                     ptc=pkd['ptc'], bsnx=bsnx)
                 return pk_pt
         elif (self.bz_model == 'BACCO'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
@@ -409,8 +424,15 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
+
+                if clm['bin_1'] != clm['bin_2']:
+                    pref = clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsn', None)
+                else:
+                    bsnx = None
+
                 pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'])
+                                     ptc=pkd['ptc'], bsnx=bsnx)
                 return pk_pt
         elif (self.bz_model == 'anzu'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
@@ -418,8 +440,15 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
+
+                if clm['bin_1'] != clm['bin_2']:
+                    pref = clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsn', None)
+                else:
+                    bsnx = None
+
                 pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                       ptc=pkd['ptc'])
+                                       ptc=pkd['ptc'], bsnx=bsnx)
                 return pk_pt
         elif (self.bz_model == 'HOD'):
             # Halo model calculation
@@ -442,16 +471,25 @@ class ClLike(Likelihood):
                     return 0.001
 
                 if ((q1 == 'galaxy_density') and (q2 == 'galaxy_density')):
-                    print(trs[clm['bin_1']])
                     pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
-                    pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg, prof_2pt=pgg,
+                    if clm['bin_1'] == clm['bin_2']:
+                        pref = clm['bin_1']
+                    else:
+                        pref = clm['bin_1'] + 'x' + clm['bin_2']
+                    bsn = pars.get(pref + '_bsn', None)
+                    pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
+                                                   pg, prof_2pt=pgg,
                                                    prof2=pg,
                                                    normprof1=True, normprof2=True,
-                                                   lk_arr=lk_s, a_arr=a_s,
                                                    smooth_transition=alpha_HMCODE,
                                                    supress_1h=k_supress)
+                    if bsn is not None:
+                        pk_pt_arr += bsn*np.ones_like(pk_pt_arr)
+
+                    pk_pt = Pk2D(a_arr=a_s, lk_arr=lk_s, pk_arr=pk_pt_arr,
+                                    cosmo=cosmo, is_logp=False)
+
                 elif ((q1 != 'galaxy_density') and (q2 == 'galaxy_density')):
-                    print(trs[clm['bin_2']])
                     pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
                     pk_pt = ccl.halos.halomod_Pk2D(cosmo, hmc, pg,
                                                    prof2=pm,
