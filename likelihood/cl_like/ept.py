@@ -150,7 +150,8 @@ class EPTCalculator(object):
     def get_pgg(self, Pnl,
                 b11, b21, bs1, b12, b22, bs2,
                 sub_lowk, b3nl1=None, b3nl2=None,
-                bk21=None, bk22=None, bsn1=None, bsn2=None, Pgrad=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, bsnx=None,
+                Pgrad=None):
         """ Get the number counts auto-spectrum at the internal
         set of wavenumbers (given by this object's `ks` attribute)
         and a number of redshift values.
@@ -207,6 +208,14 @@ class EPTCalculator(object):
         # So: the d^2 and s^2 are not divided by 2
         # Also, the spectra marked with (!) tend to a constant
         # as k-> 0, which we can suppress with a low-pass filter.
+
+        b1_list = [b11, b21, bs1, bk21, bsn1, b3nl1]
+        b2_list = [b12, b22, bs2, bk22, bsn2, b3nl2]
+
+        cross = True
+        if np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]):
+            cross = False
+
         Pd1d2 = self.g4[:, None] * self.dd_bias[2][None, :]
         Pd2d2 = self.g4[:, None] * (self.dd_bias[3]*self.wk_low)[None, :]
         Pd1s2 = self.g4[:, None] * self.dd_bias[4][None, :]
@@ -229,6 +238,8 @@ class EPTCalculator(object):
             bsn1 = np.zeros_like(self.g4)
         if bsn2 is None:
             bsn2 = np.zeros_like(self.g4)
+        if bsnx is None:
+            bsnx = np.zeros_like(self.g4)
 
         s4 = 0.
         if sub_lowk:
@@ -242,8 +253,12 @@ class EPTCalculator(object):
                0.25*(b21*bs2 + b22*bs1)[:, None] * (Pd2s2 - (4./3.)*s4) +
                0.25*(bs1*bs2)[:, None] * (Ps2s2 - (8./9.)*s4) +
                0.5*(b12*b3nl1+b11*b3nl2)[:, None] * Pd1d3 +
-               0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2 +
-               bsn1[:, None])
+               0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2)
+
+        if not cross:
+            pgg += bsn1[:, None]
+        else:
+            pgg += bsnx[:, None]
 
         return pgg*self.exp_cutoff
 
@@ -458,7 +473,7 @@ class EPTCalculator(object):
         return pmm*self.exp_cutoff
 
 
-def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
+def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
                  sub_lowk=False, nonlin_pk_type='nonlinear',
                  nonloc_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2,
@@ -610,7 +625,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                                b11, b21, bs1, b12, b22, bs2,
                                sub_lowk, b3nl1=b31, b3nl2=b32,
                                bk21=bk21, bk22=bk22,
-                               bsn1=bsn1, bsn2=bsn2,
+                               bsn1=bsn1, bsn2=bsn2, bsnx=bsnx,
                                Pgrad=Pgrad)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)

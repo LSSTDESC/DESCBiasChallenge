@@ -55,9 +55,7 @@ class LPTCalculator(object):
         self.lpt_table[:, :, 1:] /= self.h**3
 
     def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2, b3nl1=None, b3nl2=None,
-                bk21=None, bk22=None, bsn1=None, bsn2=None, Pgrad=None):
-        if self.lpt_table is None:
-            raise ValueError("Please initialise CLEFT calculator")
+                bk21=None, bk22=None, bsn1=None, bsn2=None, bsnx=None, Pgrad=None):
         # Clarification:
         # CLEFT uses the followint expansion for the galaxy overdensity:
         #   d_g = b1 d + b2 d2^2/2 + bs s^2
@@ -94,6 +92,17 @@ class LPTCalculator(object):
         # Importantly, we have corrected the spectra involving s2 to
         # make the definition of bs equivalent in the EPT and LPT
         # expansions.
+
+        if self.lpt_table is None:
+            raise ValueError("Please initialise CLEFT calculator")
+
+        b1_list = [b11, b21, bs1, bk21, bsn1, b3nl1]
+        b2_list = [b12, b22, bs2, bk22, bsn2, b3nl2]
+
+        cross = True
+        if np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]):
+            cross = False
+
         bL11 = b11-1
         bL12 = b12-1
         if Pnl is None:
@@ -129,6 +138,8 @@ class LPTCalculator(object):
             bsn1 = np.zeros_like(self.a_s)
         if bsn2 is None:
             bsn2 = np.zeros_like(self.a_s)
+        if bsnx is None:
+            bsnx = np.zeros_like(self.a_s)
 
         pgg += ((b21 + b22)[:, None] * Pdmd2 +
                 (bs1 + bs2)[:, None] * Pdms2 +
@@ -139,8 +150,12 @@ class LPTCalculator(object):
                 (bs1*bs2)[:, None] * Ps2s2 +
                 (b3nl1 + b3nl2)[:, None] * Pdmo3 +
                 (bL11*b3nl2 + bL12*b3nl1)[:, None] * Pd1o3 +
-                (b12*bk21+b11*bk22)[:, None] * Pd1k2 +
-                bsn1[:, None])
+                (b12*bk21+b11*bk22)[:, None] * Pd1k2)
+
+        if not cross:
+            pgg += bsn1[:, None]
+        else:
+            pgg += bsnx[:, None]
 
         return pgg
 
@@ -184,7 +199,7 @@ class LPTCalculator(object):
         return pmm
 
 
-def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
+def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
                  nonlin_pk_type='nonlinear',
                  nonloc_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2):
@@ -307,7 +322,7 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                                b12, b22, bs2,
                                b31, b32,
                                bk21, bk22,
-                               bsn1, bsn2,
+                               bsn1, bsn2, bsnx,
                                Pgrad)
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, b31,

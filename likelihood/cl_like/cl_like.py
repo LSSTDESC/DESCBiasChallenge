@@ -400,7 +400,7 @@ class ClLike(Likelihood):
                     bsnx = None
 
                 pk_pt = get_ept_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'], sub_lowk=False)
+                                     ptc=pkd['ptc'], bsnx=bsnx, sub_lowk=False)
                 return pk_pt
         elif (self.bz_model == 'LagrangianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
@@ -416,7 +416,7 @@ class ClLike(Likelihood):
                     bsnx = None
 
                 pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'])
+                                     ptc=pkd['ptc'], bsnx=bsnx)
                 return pk_pt
         elif (self.bz_model == 'BACCO'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
@@ -432,7 +432,7 @@ class ClLike(Likelihood):
                     bsnx = None
 
                 pk_pt = get_bacco_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'])
+                                     ptc=pkd['ptc'], bsnx=bsnx)
                 return pk_pt
         elif (self.bz_model == 'anzu'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
@@ -448,7 +448,7 @@ class ClLike(Likelihood):
                     bsnx = None
 
                 pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                       ptc=pkd['ptc'])
+                                       ptc=pkd['ptc'], bsnx=bsnx)
                 return pk_pt
         elif (self.bz_model == 'HOD'):
             # Halo model calculation
@@ -623,7 +623,7 @@ class ClLike(Likelihood):
         """
         t = self._get_theory(**pars)
         r = t - self.data_vec
-        # print(r.shape)
+        print(r.shape)
         # print(t)
         # print(self.data_vec)
         # print(np.abs(r)/np.sqrt(np.diag(self.cov)))

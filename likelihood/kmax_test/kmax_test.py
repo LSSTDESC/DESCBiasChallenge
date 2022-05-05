@@ -25,6 +25,8 @@ parser.add_argument('--bias_model', dest='bias_model', type=str, help='Name of b
 parser.add_argument('--k_max', dest='k_max', type=float, help='Maximal k vector.', required=True)
 parser.add_argument('--fit_params', dest='fit_params', nargs='+', help='Parameters to be fit.', required=True)
 parser.add_argument('--bins', dest='bins', nargs='+', help='Redshift bins to be fit.', required=True)
+parser.add_argument('--clust_cross', dest='clust_cross', help='Flag indicating if to include clustering cross-correlations.',
+                    required=False)
 parser.add_argument('--probes', dest='probes', nargs='+', help='Probes to be fit.', required=True)
 parser.add_argument('--sigma8', dest='sigma8', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed parameter value.', required=False)
@@ -203,28 +205,44 @@ else:
                                                       {'bins': ['sh2', 'sh3']}, {'bins': ['sh2', 'sh4']}, {'bins': ['sh2', 'sh5']}, \
                                                       {'bins': ['sh3', 'sh3']}, {'bins': ['sh3', 'sh4']}, {'bins': ['sh3', 'sh5']}, \
                                                       {'bins': ['sh4', 'sh4']}, {'bins': ['sh4', 'sh5']}, {'bins': ['sh5', 'sh5']}]
+        if args.clust_cross:
+            info['likelihood'][name_like]['twopoints'] += [{'bins': ['cl1', 'cl2']}, {'bins': ['cl1', 'cl3']}, {'bins': ['cl1', 'cl4']},
+                                                      {'bins': ['cl1', 'cl5']}, {'bins': ['cl1', 'cl6']},
+                                                      {'bins': ['cl2', 'cl3']}, {'bins': ['cl2', 'cl4']}, {'bins': ['cl2', 'cl5']},
+                                                      {'bins': ['cl2', 'cl6']},
+                                                      {'bins': ['cl3', 'cl4']}, {'bins': ['cl3', 'cl5']}, {'bins': ['cl3', 'cl6']},
+                                                      {'bins': ['cl4', 'cl5']}, {'bins': ['cl4', 'cl6']},
+                                                      {'bins': ['cl5', 'cl6']}]
+
         n_bin = len(info['likelihood'][name_like]['bins'])
         bin_nos = [int(bin_dict['name'][-1]) - 1 for bin_dict in info['likelihood'][name_like]['bins'] if 'cl' in bin_dict['name']]
     elif 'HSC' in args.path2data:
         logger.info('Looking at HSC sample with 5 clustering bins.')
-        info['likelihood'][name_like]['bins'] = [{'name': 'cl1'}, {'name': 'cl2'}, {'name': 'cl3'}, {'name': 'cl4'}, {'name': 'cl5'},\
+        info['likelihood'][name_like]['bins'] = [{'name': 'cl1'}, {'name': 'cl2'}, {'name': 'cl3'}, {'name': 'cl4'}, {'name': 'cl5'},
                                                  {'name': 'sh1'}, {'name': 'sh2'}, {'name': 'sh3'}, {'name': 'sh4'}, {'name': 'sh5'}]
-        info['likelihood'][name_like]['twopoints'] = [{'bins': ['cl1', 'cl1']}, {'bins': ['cl2', 'cl2']}, {'bins': ['cl3', 'cl3']}, \
-                                                      {'bins': ['cl4', 'cl4']}, {'bins': ['cl5', 'cl5']}, \
-                                                      {'bins': ['cl1', 'sh1']}, {'bins': ['cl1', 'sh2']}, {'bins': ['cl1', 'sh3']}, \
-                                                      {'bins': ['cl1', 'sh4']}, {'bins': ['cl1', 'sh5']}, {'bins': ['cl2', 'sh1']}, \
-                                                      {'bins': ['cl2', 'sh2']}, {'bins': ['cl2', 'sh3']}, {'bins': ['cl2', 'sh4']}, \
-                                                      {'bins': ['cl2', 'sh5']}, {'bins': ['cl3', 'sh1']}, {'bins': ['cl3', 'sh2']}, \
-                                                      {'bins': ['cl3', 'sh3']}, {'bins': ['cl3', 'sh4']}, {'bins': ['cl3', 'sh5']}, \
-                                                      {'bins': ['cl4', 'sh1']}, {'bins': ['cl4', 'sh2']}, {'bins': ['cl4', 'sh3']}, \
-                                                      {'bins': ['cl4', 'sh4']}, {'bins': ['cl4', 'sh5']}, {'bins': ['cl5', 'sh1']}, \
-                                                      {'bins': ['cl5', 'sh2']}, {'bins': ['cl5', 'sh3']}, {'bins': ['cl5', 'sh4']}, \
-                                                      {'bins': ['cl5', 'sh5']}, {'bins': ['sh1', 'sh1']}, {'bins': ['sh1', 'sh2']}, \
-                                                      {'bins': ['sh1', 'sh3']}, {'bins': ['sh1', 'sh4']}, {'bins': ['sh1', 'sh5']}, \
-                                                      {'bins': ['sh2', 'sh2']}, {'bins': ['sh2', 'sh3']}, {'bins': ['sh2', 'sh4']}, \
-                                                      {'bins': ['sh2', 'sh5']}, {'bins': ['sh3', 'sh3']}, {'bins': ['sh3', 'sh4']}, \
-                                                      {'bins': ['sh3', 'sh5']}, {'bins': ['sh4', 'sh4']}, {'bins': ['sh4', 'sh5']}, \
+        info['likelihood'][name_like]['twopoints'] = [{'bins': ['cl1', 'cl1']}, {'bins': ['cl2', 'cl2']}, {'bins': ['cl3', 'cl3']},
+                                                      {'bins': ['cl4', 'cl4']}, {'bins': ['cl5', 'cl5']},
+                                                      {'bins': ['cl1', 'sh1']}, {'bins': ['cl1', 'sh2']}, {'bins': ['cl1', 'sh3']},
+                                                      {'bins': ['cl1', 'sh4']}, {'bins': ['cl1', 'sh5']}, {'bins': ['cl2', 'sh1']},
+                                                      {'bins': ['cl2', 'sh2']}, {'bins': ['cl2', 'sh3']}, {'bins': ['cl2', 'sh4']},
+                                                      {'bins': ['cl2', 'sh5']}, {'bins': ['cl3', 'sh1']}, {'bins': ['cl3', 'sh2']},
+                                                      {'bins': ['cl3', 'sh3']}, {'bins': ['cl3', 'sh4']}, {'bins': ['cl3', 'sh5']},
+                                                      {'bins': ['cl4', 'sh1']}, {'bins': ['cl4', 'sh2']}, {'bins': ['cl4', 'sh3']},
+                                                      {'bins': ['cl4', 'sh4']}, {'bins': ['cl4', 'sh5']}, {'bins': ['cl5', 'sh1']},
+                                                      {'bins': ['cl5', 'sh2']}, {'bins': ['cl5', 'sh3']}, {'bins': ['cl5', 'sh4']},
+                                                      {'bins': ['cl5', 'sh5']}, {'bins': ['sh1', 'sh1']}, {'bins': ['sh1', 'sh2']},
+                                                      {'bins': ['sh1', 'sh3']}, {'bins': ['sh1', 'sh4']}, {'bins': ['sh1', 'sh5']},
+                                                      {'bins': ['sh2', 'sh2']}, {'bins': ['sh2', 'sh3']}, {'bins': ['sh2', 'sh4']},
+                                                      {'bins': ['sh2', 'sh5']}, {'bins': ['sh3', 'sh3']}, {'bins': ['sh3', 'sh4']},
+                                                      {'bins': ['sh3', 'sh5']}, {'bins': ['sh4', 'sh4']}, {'bins': ['sh4', 'sh5']},
                                                       {'bins': ['sh5', 'sh5']}]
+        if args.clust_cross:
+            info['likelihood'][name_like]['twopoints'] += [{'bins': ['cl1', 'cl2']}, {'bins': ['cl1', 'cl3']}, {'bins': ['cl1', 'cl4']},
+                                                      {'bins': ['cl1', 'cl5']},
+                                                      {'bins': ['cl2', 'cl3']}, {'bins': ['cl2', 'cl4']}, {'bins': ['cl2', 'cl5']},
+                                                      {'bins': ['cl3', 'cl4']}, {'bins': ['cl3', 'cl5']},
+                                                      {'bins': ['cl4', 'cl5']}]
+
         n_bin = len(info['likelihood'][name_like]['bins'])
         bin_nos = [int(bin_dict['name'][-1]) - 1 for bin_dict in info['likelihood'][name_like]['bins'] if 'cl' in bin_dict['name']]
 

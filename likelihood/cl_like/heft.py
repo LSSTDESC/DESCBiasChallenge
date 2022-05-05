@@ -102,14 +102,14 @@ class HEFTCalculator(object):
         self.ks = k_emu*cosmo['h']
 
     def get_pgg(self, b11, b21, bs1, b12, b22, bs2,
-                bk21=None, bk22=None, bsn1=None, bsn2=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, bsnx=None):
         """ 
         Get P_gg between two tracer samples with sets of bias params starting from the heft component spectra
     
         Adapted from the anzu method 'basis_to_full' from the LPTEmulator class.
         
         Inputs: 
-        -btheta: vector of bias + shot noise. See notes below fos tructure of terms
+        -btheta: vector of bias + shot noise. See notes below for structure of terms
     
         TODO:
         -Generalize biases for two populations of tracers. For now we're doing auto-correlations but it should be an exercise in book-keeping to adjust.
@@ -158,8 +158,9 @@ class HEFTCalculator(object):
         b1_list = [b11, b21, bs1, bk21, bsn1]
         b2_list = [b12, b22, bs2, bk22, bsn2]
 
-        assert np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]), \
-            'Two populations of tracers are not yet implemented for HEFT!'
+        cross = True
+        if np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]):
+            cross = False
 
         bL11 = b11 - 1
         bL12 = b12 - 1
@@ -172,13 +173,22 @@ class HEFTCalculator(object):
             bsn1 = np.zeros_like(self.a_arr)
         if bsn2 is None:
             bsn2 = np.zeros_like(self.a_arr)
+        if bsnx is None:
+            bsnx = np.zeros_like(self.a_arr)
 
         # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
+        # bterms_hh = [np.ones(self.nas),
+        #              2*bL11, bL11**2,
+        #              b21, b21*bL11, 0.25*b21**2,
+        #              bs1, bs1*bL11, 0.5*bs1*b21, 0.25*bs1**2,
+        #              bk21, bk21*bL11, 0.5*bk21*b21, 0.5*bk21*bs1]
+        # Cross-component-spectra are multiplied by 2, b_2 is 2x larger than in velocileptors
         bterms_hh = [np.ones(self.nas),
-                     2*bL11, bL11**2,
-                     b21, b21*bL11, 0.25*b21**2,
-                     bs1, bs1*bL11, 0.5*bs1*b21, 0.25*bs1**2,
-                     bk21, bk21*bL11, 0.5*bk21*b21, 0.5*bk21*bs1]
+                     bL11+bL12, bL11*bL12,
+                     0.5*(b21+b22), 0.5*(b21*bL12+b22*bL11), 0.25*b21*b22,
+                     0.5*(bs1+bs2), 0.5*(bs1*bL12+bs2*bL11), 0.25*(bs1*b22+bs2*b21), 0.25*bs1*bs2,
+                     0.5*(bk21+bk22), 0.5*(bk21*bL12+bk22+bL11), 0.25*(bk21*b22+bk22*b21), 0.25*(bk21*bs2+bk22*bs1)]
+
         pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
         pkvec[:,:10] = self.lpt_table
         # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
@@ -187,7 +197,12 @@ class HEFTCalculator(object):
         pkvec[:,10:] = -self.ks**2 * pkvec[:,nabla_idx]
 
         bterms_hh = np.array(bterms_hh)
-        p_hh = np.einsum('bz, zbk->zk', bterms_hh, pkvec) + np.einsum('z, zk->zk', bsn1, np.ones(shape=(self.nas, len(self.ks)) ))
+        if not cross:
+            p_hh = np.einsum('bz, zbk->zk', bterms_hh, pkvec) + np.einsum('z, zk->zk', bsn1,
+                                                                          np.ones(shape=(self.nas, len(self.ks))))
+        else:
+            p_hh = np.einsum('bz, zbk->zk', bterms_hh, pkvec) + np.einsum('z, zk->zk', bsnx,
+                                                                          np.ones(shape=(self.nas, len(self.ks))))
 
         return p_hh
 
@@ -317,7 +332,7 @@ class HEFTCalculator(object):
 
         return p_hm
 
-def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
+def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
     two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
@@ -357,9 +372,8 @@ def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None):
                 bsn2 = tracer2.sn(z_arr)
             else:
                 bsn2 = None
-            
-            #Right now get_pgg will get tracer auto-spectrum.
-            p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, bsn1, bsn2)
+
+            p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, bsn1, bsn2, bsnx)
 
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pgm(b11, b21, bs1, bk21, bsn1)

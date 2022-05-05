@@ -96,7 +96,7 @@ class BACCOCalculator(object):
         self.bacco_table = pk2d_bacco
 
     def get_pgg(self, Pnl, b11, b21, bs1, b12, b22, bs2,
-                bk21=None, bk22=None, bsn1=None, bsn2=None, Pgrad=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, bsnx=None, Pgrad=None):
         if self.bacco_table is None:
             raise ValueError("Please initialise BACCO calculator")
         # Clarification:
@@ -134,8 +134,17 @@ class BACCOCalculator(object):
         # Importantly, we have corrected the spectra involving d^2 and s2 to
         # make the definitions of b2, bs equivalent to what we have adopted for
         # the EPT and LPT expansions.
-        bL11 = b11-1
-        bL12 = b12-1
+
+        b1_list = [b11, b21, bs1, bk21, bsn1]
+        b2_list = [b12, b22, bs2, bk22, bsn2]
+
+        cross = True
+        if np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]):
+            cross = False
+
+        bL11 = b11 - 1
+        bL12 = b12 - 1
+
         if Pnl is None:
             Pdmdm = self.bacco_table[:, 0, :]
             Pdmd1 = self.bacco_table[:, 1, :]
@@ -171,6 +180,8 @@ class BACCOCalculator(object):
             bsn1 = np.zeros_like(self.a_s)
         if bsn2 is None:
             bsn2 = np.zeros_like(self.a_s)
+        if bsnx is None:
+            bsnx = np.zeros_like(self.a_s)
 
         pgg += ((b21 + b22)[:, None] * Pdmd2 +
                 (bs1 + bs2)[:, None] * Pdms2 +
@@ -189,8 +200,10 @@ class BACCOCalculator(object):
         else:
             pgg += (b12 * bk21 + b11 * bk22)[:, None] * Pd1k2
 
-        #TODO: This is a terrible hack - need to think what to do about shot noise in x-corrs
-        pgg += bsn1[:, None]
+        if not cross:
+            pgg += bsn1[:, None]
+        else:
+            pgg += bsnx[:, None]
 
         return pgg
 
@@ -233,7 +246,7 @@ class BACCOCalculator(object):
         return pmm
 
 
-def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
+def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
                  nonlin_pk_type='spt',
                  nonloc_pk_type='spt',
                  extrap_order_lok=1, extrap_order_hik=2):
@@ -347,7 +360,7 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                                b11, b21, bs1,
                                b12, b22, bs2,
                                bk21, bk22,
-                               bsn1, bsn2,
+                               bsn1, bsn2, bsnx,
                                Pgrad)
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pgm(Pnl, b11, b21, bs1, bk21, bsn1, Pgrad)
