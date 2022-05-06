@@ -26,7 +26,7 @@ parser.add_argument('--k_max', dest='k_max', type=float, help='Maximal k vector.
 parser.add_argument('--fit_params', dest='fit_params', nargs='+', help='Parameters to be fit.', required=True)
 parser.add_argument('--bins', dest='bins', nargs='+', help='Redshift bins to be fit.', required=True)
 parser.add_argument('--clust_cross', dest='clust_cross', help='Flag indicating if to include clustering cross-correlations.',
-                    required=False)
+                    required=False, default=False)
 parser.add_argument('--probes', dest='probes', nargs='+', help='Probes to be fit.', required=True)
 parser.add_argument('--sigma8', dest='sigma8', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed parameter value.', required=False)
@@ -49,15 +49,15 @@ parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='bsn reference 
                     required=False)
 parser.add_argument('--ref_HOD', dest='ref_HOD', nargs='+', help='HOD reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_lMmin_0', dest='ref_lMmin_0', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_lMmin', dest='ref_lMmin', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_siglM_0', dest='ref_siglM_0', nargs='+', help='siglM_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_siglM', dest='ref_siglM', nargs='+', help='siglM_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_lM0_0', dest='ref_lM0_0', nargs='+', help='lM0_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_lM0', dest='ref_lM0', nargs='+', help='lM0_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_lM1_0', dest='ref_lM1_0', nargs='+', help='lM1_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_lM1', dest='ref_lM1', nargs='+', help='lM1_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_alpha_0', dest='ref_alpha_0', nargs='+', help='alpha_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_alpha', dest='ref_alpha', nargs='+', help='alpha_0 reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
@@ -88,8 +88,10 @@ elif 'BACCO' in bias_model:
     model = 'BACCO'
 elif 'anzu' in bias_model:
     model = 'anzu'
-elif 'HOD' in bias_model:
-    model = 'HOD'
+elif 'HOD-evol' in bias_model:
+    model = 'HOD_evol'
+elif 'HOD-bin' in bias_model:
+    model = 'HOD_bin'
 else:
     raise ValueError("Unknown bias model")
 
@@ -110,7 +112,16 @@ DEFAULT_REF_B1 = 2.
 DEFAULT_REF_BSN = 1000.
 
 # Default reference values for HOD parameters (here assume single set for all redshift bins)
-DEFAULT_REF_HOD = [12.95, -2.0, 0.25, 0., 12.3, 0., 14.0, -1.5, 1.32, 0.]
+DEFAULT_REF_HOD = {'lMmin_0': 12.95,
+                   'lMmin_p': -2.0,
+                   'siglM_0': 0.25,
+                   'siglM_p': 0.,
+                   'lM0_0': 12.3,
+                   'lM0_p': 0.,
+                   'lM1_0': 14.0,
+                   'lM1_p': -1.5,
+                   'alpha_0': 1.32,
+                   'alpha_p': 0.}
 
 # Note: we need to hard-code the BACCO parameter bounds:
 # omega_matter: [0.23, 0.4 ]
@@ -251,12 +262,14 @@ if model == 'BACCO' or model == 'anzu' or model == 'EulerianPT' or model == 'Lag
     bpar = ['1', '1p', '2', '2p', 's', '3nl', 'k2', 'sn']
 elif model == 'Linear':
     bpar = ['1','1p']
-elif model == 'HOD':
+elif model == 'HOD_evol':
     bpar = ['lMmin_0', 'lMmin_p',
             'siglM_0', 'siglM_p',
             'lM0_0', 'lM0_p',
             'lM1_0', 'lM1_p',
             'alpha_0', 'alpha_p']
+elif model == 'HOD_bin':
+    bpar = ['lMmin_0', 'siglM_0', 'lM0_0', 'lM1_0', 'alpha_0', 'sn']
 
 ref_bsn = args.ref_bsn
 if args.ref_bsn is not None:
@@ -337,8 +350,53 @@ if args.ref_HOD is not None:
             ref_HOD[i] = None
 else:
     ref_HOD = [None for i in range(10)]
+if args.ref_lMmin is not None:
+    ref_lMmin = [0 for i in range(len(args.ref_lMmin))]
+    for i, ref in enumerate(args.ref_lMmin):
+        if ref != 'None':
+            ref_lMmin[i] = float(ref)
+        else:
+            ref_lMmin[i] = None
+else:
+    ref_lMmin = [None for i in range(7)]
+if args.ref_siglM is not None:
+    ref_siglM = [0 for i in range(len(args.ref_siglM))]
+    for i, ref in enumerate(args.ref_siglM):
+        if ref != 'None':
+            ref_siglM[i] = float(ref)
+        else:
+            ref_siglM[i] = None
+else:
+    ref_siglM = [None for i in range(7)]
+if args.ref_lM0 is not None:
+    ref_lM0 = [0 for i in range(len(args.ref_lM0))]
+    for i, ref in enumerate(args.ref_lM0):
+        if ref != 'None':
+            ref_lM0[i] = float(ref)
+        else:
+            ref_lM0[i] = None
+else:
+    ref_lM0 = [None for i in range(7)]
+if args.ref_lM1 is not None:
+    ref_lM1 = [0 for i in range(len(args.ref_lM1))]
+    for i, ref in enumerate(args.ref_lM1):
+        if ref != 'None':
+            ref_lM1[i] = float(ref)
+        else:
+            ref_lM1[i] = None
+else:
+    ref_lM1 = [None for i in range(7)]
+if args.ref_alpha is not None:
+    ref_alpha = [0 for i in range(len(args.ref_alpha))]
+    for i, ref in enumerate(args.ref_alpha):
+        if ref != 'None':
+            ref_alpha[i] = float(ref)
+        else:
+            ref_alpha[i] = None
+else:
+    ref_alpha = [None for i in range(7)]
 
-if model != 'HOD':
+if 'HOD' not in model:
     # Template for bias parameters in yaml file
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
             'ref': {'dist': 'norm', 'loc': 0., 'scale': 0.01},
@@ -358,7 +416,7 @@ info['likelihood'][name_like]['input_file'] = args.path2data
 
 # Write bias parameters into yaml file
 input_params_prefix = info['likelihood'][name_like]['input_params_prefix']
-if model != 'HOD':
+if 'HOD' not in model:
     for b in bpar:
         for i in bin_nos:
             param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
@@ -370,59 +428,59 @@ if model != 'HOD':
                         mean = ref_b1[i]
                     else:
                         mean = DEFAULT_REF_B1
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                    info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 elif b == '1p':
                     if ref_b1p[i] is not None:
                         mean = ref_b1p[i]
                     else:
                         mean = 0.
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                    info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 elif b == '2':
                     if ref_b2[i] is not None:
                         mean = ref_b2[i]
                     else:
                         mean = 0.
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                    info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 elif b == '2p':
                     if ref_b2p[i] is not None:
                         mean = ref_b2p[i]
                     else:
                         mean = 0.
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                    info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 elif b == 's':
                     if ref_bs[i] is not None:
                         mean = ref_bs[i]
                     else:
                         mean = 0.
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                    info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 elif b == 'k2':
                     if ref_bk2[i] is not None:
                         mean = ref_bk2[i]
                     else:
                         mean = 0.
-                    info['params'][input_params_prefix+'_cl'+str(i+1)+'_b'+b]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                    info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 elif b == 'sn':
                     if ref_bsn[i] is not None:
                         mean = ref_bsn[i]
                     else:
                         mean = DEFAULT_REF_BSN
 
-                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['ref'] = {'dist': 'norm',
-                                                                                                  'loc': mean,
-                                                                                                  'scale': 0.1*np.abs(mean)}
+                    info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                          'loc': mean,
+                                                          'scale': 0.1*np.abs(mean)}
                     if args.sampler_type == 'minimizer':
-                        info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -5.*np.abs(mean),
-                                                                                                    'max': 5.*np.abs(mean)}
+                        info['params'][param_name]['prior'] = {'min': -5.*np.abs(mean),
+                                                                'max': 5.*np.abs(mean)}
                     elif args.sampler_type == 'mcmc':
                         if args.mcmc_method == 'MH':
-                            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -100000.,
-                                                                                                        'max': 100000.}
+                            info['params'][param_name]['prior'] = {'min': -100000.,
+                                                                    'max': 100000.}
                         elif args.mcmc_method == 'polychord':
-                            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': 0.,
-                                                                                                        'max': 2*np.abs(mean)}
+                            info['params'][param_name]['prior'] = {'min': 0.,
+                                                                    'max': 2*np.abs(mean)}
                         else:
                             raise NotImplementedError()
-                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['proposal'] = 0.1*np.abs(mean)
+                    info['params'][param_name]['proposal'] = 0.1*np.abs(mean)
             else:
                 if b == '0' or b == '1':
                     if ref_b1[i] is not None:
@@ -462,59 +520,172 @@ if model != 'HOD':
                 else:
                     mean = 0.
 
-                info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b] = mean
+                info['params'][param_name] = mean
+# Model: HOD
 else:
-    for i, b in enumerate(bpar):
-        param_name = input_params_prefix + '_hod_' + b
-        if param_name in fit_params:
-            info['params'][param_name] = cl_param.copy()
-            info['params'][param_name]['latex'] = b + '\\,\\text{for HOD}'
-            if ref_HOD[i] is not None:
-                mean = ref_HOD[i]
-            else:
-                mean = DEFAULT_REF_HOD[i]
-            info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
-        else:
-            if ref_HOD[i] is not None:
-                mean = ref_HOD[i]
-            else:
-                mean = DEFAULT_REF_HOD[i]
-            info['params'][param_name] = mean
-    # Add shot noise
-    b = 'sn'
-    for i in bin_nos:
-        param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
-        if param_name in fit_params:
-            info['params'][param_name] = cl_param.copy()
-            info['params'][param_name]['latex'] = 'b_' + b + '\\,\\text{for}\\,C_{l,' + str(i + 1) + '}'
-            if ref_bsn[i] is not None:
-                mean = ref_bsn[i]
-            else:
-                mean = DEFAULT_REF_BSN
-            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['ref'] = {'dist': 'norm',
-                                                                                          'loc': mean,
-                                                                                          'scale': 0.1 * np.abs(mean)}
-            if args.sampler_type == 'minimizer':
-                info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {
-                    'min': -5. * np.abs(mean),
-                    'max': 5. * np.abs(mean)}
-            elif args.sampler_type == 'mcmc':
-                if args.mcmc_method == 'MH':
-                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': -100000.,
-                                                                                                    'max': 100000.}
-                elif args.mcmc_method == 'polychord':
-                    info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['prior'] = {'min': 0.,
-                                                                                                    'max': 2 * np.abs(
-                                                                                                        mean)}
+    if model == 'HOD_evol':
+        for i, b in enumerate(bpar):
+            param_name = input_params_prefix + '_hod_' + b
+            if param_name in fit_params:
+                info['params'][param_name] = cl_param.copy()
+                info['params'][param_name]['latex'] = b + '\\,\\text{for HOD}'
+                if ref_HOD[i] is not None:
+                    mean = ref_HOD[i]
                 else:
-                    raise NotImplementedError()
-            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b]['proposal'] = 0.1 * np.abs(mean)
-        else:
-            if ref_bsn[i] is not None:
-                mean = ref_bsn[i]
+                    mean = DEFAULT_REF_HOD[b]
+                info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
             else:
-                mean = DEFAULT_REF_BSN
-            info['params'][input_params_prefix + '_cl' + str(i + 1) + '_b' + b] = mean
+                if ref_HOD[i] is not None:
+                    mean = ref_HOD[i]
+                else:
+                    mean = DEFAULT_REF_HOD[b]
+                info['params'][param_name] = mean
+        # Add shot noise
+        b = 'sn'
+        for i in bin_nos:
+            param_name = input_params_prefix+'_cl'+str(i+1)+'_b'+b
+            if param_name in fit_params:
+                info['params'][param_name] = cl_param.copy()
+                info['params'][param_name]['latex'] = 'b_' + b + '\\,\\text{for}\\,C_{l,' + str(i + 1) + '}'
+                if ref_bsn[i] is not None:
+                    mean = ref_bsn[i]
+                else:
+                    mean = DEFAULT_REF_BSN
+                info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                      'loc': mean,
+                                                      'scale': 0.1 * np.abs(mean)}
+                if args.sampler_type == 'minimizer':
+                    info['params'][param_name]['prior'] = {
+                        'min': -5. * np.abs(mean),
+                        'max': 5. * np.abs(mean)}
+                elif args.sampler_type == 'mcmc':
+                    if args.mcmc_method == 'MH':
+                        info['params'][param_name]['prior'] = {'min': -100000.,
+                                                                'max': 100000.}
+                    elif args.mcmc_method == 'polychord':
+                        info['params'][param_name]['prior'] = {'min': 0.,
+                                                                'max': 2 * np.abs(mean)}
+                    else:
+                        raise NotImplementedError()
+                info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
+            else:
+                if ref_bsn[i] is not None:
+                    mean = ref_bsn[i]
+                else:
+                    mean = DEFAULT_REF_BSN
+                info['params'][param_name] = mean
+    if model == 'HOD_bin':
+        for b in bpar:
+            for i in bin_nos:
+                if b != 'sn':
+                    paramtag = '_'
+                else:
+                    paramtag = '_b'
+                param_name = input_params_prefix + '_cl' + str(i + 1) + paramtag + b
+                if param_name in fit_params:
+                    info['params'][param_name] = cl_param.copy()
+                    info['params'][param_name]['latex'] = paramtag + b + '\\,\\text{for}\\,C_{l,' + str(i + 1) + '}'
+                    if b == 'lMmin_0':
+                        if ref_lMmin[i] is not None:
+                            mean = ref_lMmin[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                              'loc': mean,
+                                                              'scale': 0.01}
+                    elif b == 'siglM_0':
+                        if ref_siglM[i] is not None:
+                            mean = ref_siglM[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                              'loc': mean,
+                                                              'scale': 0.01}
+                    elif b == 'lM0_0':
+                        if ref_lM0[i] is not None:
+                            mean = ref_lM0[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                              'loc': mean,
+                                                              'scale': 0.01}
+                    elif b == 'lM1_0':
+                        if ref_lM1[i] is not None:
+                            mean = ref_lM1[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                             'loc': mean,
+                                                             'scale': 0.01}
+                    elif b == 'alpha_0':
+                        if ref_alpha[i] is not None:
+                            mean = ref_alpha[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                             'loc': mean,
+                                                             'scale': 0.01}
+                    elif b == 'sn':
+                        if ref_bsn[i] is not None:
+                            mean = ref_bsn[i]
+                        else:
+                            mean = DEFAULT_REF_BSN
+
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                              'loc': mean,
+                                                              'scale': 0.1 * np.abs(mean)}
+                        if args.sampler_type == 'minimizer':
+                            info['params'][param_name]['prior'] = {
+                                'min': -5. * np.abs(mean),
+                                'max': 5. * np.abs(mean)}
+                        elif args.sampler_type == 'mcmc':
+                            if args.mcmc_method == 'MH':
+                                info['params'][param_name]['prior'] = {'min': -100000.,
+                                                                        'max': 100000.}
+                            elif args.mcmc_method == 'polychord':
+                                info['params'][param_name]['prior'] = {'min': 0.,
+                                                                        'max': 2 * np.abs(mean)}
+                            else:
+                                raise NotImplementedError()
+                        info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
+                else:
+                    if b == 'lMmin_0':
+                        if ref_lMmin[i] is not None:
+                            mean = ref_lMmin[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+
+                    elif b == 'siglM_0':
+                        if ref_siglM[i] is not None:
+                            mean = ref_siglM[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+
+                    elif b == 'lM0_0':
+                        if ref_lM0[i] is not None:
+                            mean = ref_lM0[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+
+                    elif b == 'lM1_0':
+                        if ref_lM1[i] is not None:
+                            mean = ref_lM1[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+
+                    elif b == 'alpha_0':
+                        if ref_alpha[i] is not None:
+                            mean = ref_alpha[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+
+                    elif b == 'sn':
+                        if ref_bsn[i] is not None:
+                            mean = ref_bsn[i]
+                        else:
+                            mean = DEFAULT_REF_BSN
+
+                    info['params'][param_name] = mean
 
 # Add kmax and output file
 info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)

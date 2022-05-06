@@ -285,7 +285,7 @@ class ClLike(Likelihood):
                     else:
                         ptt = pt.PTNumberCountsTracer(b1=b1, b2=b2,
                                                       bs=bs)
-                elif self.bz_model == 'HOD':
+                elif self.bz_model == 'HOD_evol':
                     pref = self.input_params_prefix + '_hod_'
                     trs[name] = {'HOD_params': {
                                                 'lMmin_0': pars[pref + 'lMmin_0'],
@@ -300,6 +300,23 @@ class ClLike(Likelihood):
                                                 'alpha_p': pars.get(pref + 'alpha_p', 0.)
                                                 }
                                 }
+                elif self.bz_model == 'HOD_bin':
+                    print(pars)
+                    pref = self.input_params_prefix + '_' + name
+                    trs[name] = {'HOD_params': {
+                                                'lMmin_0': pars[pref + '_lMmin_0'],
+                                                'lMmin_p': pars.get(pref + '_lMmin_p', 0.),
+                                                'siglM_0': pars[pref + '_siglM_0'],
+                                                'siglM_p': pars.get(pref + '_siglM_p', 0.),
+                                                'lM0_0': pars[pref + '_lM0_0'],
+                                                'lM0_p': pars.get(pref + '_lM0_p', 0.),
+                                                'lM1_0': pars[pref + '_lM1_0'],
+                                                'lM1_p': pars.get(pref + '_lM1_p', 0.),
+                                                'alpha_0': pars[pref + '_alpha_0'],
+                                                'alpha_p': pars.get(pref + '_alpha_p', 0.)
+                                                }
+                                }
+
             elif q == 'galaxy_shear':
                 nz = self._get_nz(cosmo, name, **pars)
                 ia = self._get_ia_bias(cosmo, name, **pars)
@@ -322,7 +339,7 @@ class ClLike(Likelihood):
         For linear bias, this is just the matter power spectrum.
         """
         # Get P(k)s from CCL
-        if self.bz_model == 'Linear' or self.bz_model == 'HOD':
+        if self.bz_model == 'Linear' or self.bz_model == 'HOD_evol' or self.bz_model == 'HOD_bin':
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
             return {'pk_mm': pkmm}
@@ -450,7 +467,7 @@ class ClLike(Likelihood):
                 pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
                                        ptc=pkd['ptc'], bsnx=bsnx)
                 return pk_pt
-        elif (self.bz_model == 'HOD'):
+        elif (self.bz_model == 'HOD_evol' or self.bz_model == 'HOD_bin'):
             # Halo model calculation
             if ((q1 == 'galaxy_density') or (q2 == 'galaxy_density')):
                 md = ccl.halos.MassDef200m()
@@ -471,15 +488,17 @@ class ClLike(Likelihood):
                     return 0.001
 
                 if ((q1 == 'galaxy_density') and (q2 == 'galaxy_density')):
-                    pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
+                    pg1 = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
                     if clm['bin_1'] == clm['bin_2']:
                         pref = clm['bin_1']
+                        pg2 = pg1
                     else:
                         pref = clm['bin_1'] + 'x' + clm['bin_2']
+                        pg2 = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
                     bsn = pars.get(pref + '_bsn', None)
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
-                                                   pg, prof_2pt=pgg,
-                                                   prof2=pg,
+                                                   pg1, prof_2pt=pgg,
+                                                   prof2=pg2,
                                                    normprof1=True, normprof2=True,
                                                    smooth_transition=alpha_HMCODE,
                                                    supress_1h=k_supress)
@@ -623,7 +642,7 @@ class ClLike(Likelihood):
         """
         t = self._get_theory(**pars)
         r = t - self.data_vec
-        print(r.shape)
+        # print(r.shape)
         # print(t)
         # print(self.data_vec)
         # print(np.abs(r)/np.sqrt(np.diag(self.cov)))
