@@ -301,7 +301,6 @@ class ClLike(Likelihood):
                                                 }
                                 }
                 elif self.bz_model == 'HOD_bin':
-                    print(pars)
                     pref = self.input_params_prefix + '_' + name
                     trs[name] = {'HOD_params': {
                                                 'lMmin_0': pars[pref + '_lMmin_0'],
@@ -411,8 +410,8 @@ class ClLike(Likelihood):
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
 
                 if clm['bin_1'] != clm['bin_2']:
-                    pref = clm['bin_1']+'x'+clm['bin_2']
-                    bsnx = pars.get(pref + '_bsn', None)
+                    pref = self.input_params_prefix + '_' + clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsnx', None)
                 else:
                     bsnx = None
 
@@ -427,8 +426,8 @@ class ClLike(Likelihood):
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
 
                 if clm['bin_1'] != clm['bin_2']:
-                    pref = clm['bin_1']+'x'+clm['bin_2']
-                    bsnx = pars.get(pref + '_bsn', None)
+                    pref = self.input_params_prefix + '_' + clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsnx', None)
                 else:
                     bsnx = None
 
@@ -443,8 +442,8 @@ class ClLike(Likelihood):
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
 
                 if clm['bin_1'] != clm['bin_2']:
-                    pref = clm['bin_1']+'x'+clm['bin_2']
-                    bsnx = pars.get(pref + '_bsn', None)
+                    pref = self.input_params_prefix + '_' + clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsnx', None)
                 else:
                     bsnx = None
 
@@ -459,8 +458,8 @@ class ClLike(Likelihood):
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
 
                 if clm['bin_1'] != clm['bin_2']:
-                    pref = clm['bin_1']+'x'+clm['bin_2']
-                    bsnx = pars.get(pref + '_bsn', None)
+                    pref = self.input_params_prefix + '_' + clm['bin_1']+'x'+clm['bin_2']
+                    bsnx = pars.get(pref + '_bsnx', None)
                 else:
                     bsnx = None
 
@@ -495,15 +494,15 @@ class ClLike(Likelihood):
                     else:
                         pref = clm['bin_1'] + 'x' + clm['bin_2']
                         pg2 = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
-                    bsn = pars.get(pref + '_bsn', None)
+                    bsnx = pars.get(pref + '_bsnx', None)
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                    pg1, prof_2pt=pgg,
                                                    prof2=pg2,
                                                    normprof1=True, normprof2=True,
                                                    smooth_transition=alpha_HMCODE,
                                                    supress_1h=k_supress)
-                    if bsn is not None:
-                        pk_pt_arr += bsn*np.ones_like(pk_pt_arr)
+                    if bsnx is not None:
+                        pk_pt_arr += bsnx*np.ones_like(pk_pt_arr)
 
                     pk_pt = Pk2D(a_arr=a_s, lk_arr=lk_s, pk_arr=pk_pt_arr,
                                     cosmo=cosmo, is_logp=False)

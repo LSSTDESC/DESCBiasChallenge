@@ -373,6 +373,9 @@ def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None):
             else:
                 bsn2 = None
 
+            if bsnx is not None:
+                bsnx = bsnx*np.ones_like(z_arr)
+
             p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, bsn1, bsn2, bsnx)
 
         elif (tracer2.type == 'M'):

@@ -47,6 +47,8 @@ parser.add_argument('--ref_bk2', dest='ref_bk2', nargs='+', help='bk2 reference 
                     required=False)
 parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='bsn reference distribution (for initializtion).',
                     required=False)
+parser.add_argument('--ref_bsnx', dest='ref_bsnx', nargs='+', help='bsnx reference distribution (for initializtion).',
+                    required=False)
 parser.add_argument('--ref_HOD', dest='ref_HOD', nargs='+', help='HOD reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--ref_lMmin', dest='ref_lMmin', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
@@ -395,6 +397,15 @@ if args.ref_alpha is not None:
             ref_alpha[i] = None
 else:
     ref_alpha = [None for i in range(7)]
+if args.ref_bsnx is not None:
+    ref_bsnx = [0 for i in range(len(args.ref_bsnx))]
+    for i, ref in enumerate(args.ref_bsnx):
+        if ref != 'None':
+            ref_bsnx[i] = float(ref)
+        else:
+            ref_bsnx[i] = None
+else:
+    ref_bsnx = [None for i in range(15)]
 
 if 'HOD' not in model:
     # Template for bias parameters in yaml file
@@ -413,6 +424,8 @@ else:
 # Add model and input file
 info['likelihood'][name_like]['bz_model'] = model
 info['likelihood'][name_like]['input_file'] = args.path2data
+
+print(info['params'])
 
 # Write bias parameters into yaml file
 input_params_prefix = info['likelihood'][name_like]['input_params_prefix']
@@ -521,6 +534,33 @@ if 'HOD' not in model:
                     mean = 0.
 
                 info['params'][param_name] = mean
+
+    if 'bsnx' in str(fit_params):
+        b = 'snx'
+        for i, bin1 in enumerate(bin_nos):
+            for ii, bin2 in enumerate(bin_nos[i+1:]):
+                param_name = input_params_prefix + '_cl' + str(bin1 + 1) + 'x' + 'cl' + str(bin2 + 1) + '_b' + b
+                if ref_bsnx[i] is not None:
+                    mean = ref_bsnx[i]
+                else:
+                    mean = DEFAULT_REF_BSN
+                info['params'][param_name] = cl_param.copy()
+                info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                     'loc': mean,
+                                                     'scale': 0.1 * np.abs(mean)}
+                if args.sampler_type == 'minimizer':
+                    info['params'][param_name]['prior'] = {'min': -5. * np.abs(mean),
+                                                           'max': 5. * np.abs(mean)}
+                elif args.sampler_type == 'mcmc':
+                    if args.mcmc_method == 'MH':
+                        info['params'][param_name]['prior'] = {'min': -100000.,
+                                                               'max': 100000.}
+                    elif args.mcmc_method == 'polychord':
+                        info['params'][param_name]['prior'] = {'min': 0.,
+                                                               'max': 2 * np.abs(mean)}
+                    else:
+                        raise NotImplementedError()
+                info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
 # Model: HOD
 else:
     if model == 'HOD_evol':
@@ -574,6 +614,32 @@ else:
                 else:
                     mean = DEFAULT_REF_BSN
                 info['params'][param_name] = mean
+        if 'bsnx' in str(fit_params):
+            b = 'snx'
+            for i, bin1 in enumerate(bin_nos):
+                for ii, bin2 in enumerate(bin_nos[i+1:]):
+                    param_name = input_params_prefix + '_cl' + str(bin1 + 1) + 'x' + 'cl' + str(bin2 + 1) + '_b' + b
+                    if ref_bsnx[i] is not None:
+                        mean = ref_bsnx[i]
+                    else:
+                        mean = DEFAULT_REF_BSN
+                    info['params'][param_name] = cl_param.copy()
+                    info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                         'loc': mean,
+                                                         'scale': 0.1 * np.abs(mean)}
+                    if args.sampler_type == 'minimizer':
+                        info['params'][param_name]['prior'] = {'min': -5. * np.abs(mean),
+                                                               'max': 5. * np.abs(mean)}
+                    elif args.sampler_type == 'mcmc':
+                        if args.mcmc_method == 'MH':
+                            info['params'][param_name]['prior'] = {'min': -100000.,
+                                                                   'max': 100000.}
+                        elif args.mcmc_method == 'polychord':
+                            info['params'][param_name]['prior'] = {'min': 0.,
+                                                                   'max': 2 * np.abs(mean)}
+                        else:
+                            raise NotImplementedError()
+                    info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
     if model == 'HOD_bin':
         for b in bpar:
             for i in bin_nos:
@@ -686,6 +752,32 @@ else:
                             mean = DEFAULT_REF_BSN
 
                     info['params'][param_name] = mean
+        if 'bsnx' in str(fit_params):
+            b = 'snx'
+            for i, bin1 in enumerate(bin_nos):
+                for ii, bin2 in enumerate(bin_nos[i+1:]):
+                    param_name = input_params_prefix + '_cl' + str(bin1 + 1) + 'x' + 'cl' + str(bin2 + 1) + '_b' + b
+                    if ref_bsnx[i] is not None:
+                        mean = ref_bsnx[i]
+                    else:
+                        mean = DEFAULT_REF_BSN
+                    info['params'][param_name] = cl_param.copy()
+                    info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                         'loc': mean,
+                                                         'scale': 0.1 * np.abs(mean)}
+                    if args.sampler_type == 'minimizer':
+                        info['params'][param_name]['prior'] = {'min': -5. * np.abs(mean),
+                                                               'max': 5. * np.abs(mean)}
+                    elif args.sampler_type == 'mcmc':
+                        if args.mcmc_method == 'MH':
+                            info['params'][param_name]['prior'] = {'min': -100000.,
+                                                                   'max': 100000.}
+                        elif args.mcmc_method == 'polychord':
+                            info['params'][param_name]['prior'] = {'min': 0.,
+                                                                   'max': 2 * np.abs(mean)}
+                        else:
+                            raise NotImplementedError()
+                    info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
 
 # Add kmax and output file
 info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)

@@ -356,6 +356,9 @@ def get_bacco_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
             else:
                 bsn2 = None
 
+            if bsnx is not None:
+                bsnx = bsnx*np.ones_like(z_arr)
+
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1,
                                b12, b22, bs2,
