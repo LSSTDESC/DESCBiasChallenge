@@ -97,6 +97,11 @@ elif 'HOD-bin' in bias_model:
 else:
     raise ValueError("Unknown bias model")
 
+if 'corr' in bias_model:
+    corr_tag = '_corr'
+else:
+    corr_tag = None
+
 logger.info('Running analysis for:')
 logger.info('Likelihood: {}.'.format(name_like))
 logger.info('Bias model: {}.'.format(bias_model))
@@ -422,7 +427,10 @@ else:
             'latex': 'blank', 'proposal': 0.01}
 
 # Add model and input file
-info['likelihood'][name_like]['bz_model'] = model
+if corr_tag is None:
+    info['likelihood'][name_like]['bz_model'] = model
+else:
+    info['likelihood'][name_like]['bz_model'] = model+corr_tag
 info['likelihood'][name_like]['input_file'] = args.path2data
 
 print(info['params'])
