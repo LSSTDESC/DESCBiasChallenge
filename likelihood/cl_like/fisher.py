@@ -320,7 +320,14 @@ class Fisher_second_deri():
                pref + "_cl1_bk2": 0.1, pref + "_cl2_bk2": 0.1, pref + "_cl3_bk2": 0.1,
                pref + "_cl4_bk2": 0.1, pref + "_cl5_bk2": 0.1, pref + "_cl6_bk2": 0.1,
                pref + "_cl1_bsn": 0.1, pref + "_cl2_bsn": 0.1, pref + "_cl3_bsn": 0.1,
-               pref + "_cl4_bsn": 0.1, pref + "_cl5_bsn": 0.1, pref + "_cl6_bsn": 0.1}
+               pref + "_cl4_bsn": 0.1, pref + "_cl5_bsn": 0.1, pref + "_cl6_bsn": 0.1,
+               pref + "_cl1xcl2_bsnx": 0.1, pref + "_cl1xcl3_bsnx": 0.1, pref + "_cl1xcl4_bsnx": 0.1,
+               pref + "_cl1xcl5_bsnx": 0.1, pref + "_cl1xcl6_bsnx": 0.1,
+               pref + "_cl2xcl3_bsnx": 0.1, pref + "_cl2xcl4_bsnx": 0.1, pref + "_cl2xcl5_bsnx": 0.1,
+               pref + "_cl2xcl6_bsnx": 0.1,
+               pref + "_cl3xcl4_bsnx": 0.1, pref + "_cl3xcl5_bsnx": 0.1, pref + "_cl3xcl6_bsnx": 0.1,
+               pref + "_cl4xcl5_bsnx": 0.1, pref + "_cl4xcl6_bsnx": 0.1,
+               pref + "_cl5xcl6_bsnx": 0.1}
 
         #theta = list(self.pf.keys())  # array containing parameter names
         theta = self.pf_name
