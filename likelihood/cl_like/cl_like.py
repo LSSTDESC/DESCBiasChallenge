@@ -505,12 +505,15 @@ class ClLike(Likelihood):
                 if ((q1 == 'galaxy_density') and (q2 == 'galaxy_density')):
                     pg1 = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
                     if clm['bin_1'] == clm['bin_2']:
-                        pref = clm['bin_1']
+                        pref = self.input_params_prefix + '_' + clm['bin_1']
                         pg2 = pg1
+                        bsn = pars.get(pref+'_bsn', None)
+                        sn = bsn
                     else:
-                        pref = clm['bin_1'] + 'x' + clm['bin_2']
+                        pref = self.input_params_prefix + '_' + clm['bin_1'] + 'x' + clm['bin_2']
                         pg2 = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
-                    bsnx = pars.get(pref + '_bsnx', None)
+                        bsnx = pars.get(pref + '_bsnx', None)
+                        sn = bsnx
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                    pg1, prof_2pt=pgg,
                                                    prof2=pg2,
@@ -521,8 +524,8 @@ class ClLike(Likelihood):
                     if hasattr(self, 'rk_hm'):
                         pk_pt_arr *= self.rk_hm
 
-                    if bsnx is not None:
-                        pk_pt_arr += bsnx*np.ones_like(pk_pt_arr)
+                    if sn is not None:
+                        pk_pt_arr += sn*np.ones_like(pk_pt_arr)
 
                     pk_pt = Pk2D(a_arr=a_s, lk_arr=lk_s, pk_arr=pk_pt_arr,
                                     cosmo=cosmo, is_logp=False)

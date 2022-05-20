@@ -327,7 +327,12 @@ class Fisher_second_deri():
                pref + "_cl2xcl6_bsnx": 0.1,
                pref + "_cl3xcl4_bsnx": 0.1, pref + "_cl3xcl5_bsnx": 0.1, pref + "_cl3xcl6_bsnx": 0.1,
                pref + "_cl4xcl5_bsnx": 0.1, pref + "_cl4xcl6_bsnx": 0.1,
-               pref + "_cl5xcl6_bsnx": 0.1}
+               pref + "_cl5xcl6_bsnx": 0.1,
+               pref + "_lMmin_0": 0.1, pref + "_lMmin_p": 0.1,
+               pref + "_siglM_0": 0.1, pref + "_siglM_p": 0.1,
+               pref + "_lM0_0": 0.1, pref + "_lM0_p": 0.1,
+               pref + "_lM1_0": 0.1, pref + "_lM1_p": 0.1,
+               pref + "_alpha_0": 0.1, pref + "_alpha_p": 0.1}
 
         #theta = list(self.pf.keys())  # array containing parameter names
         theta = self.pf_name
