@@ -276,11 +276,11 @@ elif model == 'HOD_evol':
             'lM1_0', 'lM1_p',
             'alpha_0', 'alpha_p']
 elif model == 'HOD_bin':
-    bpar = ['lMmin_0',
-            'siglM_0',
-            'lM0_0',
-            'lM1_0',
-            'alpha_0',
+    bpar = ['lMmin_0', 'lMmin_p',
+            'siglM_0', 'siglM_p',
+            'lM0_0', 'lM0_p',
+            'lM1_0', 'lM1_p',
+            'alpha_0', 'alpha_p',
             'sn']
 
 ref_bsn = args.ref_bsn
@@ -495,11 +495,11 @@ if 'HOD' not in model:
                                                           'loc': mean,
                                                           'scale': 0.1*np.abs(mean)}
                     if args.sampler_type == 'minimizer':
-                        info['params'][param_name]['prior'] = {'min': -5.*np.abs(mean),
+                        info['params'][param_name]['prior'] = {'min': 0.,
                                                                 'max': 5.*np.abs(mean)}
                     elif args.sampler_type == 'mcmc':
                         if args.mcmc_method == 'MH':
-                            info['params'][param_name]['prior'] = {'min': -100000.,
+                            info['params'][param_name]['prior'] = {'min': 0.,
                                                                     'max': 100000.}
                         elif args.mcmc_method == 'polychord':
                             info['params'][param_name]['prior'] = {'min': 0.,
@@ -562,11 +562,11 @@ if 'HOD' not in model:
                                                      'loc': mean,
                                                      'scale': 0.1 * np.abs(mean)}
                 if args.sampler_type == 'minimizer':
-                    info['params'][param_name]['prior'] = {'min': -5. * np.abs(mean),
+                    info['params'][param_name]['prior'] = {'min': 0.,
                                                            'max': 5. * np.abs(mean)}
                 elif args.sampler_type == 'mcmc':
                     if args.mcmc_method == 'MH':
-                        info['params'][param_name]['prior'] = {'min': -100000.,
+                        info['params'][param_name]['prior'] = {'min': 0.,
                                                                'max': 100000.}
                     elif args.mcmc_method == 'polychord':
                         info['params'][param_name]['prior'] = {'min': 0.,
@@ -609,11 +609,11 @@ else:
                                                       'scale': 0.1 * np.abs(mean)}
                 if args.sampler_type == 'minimizer':
                     info['params'][param_name]['prior'] = {
-                        'min': -5. * np.abs(mean),
-                        'max': 5. * np.abs(mean)}
+                                                            'min': 0.,
+                                                            'max': 5. * np.abs(mean)}
                 elif args.sampler_type == 'mcmc':
                     if args.mcmc_method == 'MH':
-                        info['params'][param_name]['prior'] = {'min': -100000.,
+                        info['params'][param_name]['prior'] = {'min': 0.,
                                                                 'max': 100000.}
                     elif args.mcmc_method == 'polychord':
                         info['params'][param_name]['prior'] = {'min': 0.,
@@ -641,11 +641,11 @@ else:
                                                          'loc': mean,
                                                          'scale': 0.1 * np.abs(mean)}
                     if args.sampler_type == 'minimizer':
-                        info['params'][param_name]['prior'] = {'min': -5. * np.abs(mean),
+                        info['params'][param_name]['prior'] = {'min': 0.,
                                                                'max': 5. * np.abs(mean)}
                     elif args.sampler_type == 'mcmc':
                         if args.mcmc_method == 'MH':
-                            info['params'][param_name]['prior'] = {'min': -100000.,
+                            info['params'][param_name]['prior'] = {'min': 0.,
                                                                    'max': 100000.}
                         elif args.mcmc_method == 'polychord':
                             info['params'][param_name]['prior'] = {'min': 0.,
@@ -715,11 +715,11 @@ else:
                                                               'scale': 0.1 * np.abs(mean)}
                         if args.sampler_type == 'minimizer':
                             info['params'][param_name]['prior'] = {
-                                'min': -5. * np.abs(mean),
-                                'max': 5. * np.abs(mean)}
+                                                                    'min': 0.,
+                                                                    'max': 5. * np.abs(mean)}
                         elif args.sampler_type == 'mcmc':
                             if args.mcmc_method == 'MH':
-                                info['params'][param_name]['prior'] = {'min': -100000.,
+                                info['params'][param_name]['prior'] = {'min': 0.,
                                                                         'max': 100000.}
                             elif args.mcmc_method == 'polychord':
                                 info['params'][param_name]['prior'] = {'min': 0.,
@@ -727,36 +727,51 @@ else:
                             else:
                                 raise NotImplementedError()
                         info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
+                    # Case where lMmin_p, siglM_p, lM0_p, lM1_p, alpha_p
+                    else:
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                             'loc': 0.,
+                                                             'scale': 0.1 * np.abs(mean)}
                 else:
                     if b == 'lMmin_0':
                         if ref_lMmin[i] is not None:
                             mean = ref_lMmin[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
+                    elif b == 'lMmin_p':
+                        mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'siglM_0':
                         if ref_siglM[i] is not None:
                             mean = ref_siglM[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
+                    elif b == 'siglM_p':
+                        mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'lM0_0':
                         if ref_lM0[i] is not None:
                             mean = ref_lM0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
+                    elif b == 'lM0_p':
+                        mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'lM1_0':
                         if ref_lM1[i] is not None:
                             mean = ref_lM1[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
+                    elif b == 'lM1_p':
+                        mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'alpha_0':
                         if ref_alpha[i] is not None:
                             mean = ref_alpha[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
+                    elif b == 'alpha_p':
+                        mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'sn':
                         if ref_bsn[i] is not None:
@@ -779,11 +794,11 @@ else:
                                                          'loc': mean,
                                                          'scale': 0.1 * np.abs(mean)}
                     if args.sampler_type == 'minimizer':
-                        info['params'][param_name]['prior'] = {'min': -5. * np.abs(mean),
+                        info['params'][param_name]['prior'] = {'min': 0.,
                                                                'max': 5. * np.abs(mean)}
                     elif args.sampler_type == 'mcmc':
                         if args.mcmc_method == 'MH':
-                            info['params'][param_name]['prior'] = {'min': -100000.,
+                            info['params'][param_name]['prior'] = {'min': 0.,
                                                                    'max': 100000.}
                         elif args.mcmc_method == 'polychord':
                             info['params'][param_name]['prior'] = {'min': 0.,
