@@ -276,11 +276,12 @@ elif model == 'HOD_evol':
             'lM1_0', 'lM1_p',
             'alpha_0', 'alpha_p']
 elif model == 'HOD_bin':
-    bpar = ['lMmin_0', 'lMmin_p',
-            'siglM_0', 'siglM_p',
-            'lM0_0', 'lM0_p',
-            'lM1_0', 'lM1_p',
-            'alpha_0', 'alpha_p']
+    bpar = ['lMmin_0',
+            'siglM_0',
+            'lM0_0',
+            'lM1_0',
+            'alpha_0',
+            'sn']
 
 ref_bsn = args.ref_bsn
 if args.ref_bsn is not None:
