@@ -120,13 +120,13 @@ DEFAULT_REF_BSN = 1000.
 
 # Default reference values for HOD parameters (here assume single set for all redshift bins)
 DEFAULT_REF_HOD = {'lMmin_0': 12.95,
-                   'lMmin_p': -2.0,
+                   'lMmin_p': 0.,
                    'siglM_0': 0.25,
                    'siglM_p': 0.,
                    'lM0_0': 12.3,
                    'lM0_p': 0.,
                    'lM1_0': 14.0,
-                   'lM1_p': -1.5,
+                   'lM1_p': 0.,
                    'alpha_0': 1.32,
                    'alpha_p': 0.}
 
