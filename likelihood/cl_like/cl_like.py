@@ -496,11 +496,11 @@ class ClLike(Likelihood):
                         # We need to change the order because interp2d sorts arrays in increasing order by default
                         self.rk_hm = HMCorr.rk_interp(k_s, a_s)[::-1]
 
-                def alpha_HMCODE(a):
-                    return 0.7
+                def alpha_HMCODE_func(al_HM, a):
+                    return al_HM
 
-                def k_supress(a):
-                    return 0.001
+                def k_supress_func(k_sup, a):
+                    return k_sup
 
                 if ((q1 == 'galaxy_density') and (q2 == 'galaxy_density')):
                     pg1 = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
@@ -514,12 +514,16 @@ class ClLike(Likelihood):
                         pg2 = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
                         bsnx = pars.get(pref + '_bsnx', None)
                         sn = bsnx
+                    pref = self.input_params_prefix + '_hod_'
+                    alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
+                    k_supress = pars.get(pref + 'k_supress', None)
+
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                    pg1, prof_2pt=pgg,
                                                    prof2=pg2,
                                                    normprof1=True, normprof2=True,
-                                                   smooth_transition=alpha_HMCODE,
-                                                   supress_1h=k_supress)
+                                                   smooth_transition=lambda a: alpha_HMCODE_func(alpha_HMCODE, a),
+                                                   supress_1h=lambda a: k_supress_func(k_supress, a))
 
                     if hasattr(self, 'rk_hm'):
                         pk_pt_arr *= self.rk_hm
@@ -532,11 +536,16 @@ class ClLike(Likelihood):
 
                 elif ((q1 != 'galaxy_density') and (q2 == 'galaxy_density')):
                     pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
+
+                    pref = self.input_params_prefix + '_hod_'
+                    alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
+                    k_supress = pars.get(pref + 'k_supress', None)
+
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                                  pg, prof2=pm,
                                                                  normprof1=True, normprof2=True,
-                                                                 smooth_transition=alpha_HMCODE,
-                                                                 supress_1h=k_supress)
+                                                                 smooth_transition=lambda a: alpha_HMCODE_func(alpha_HMCODE, a),
+                                                                 supress_1h=lambda a: k_supress_func(k_supress, a))
 
                     if hasattr(self, 'rk_hm'):
                         pk_pt_arr *= self.rk_hm
@@ -546,11 +555,16 @@ class ClLike(Likelihood):
 
                 elif ((q1 == 'galaxy_density') and (q2 != 'galaxy_density')):
                     pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
+
+                    pref = self.input_params_prefix + '_hod_'
+                    alpha_HMCODE = pars.get(pref + 'alpha_HMCODE', None)
+                    k_supress = pars.get(pref + 'k_supress', None)
+
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                                  pg, prof2=pm,
                                                                  normprof1=True, normprof2=True,
-                                                                 smooth_transition=alpha_HMCODE,
-                                                                 supress_1h=k_supress)
+                                                                 smooth_transition=lambda a: alpha_HMCODE_func(alpha_HMCODE, a),
+                                                                 supress_1h=lambda a: k_supress_func(k_supress, a))
 
                     if hasattr(self, 'rk_hm'):
                         pk_pt_arr *= self.rk_hm

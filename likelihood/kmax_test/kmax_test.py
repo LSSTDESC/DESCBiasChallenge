@@ -128,7 +128,10 @@ DEFAULT_REF_HOD = {'lMmin_0': 12.95,
                    'lM1_0': 14.0,
                    'lM1_p': 0.,
                    'alpha_0': 1.32,
-                   'alpha_p': 0.}
+                   'alpha_p': 0.,
+                   'alpha_HMCODE': 0.7,
+                   'k_supress': 0.001
+}
 
 # Note: we need to hard-code the BACCO parameter bounds:
 # omega_matter: [0.23, 0.4 ]
@@ -274,7 +277,9 @@ elif model == 'HOD_evol':
             'siglM_0', 'siglM_p',
             'lM0_0', 'lM0_p',
             'lM1_0', 'lM1_p',
-            'alpha_0', 'alpha_p']
+            'alpha_0', 'alpha_p',
+            'alpha_HMCODE',
+            'k_supress']
 elif model == 'HOD_bin':
     bpar = ['lMmin_0', 'lMmin_p',
             'siglM_0', 'siglM_p',
@@ -587,6 +592,9 @@ else:
                 else:
                     mean = DEFAULT_REF_HOD[b]
                 info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+                if b == 'alpha_HMCODE' or b == 'k_supress':
+                    info['params'][param_name]['prior'] = {'min': 0.,
+                                                           'max': 100.}
             else:
                 if ref_HOD[i] is not None:
                     mean = ref_HOD[i]
@@ -806,6 +814,18 @@ else:
                         else:
                             raise NotImplementedError()
                     info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
+        for b in ['alpha_HMCODE', 'k_supress']:
+            param_name = input_params_prefix + '_hod_' + b
+            if param_name in fit_params:
+                info['params'][param_name] = cl_param.copy()
+                info['params'][param_name]['prior'] = {'min': 0.,
+                                                       'max': 100.}
+                info['params'][param_name]['latex'] = b + '\\,\\text{for HOD}'
+                mean = DEFAULT_REF_HOD[b]
+                info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
+            else:
+                mean = DEFAULT_REF_HOD[b]
+                info['params'][param_name] = mean
 
 # Add kmax and output file
 info['likelihood'][name_like]['defaults']['kmax'] = float(k_max)
