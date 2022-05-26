@@ -61,6 +61,10 @@ parser.add_argument('--ref_lM1', dest='ref_lM1', nargs='+', help='lM1_0 referenc
                     required=False)
 parser.add_argument('--ref_alpha', dest='ref_alpha', nargs='+', help='alpha_0 reference distribution (for initializtion).',
                     required=False)
+parser.add_argument('--ref_alpha_HMCODE', dest='ref_alpha_HMCODE', type=float, help='alpha_HMCODE reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_k_supress', dest='ref_k_supress', type=float, help='k_supress reference distribution (for initializtion).',
+                    required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
 parser.add_argument('--sampler_type', dest='sampler_type', help='Type of sampler used.', default='minimizer',
@@ -421,6 +425,14 @@ if args.ref_bsnx is not None:
             ref_bsnx[i] = None
 else:
     ref_bsnx = [None for i in range(15)]
+if args.ref_alpha_HMCODE is not None:
+    ref_alpha_HMCODE = float(args.ref_alpha_HMCODE)
+else:
+    ref_alpha_HMCODE = None
+if args.ref_k_supress is not None:
+    ref_k_supress = float(args.ref_k_supress)
+else:
+    ref_k_supress = None
 
 if 'HOD' not in model:
     # Template for bias parameters in yaml file
@@ -593,7 +605,7 @@ else:
                     mean = DEFAULT_REF_HOD[b]
                 info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
                 if b == 'alpha_HMCODE' or b == 'k_supress':
-                    info['params'][param_name]['prior'] = {'min': 0.,
+                    info['params'][param_name]['prior'] = {'min': 1e-6,
                                                            'max': 100.}
             else:
                 if ref_HOD[i] is not None:
@@ -818,10 +830,19 @@ else:
             param_name = input_params_prefix + '_hod_' + b
             if param_name in fit_params:
                 info['params'][param_name] = cl_param.copy()
-                info['params'][param_name]['prior'] = {'min': 0.,
+                info['params'][param_name]['prior'] = {'min': 1e-6,
                                                        'max': 100.}
                 info['params'][param_name]['latex'] = b + '\\,\\text{for HOD}'
-                mean = DEFAULT_REF_HOD[b]
+                if b == 'alpha_HMCODE':
+                    if ref_alpha_HMCODE is not None:
+                        mean = ref_alpha_HMCODE
+                    else:
+                        mean = DEFAULT_REF_HOD[b]
+                if b == 'k_supress':
+                    if ref_k_supress is not None:
+                        mean = ref_k_supress
+                    else:
+                        mean = DEFAULT_REF_HOD[b]
                 info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
             else:
                 mean = DEFAULT_REF_HOD[b]
