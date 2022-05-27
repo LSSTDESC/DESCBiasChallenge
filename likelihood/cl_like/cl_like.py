@@ -517,13 +517,21 @@ class ClLike(Likelihood):
                     pref = self.input_params_prefix + '_hod_'
                     alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
                     k_supress = pars.get(pref + 'k_supress', None)
+                    if alpha_HMCODE is not None:
+                        smooth_transition = lambda a: alpha_HMCODE_func(alpha_HMCODE, a)
+                    else:
+                        smooth_transition = None
+                    if k_supress is not None:
+                        supress_1h = lambda a: k_supress_func(k_supress, a)
+                    else:
+                        supress_1h = None
 
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                    pg1, prof_2pt=pgg,
                                                    prof2=pg2,
                                                    normprof1=True, normprof2=True,
-                                                   smooth_transition=lambda a: alpha_HMCODE_func(alpha_HMCODE, a),
-                                                   supress_1h=lambda a: k_supress_func(k_supress, a))
+                                                   smooth_transition=smooth_transition,
+                                                   supress_1h=supress_1h)
 
                     if hasattr(self, 'rk_hm'):
                         pk_pt_arr *= self.rk_hm
@@ -540,12 +548,20 @@ class ClLike(Likelihood):
                     pref = self.input_params_prefix + '_hod_'
                     alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
                     k_supress = pars.get(pref + 'k_supress', None)
+                    if alpha_HMCODE is not None:
+                        smooth_transition = lambda a: alpha_HMCODE_func(alpha_HMCODE, a)
+                    else:
+                        smooth_transition = None
+                    if k_supress is not None:
+                        supress_1h = lambda a: k_supress_func(k_supress, a)
+                    else:
+                        supress_1h = None
 
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                                  pg, prof2=pm,
                                                                  normprof1=True, normprof2=True,
-                                                                 smooth_transition=lambda a: alpha_HMCODE_func(alpha_HMCODE, a),
-                                                                 supress_1h=lambda a: k_supress_func(k_supress, a))
+                                                                 smooth_transition=smooth_transition,
+                                                                 supress_1h=supress_1h)
 
                     if hasattr(self, 'rk_hm'):
                         pk_pt_arr *= self.rk_hm
@@ -559,12 +575,20 @@ class ClLike(Likelihood):
                     pref = self.input_params_prefix + '_hod_'
                     alpha_HMCODE = pars.get(pref + 'alpha_HMCODE', None)
                     k_supress = pars.get(pref + 'k_supress', None)
+                    if alpha_HMCODE is not None:
+                        smooth_transition = lambda a: alpha_HMCODE_func(alpha_HMCODE, a)
+                    else:
+                        smooth_transition = None
+                    if k_supress is not None:
+                        supress_1h = lambda a: k_supress_func(k_supress, a)
+                    else:
+                        supress_1h = None
 
                     pk_pt_arr = ccl.halos.halomod_power_spectrum(cosmo, hmc, np.exp(lk_s), a_s,
                                                                  pg, prof2=pm,
                                                                  normprof1=True, normprof2=True,
-                                                                 smooth_transition=lambda a: alpha_HMCODE_func(alpha_HMCODE, a),
-                                                                 supress_1h=lambda a: k_supress_func(k_supress, a))
+                                                                 smooth_transition=smooth_transition,
+                                                                 supress_1h=supress_1h)
 
                     if hasattr(self, 'rk_hm'):
                         pk_pt_arr *= self.rk_hm
