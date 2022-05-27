@@ -445,7 +445,7 @@ if 'HOD' not in model:
                     'latex': 'blank', 'proposal': 0.01}
 else:
     cl_param = {'prior': {'min': -100.0, 'max': 100.0},
-            'ref': {'dist': 'norm', 'loc': 'blank', 'scale': 0.1},
+            'ref': {'dist': 'norm', 'loc': 'blank', 'scale': 0.01},
             'latex': 'blank', 'proposal': 0.01}
 
 # Add model and input file
@@ -751,7 +751,7 @@ else:
                     else:
                         info['params'][param_name]['ref'] = {'dist': 'norm',
                                                              'loc': 0.,
-                                                             'scale': 0.1 * np.abs(mean)}
+                                                             'scale': 0.01}
                 else:
                     if b == 'lMmin_0':
                         if ref_lMmin[i] is not None:
