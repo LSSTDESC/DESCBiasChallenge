@@ -328,11 +328,16 @@ class Fisher_second_deri():
                pref + "_cl3xcl4_bsnx": 0.1, pref + "_cl3xcl5_bsnx": 0.1, pref + "_cl3xcl6_bsnx": 0.1,
                pref + "_cl4xcl5_bsnx": 0.1, pref + "_cl4xcl6_bsnx": 0.1,
                pref + "_cl5xcl6_bsnx": 0.1,
-               pref + "_lMmin_0": 0.1, pref + "_lMmin_p": 0.1,
-               pref + "_siglM_0": 0.1, pref + "_siglM_p": 0.1,
-               pref + "_lM0_0": 0.1, pref + "_lM0_p": 0.1,
-               pref + "_lM1_0": 0.1, pref + "_lM1_p": 0.1,
-               pref + "_alpha_0": 0.1, pref + "_alpha_p": 0.1}
+               pref + "_hod_lMmin_0": 0.1, pref + "_hod_lMmin_p": 0.1,
+               pref + "_hod_siglM_0": 0.1, pref + "_hod_siglM_p": 0.1,
+               pref + "_hod_lM0_0": 0.1, pref + "_hod_lM0_p": 0.1,
+               pref + "_hod_lM1_0": 0.1, pref + "_hod_lM1_p": 0.1,
+               pref + "_hod_alpha_0": 0.1, pref + "_hod_alpha_p": 0.1}
+
+        for param in ['_lMmin_0', '_lMmin_p', '_siglM_0', '_siglM_p', '_lM0_0', '_lM0_p', '_lM1_0', '_lM1_p', \
+                        '_alpha_0', '_alpha_p']:
+            for key in ['_cl1', '_cl2', '_cl3', '_cl4', '_cl5', '_cl6']:
+                typ_var[pref+key+param] = 0.1
 
         #theta = list(self.pf.keys())  # array containing parameter names
         theta = self.pf_name
