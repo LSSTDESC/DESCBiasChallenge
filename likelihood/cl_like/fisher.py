@@ -332,7 +332,9 @@ class Fisher_second_deri():
                pref + "_hod_siglM_0": 0.1, pref + "_hod_siglM_p": 0.1,
                pref + "_hod_lM0_0": 0.1, pref + "_hod_lM0_p": 0.1,
                pref + "_hod_lM1_0": 0.1, pref + "_hod_lM1_p": 0.1,
-               pref + "_hod_alpha_0": 0.1, pref + "_hod_alpha_p": 0.1}
+               pref + "_hod_alpha_0": 0.1, pref + "_hod_alpha_p": 0.1,
+               pref + "_hod_alpha_HMCODE": 0.1, pref + "_hod_k_supress": 0.1
+                   }
 
         for param in ['_lMmin_0', '_lMmin_p', '_siglM_0', '_siglM_p', '_lM0_0', '_lM0_p', '_lM1_0', '_lM1_p', \
                         '_alpha_0', '_alpha_p']:
