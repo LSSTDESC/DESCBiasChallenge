@@ -51,15 +51,25 @@ parser.add_argument('--ref_bsnx', dest='ref_bsnx', nargs='+', help='bsnx referen
                     required=False)
 parser.add_argument('--ref_HOD', dest='ref_HOD', nargs='+', help='HOD reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_lMmin', dest='ref_lMmin', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_lMmin_0', dest='ref_lMmin_0', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_siglM', dest='ref_siglM', nargs='+', help='siglM_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_siglM_0', dest='ref_siglM_0', nargs='+', help='siglM_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_lM0', dest='ref_lM0', nargs='+', help='lM0_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_lM0_0', dest='ref_lM0_0', nargs='+', help='lM0_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_lM1', dest='ref_lM1', nargs='+', help='lM1_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_lM1_0', dest='ref_lM1_0', nargs='+', help='lM1_0 reference distribution (for initializtion).',
                     required=False)
-parser.add_argument('--ref_alpha', dest='ref_alpha', nargs='+', help='alpha_0 reference distribution (for initializtion).',
+parser.add_argument('--ref_alpha_0', dest='ref_alpha_0', nargs='+', help='alpha_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_lMmin_p', dest='ref_lMmin_p', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_siglM_p', dest='ref_siglM_p', nargs='+', help='siglM_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_lM0_p', dest='ref_lM0_p', nargs='+', help='lM0_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_lM1_p', dest='ref_lM1_p', nargs='+', help='lM1_0 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_alpha_p', dest='ref_alpha_p', nargs='+', help='alpha_0 reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--ref_alpha_HMCODE', dest='ref_alpha_HMCODE', type=float, help='alpha_HMCODE reference distribution (for initializtion).',
                     required=False)
@@ -371,51 +381,96 @@ if args.ref_HOD is not None:
             ref_HOD[i] = None
 else:
     ref_HOD = [None for i in range(10)]
-if args.ref_lMmin is not None:
-    ref_lMmin = [0 for i in range(len(args.ref_lMmin))]
-    for i, ref in enumerate(args.ref_lMmin):
+if args.ref_lMmin_0 is not None:
+    ref_lMmin_0 = [0 for i in range(len(args.ref_lMmin_0))]
+    for i, ref in enumerate(args.ref_lMmin_0):
         if ref != 'None':
-            ref_lMmin[i] = float(ref)
+            ref_lMmin_0[i] = float(ref)
         else:
-            ref_lMmin[i] = None
+            ref_lMmin_0[i] = None
 else:
-    ref_lMmin = [None for i in range(7)]
-if args.ref_siglM is not None:
-    ref_siglM = [0 for i in range(len(args.ref_siglM))]
-    for i, ref in enumerate(args.ref_siglM):
+    ref_lMmin_0 = [None for i in range(7)]
+if args.ref_siglM_0 is not None:
+    ref_siglM_0 = [0 for i in range(len(args.ref_siglM_0))]
+    for i, ref in enumerate(args.ref_siglM_0):
         if ref != 'None':
-            ref_siglM[i] = float(ref)
+            ref_siglM_0[i] = float(ref)
         else:
-            ref_siglM[i] = None
+            ref_siglM_0[i] = None
 else:
-    ref_siglM = [None for i in range(7)]
-if args.ref_lM0 is not None:
-    ref_lM0 = [0 for i in range(len(args.ref_lM0))]
-    for i, ref in enumerate(args.ref_lM0):
+    ref_siglM_0 = [None for i in range(7)]
+if args.ref_lM0_0 is not None:
+    ref_lM0_0 = [0 for i in range(len(args.ref_lM0_0))]
+    for i, ref in enumerate(args.ref_lM0_0):
         if ref != 'None':
-            ref_lM0[i] = float(ref)
+            ref_lM0_0[i] = float(ref)
         else:
-            ref_lM0[i] = None
+            ref_lM0_0[i] = None
 else:
-    ref_lM0 = [None for i in range(7)]
-if args.ref_lM1 is not None:
-    ref_lM1 = [0 for i in range(len(args.ref_lM1))]
-    for i, ref in enumerate(args.ref_lM1):
+    ref_lM0_0 = [None for i in range(7)]
+if args.ref_lM1_0 is not None:
+    ref_lM1_0 = [0 for i in range(len(args.ref_lM1_0))]
+    for i, ref in enumerate(args.ref_lM1_0):
         if ref != 'None':
-            ref_lM1[i] = float(ref)
+            ref_lM1_0[i] = float(ref)
         else:
-            ref_lM1[i] = None
+            ref_lM1_0[i] = None
 else:
-    ref_lM1 = [None for i in range(7)]
-if args.ref_alpha is not None:
-    ref_alpha = [0 for i in range(len(args.ref_alpha))]
-    for i, ref in enumerate(args.ref_alpha):
+    ref_lM1_0 = [None for i in range(7)]
+if args.ref_alpha_0 is not None:
+    ref_alpha_0 = [0 for i in range(len(args.ref_alpha_0))]
+    for i, ref in enumerate(args.ref_alpha_0):
         if ref != 'None':
-            ref_alpha[i] = float(ref)
+            ref_alpha_0[i] = float(ref)
         else:
-            ref_alpha[i] = None
+            ref_alpha_0[i] = None
 else:
-    ref_alpha = [None for i in range(7)]
+    ref_alpha_0 = [None for i in range(7)]
+if args.ref_lMmin_p is not None:
+    ref_lMmin_p = [0 for i in range(len(args.ref_lMmin_p))]
+    for i, ref in enumerate(args.ref_lMmin_p):
+        if ref != 'None':
+            ref_lMmin_p[i] = float(ref)
+        else:
+            ref_lMmin_p[i] = None
+else:
+    ref_lMmin_p = [None for i in range(7)]
+if args.ref_siglM_p is not None:
+    ref_siglM_p = [0 for i in range(len(args.ref_siglM_p))]
+    for i, ref in enumerate(args.ref_siglM_p):
+        if ref != 'None':
+            ref_siglM_p[i] = float(ref)
+        else:
+            ref_siglM_p[i] = None
+else:
+    ref_siglM_p = [None for i in range(7)]
+if args.ref_lM0_p is not None:
+    ref_lM0_p = [0 for i in range(len(args.ref_lM0_p))]
+    for i, ref in enumerate(args.ref_lM0_p):
+        if ref != 'None':
+            ref_lM0_p[i] = float(ref)
+        else:
+            ref_lM0_p[i] = None
+else:
+    ref_lM0_p = [None for i in range(7)]
+if args.ref_lM1_p is not None:
+    ref_lM1_p = [0 for i in range(len(args.ref_lM1_p))]
+    for i, ref in enumerate(args.ref_lM1_p):
+        if ref != 'None':
+            ref_lM1_p[i] = float(ref)
+        else:
+            ref_lM1_p[i] = None
+else:
+    ref_lM1_p = [None for i in range(7)]
+if args.ref_alpha_p is not None:
+    ref_alpha_p = [0 for i in range(len(args.ref_alpha_p))]
+    for i, ref in enumerate(args.ref_alpha_p):
+        if ref != 'None':
+            ref_alpha_p[i] = float(ref)
+        else:
+            ref_alpha_p[i] = None
+else:
+    ref_alpha_p = [None for i in range(7)]
 if args.ref_bsnx is not None:
     ref_bsnx = [0 for i in range(len(args.ref_bsnx))]
     for i, ref in enumerate(args.ref_bsnx):
@@ -685,40 +740,96 @@ else:
                     info['params'][param_name] = cl_param.copy()
                     info['params'][param_name]['latex'] = paramtag + b + '\\,\\text{for}\\,C_{l,' + str(i + 1) + '}'
                     if b == 'lMmin_0':
-                        if ref_lMmin[i] is not None:
-                            mean = ref_lMmin[i]
+                        if ref_lMmin_0[i] is not None:
+                            mean = ref_lMmin_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                         info['params'][param_name]['ref'] = {'dist': 'norm',
                                                               'loc': mean,
                                                               'scale': 0.01}
                     elif b == 'siglM_0':
-                        if ref_siglM[i] is not None:
-                            mean = ref_siglM[i]
+                        if ref_siglM_0[i] is not None:
+                            mean = ref_siglM_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                         info['params'][param_name]['ref'] = {'dist': 'norm',
                                                               'loc': mean,
                                                               'scale': 0.01}
                     elif b == 'lM0_0':
-                        if ref_lM0[i] is not None:
-                            mean = ref_lM0[i]
+                        if ref_lM0_0[i] is not None:
+                            mean = ref_lM0_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                         info['params'][param_name]['ref'] = {'dist': 'norm',
                                                               'loc': mean,
                                                               'scale': 0.01}
                     elif b == 'lM1_0':
-                        if ref_lM1[i] is not None:
-                            mean = ref_lM1[i]
+                        if ref_lM1_0[i] is not None:
+                            mean = ref_lM1_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                         info['params'][param_name]['ref'] = {'dist': 'norm',
                                                              'loc': mean,
                                                              'scale': 0.01}
                     elif b == 'alpha_0':
-                        if ref_alpha[i] is not None:
-                            mean = ref_alpha[i]
+                        if ref_alpha_0[i] is not None:
+                            mean = ref_alpha_0[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                             'loc': mean,
+                                                             'scale': 0.01}
+                    elif b == 'lMmin_p':
+                        if ref_lMmin_p[i] is not None:
+                            mean = ref_lMmin_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                              'loc': mean,
+                                                              'scale': 0.01}
+                    elif b == 'siglM_p':
+                        if ref_siglM_p[i] is not None:
+                            mean = ref_siglM_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                              'loc': mean,
+                                                              'scale': 0.01}
+                    elif b == 'lM0_p':
+                        if ref_lM0_p[i] is not None:
+                            mean = ref_lM0_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                              'loc': mean,
+                                                              'scale': 0.01}
+                    elif b == 'lM1_p':
+                        if ref_lM1_p[i] is not None:
+                            mean = ref_lM1_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                             'loc': mean,
+                                                             'scale': 0.01}
+                    elif b == 'alpha_p':
+                        if ref_alpha_p[i] is not None:
+                            mean = ref_alpha_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                             'loc': mean,
+                                                             'scale': 0.01}
+                    elif b == 'alpha_HMCODE':
+                        if ref_alpha_HMCODE[i] is not None:
+                            mean = ref_alpha_HMCODE[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
+                        info['params'][param_name]['ref'] = {'dist': 'norm',
+                                                             'loc': mean,
+                                                             'scale': 0.01}
+                    elif b == 'k_supress':
+                        if ref_k_supress[i] is not None:
+                            mean = ref_k_supress[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                         info['params'][param_name]['ref'] = {'dist': 'norm',
@@ -754,40 +865,40 @@ else:
                                                              'scale': 0.01}
                 else:
                     if b == 'lMmin_0':
-                        if ref_lMmin[i] is not None:
-                            mean = ref_lMmin[i]
+                        if ref_lMmin_0[i] is not None:
+                            mean = ref_lMmin_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'lMmin_p':
                         mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'siglM_0':
-                        if ref_siglM[i] is not None:
-                            mean = ref_siglM[i]
+                        if ref_siglM_0[i] is not None:
+                            mean = ref_siglM_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'siglM_p':
                         mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'lM0_0':
-                        if ref_lM0[i] is not None:
-                            mean = ref_lM0[i]
+                        if ref_lM0_0[i] is not None:
+                            mean = ref_lM0_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'lM0_p':
                         mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'lM1_0':
-                        if ref_lM1[i] is not None:
-                            mean = ref_lM1[i]
+                        if ref_lM1_0[i] is not None:
+                            mean = ref_lM1_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'lM1_p':
                         mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'alpha_0':
-                        if ref_alpha[i] is not None:
-                            mean = ref_alpha[i]
+                        if ref_alpha_0[i] is not None:
+                            mean = ref_alpha_0[i]
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'alpha_p':
