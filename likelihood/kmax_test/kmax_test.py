@@ -33,6 +33,10 @@ parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed paramet
 parser.add_argument('--Omega_b', dest='Omega_b', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--h', dest='h', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--n_s', dest='n_s', type=float, help='Fixed parameter value.', required=False)
+parser.add_argument('--ref_sigma8', dest='ref_sigma8', help='sigma8 reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_Omegac', dest='ref_Omegac', help='Omegac reference distribution (for initializtion).',
+                    required=False)
 parser.add_argument('--ref_b1', dest='ref_b1', nargs='+', help='b1 reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--ref_b1p', dest='ref_b1p', nargs='+', help='b1p reference distribution (for initializtion).',
@@ -159,8 +163,12 @@ DEFAULT_REF_HOD = {'lMmin_0': 12.95,
 # expfactor': [0.4, 1. ]
 
 if 'sigma8' in fit_params:
+    if args.ref_sigma8 is not None:
+        mean = float(args.ref_sigma8)
+    else:
+        mean = 0.8090212289405192
     info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2},
-                                                    'ref': {'dist': 'norm', 'loc': 0.8090212289405192, 'scale': 0.01},
+                                                    'ref': {'dist': 'norm', 'loc': mean, 'scale': 0.01},
                                                     'latex': '\sigma_8', 'proposal': 0.001}
     if model == 'BACCO':
         info['params']['sigma8']['prior'] = {'min': 0.73, 'max': 0.9}
@@ -169,8 +177,12 @@ elif args.sigma8 is not None:
 else:
     info['params']['sigma8'] = 0.8090212289405192
 if 'Omega_c' in fit_params:
+    if args.ref_Omegac is not None:
+        mean = float(args.ref_Omegac)
+    else:
+        mean = 0.26447041034523616
     info['params']['Omega_c'] = {'prior': {'min': 0.05, 'max': 0.7},
-                                                    'ref': {'dist': 'norm', 'loc': 0.26447041034523616, 'scale': 0.01},
+                                                    'ref': {'dist': 'norm', 'loc': mean, 'scale': 0.01},
                                                     'latex': '\Omega_c', 'proposal': 0.001}
     if model == 'BACCO':
         info['params']['Omega_c']['prior'] = {'min': 0.19, 'max': 0.36}
