@@ -177,7 +177,6 @@ class ClLike(Likelihood):
         self.ic_v = self.ic_v.T
         self.ic_w[self.ic_w < 0] = 0
         self.ndata = len(self.data_vec)
-        self.inv_cov_test = np.linalg.inv(self.cov)
 
     def _get_ell_sampling(self, nl_per_decade=30):
         # Selects ell sampling.
@@ -722,7 +721,7 @@ class ClLike(Likelihood):
         # print(np.sqrt(np.diag(self.cov))/self.data_vec)
         # t = np.random.multivariate_normal(t, self.cov)
         # chi2 = np.dot(r, self.inv_cov.dot(r))
-        # re = np.dot(self.ic_v, r)
-        # chi2 = np.sum(re**2*self.ic_w)
-        chi2 = np.einsum('i,ij,j', r, self.inv_cov_test, r)
+        re = np.dot(self.ic_v, r)
+        chi2 = np.sum(re**2*self.ic_w)
+        # chi2 = np.einsum('i,ij,j', r, self.inv_cov_test, r)
         return -0.5*chi2
