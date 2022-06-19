@@ -246,7 +246,7 @@ class EPTCalculator(object):
             s4 = self.g4 * self.dd_bias[7]
             s4 = s4[:, None]
 
-        if Pnl.shape[0] == self.ks.shape[0]:
+        if Pnl.shape[0] != self.ks.shape[0]:
             pgg = (b11*b12)[:, None] * Pnl
         else:
             pgg = (b11*b12)[:, None] * (np.sqrt(self.g4[:, None])*Pnl + self.g4[:, None]*self.dd_bias[0][None, :])
@@ -358,7 +358,7 @@ class EPTCalculator(object):
         if bsn is None:
             bsn = np.zeros_like(self.g4)
 
-        if Pnl.shape[0] == self.ks.shape[0]:
+        if Pnl.shape[0] != self.ks.shape[0]:
             pgm = b1[:, None] * Pnl
         else:
             pgm = b1[:, None] * (np.sqrt(self.g4[:, None])*Pnl + self.g4[:, None]*self.dd_bias[0][None, :])

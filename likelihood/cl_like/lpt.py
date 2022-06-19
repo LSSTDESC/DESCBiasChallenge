@@ -215,7 +215,7 @@ class LPTCalculator(object):
 
 
 def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
-                 nonlin_pk_type='spt',
+                 nonlin_pk_type='nonlinear',
                  nonloc_pk_type='spt',
                  extrap_order_lok=1, extrap_order_hik=2):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
