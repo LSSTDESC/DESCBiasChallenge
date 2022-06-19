@@ -125,6 +125,9 @@ class LPTCalculator(object):
         if Pgrad is not None:
             Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
         else:
+            Pdmdm = self.lpt_table[:, :, 1]
+            Pdmd1 = 0.5*self.lpt_table[:, :, 2]
+
             Pdmk2 = 0.5*Pdmdm * (self.ks**2)[None, :]
             Pd1k2 = 0.5*Pdmd1 * (self.ks**2)[None, :]
             Pd2k2 = Pdmd2 * (self.ks**2)[None, :]
@@ -196,6 +199,8 @@ class LPTCalculator(object):
         if Pgrad is not None:
             Pdmk2 = 0.5*Pgrad * (self.ks**2)[None, :]
         else:
+            Pdmdm = self.lpt_table[:, :, 1]
+
             Pdmk2 = 0.5*Pdmdm * (self.ks**2)[None, :]
 
         pgm += (b2[:, None] * Pdmd2 +
