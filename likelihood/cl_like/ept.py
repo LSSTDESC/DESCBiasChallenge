@@ -246,8 +246,12 @@ class EPTCalculator(object):
             s4 = self.g4 * self.dd_bias[7]
             s4 = s4[:, None]
 
-        pgg = ((b11*b12)[:, None] * Pnl +
-               0.5*(b11*b22 + b12*b21)[:, None] * Pd1d2 +
+        if Pnl.shape[0] == self.ks.shape[0]:
+            pgg = (b11*b12)[:, None] * Pnl
+        else:
+            pgg = (b11*b12)[:, None] * (np.sqrt(self.g4[:, None])*Pnl + self.g4[:, None]*self.dd_bias[0][None, :])
+
+        pgg += (0.5*(b11*b22 + b12*b21)[:, None] * Pd1d2 +
                0.25*(b21*b22)[:, None] * (Pd2d2 - 2.*s4) +
                0.5*(b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
                0.25*(b21*bs2 + b22*bs1)[:, None] * (Pd2s2 - (4./3.)*s4) +
@@ -354,8 +358,12 @@ class EPTCalculator(object):
         if bsn is None:
             bsn = np.zeros_like(self.g4)
 
-        pgm = (b1[:, None] * Pnl +
-               0.5 * b2[:, None] * Pd1d2 +
+        if Pnl.shape[0] == self.ks.shape[0]:
+            pgm = b1[:, None] * Pnl
+        else:
+            pgm = b1[:, None] * (np.sqrt(self.g4[:, None])*Pnl + self.g4[:, None]*self.dd_bias[0][None, :])
+
+        pgm += (0.5 * b2[:, None] * Pd1d2 +
                0.5 * bs[:, None] * Pd1s2 +
                0.5 * b3nl[:, None] * Pd1d3 +
                0.5 * bk2[:, None] * Pd1k2)
@@ -474,7 +482,7 @@ class EPTCalculator(object):
 
 
 def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
-                 sub_lowk=False, nonlin_pk_type='nonlinear',
+                 sub_lowk=False, nonlin_pk_type='EPT',
                  nonloc_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2,
                  return_ia_bb=False, return_ia_ee_and_bb=False):
@@ -567,6 +575,8 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
         pklin = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
                           for a in ptc.a_s])
         Pnl = ptc.get_pmm(pklin)
+    elif nonlin_pk_type == 'EPT':
+        Pnl = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
     else:
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))

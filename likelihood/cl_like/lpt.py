@@ -122,9 +122,14 @@ class LPTCalculator(object):
         Ps2s2 = 0.25*self.lpt_table[:, :, 10]*self.wk_low[None, :]
         Pdmo3 = 0.25 * self.lpt_table[:, :, 11]
         Pd1o3 = 0.25 * self.lpt_table[:, :, 12]
-        if Pgrad is None:
-            Pgrad = Pnl
-        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+        if Pgrad is not None:
+            Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+        else:
+            Pdmk2 = 0.5*Pdmdm * (self.ks**2)[None, :]
+            Pd1k2 = 0.5*Pdmd1 * (self.ks**2)[None, :]
+            Pd2k2 = Pdmd2 * (self.ks**2)[None, :]
+            Ps2k2 = Pdms2 * (self.ks**2)[None, :]
+            Pk2k2 = 0.25*Pdmdm * (self.ks**4)[None, :]
 
         if b3nl1 is None:
             b3nl1 = np.zeros_like(self.a_s)
@@ -149,8 +154,16 @@ class LPTCalculator(object):
                 (b21*bs2 + b22*bs1)[:, None] * Pd2s2 +
                 (bs1*bs2)[:, None] * Ps2s2 +
                 (b3nl1 + b3nl2)[:, None] * Pdmo3 +
-                (bL11*b3nl2 + bL12*b3nl1)[:, None] * Pd1o3 +
-                (b12*bk21+b11*bk22)[:, None] * Pd1k2)
+                (bL11*b3nl2 + bL12*b3nl1)[:, None] * Pd1o3)
+
+        if Pgrad is not None:
+            pgg += (b12*bk21+b11*bk22)[:, None] * Pd1k2
+        else:
+            pgg += ((bk21 + bk22)[:, None] * Pdmk2 +
+                    (bL12 * bk21 + bL11 * bk22)[:, None] * Pd1k2 +
+                    (b22 * bk21 + b21 * bk22)[:, None] * Pd2k2 +
+                    (bs2 * bk21 + bs1 * bk22)[:, None] * Ps2k2 +
+                    (bk21 * bk22)[:, None] * Pk2k2)
 
         if not cross:
             pgg += bsn1[:, None]
@@ -178,15 +191,17 @@ class LPTCalculator(object):
             pgm = b1[:, None]*Pnl
         Pdmd2 = 0.5*self.lpt_table[:, :, 4]
         Pdms2 = 0.25*self.lpt_table[:, :, 7]
-        Pdmo3 = 0.5 * self.lpt_table[:, :, 11]
-        if Pgrad is None:
-            Pgrad = Pnl
-        Pd1k2 = 0.5*Pgrad * (self.ks**2)[None, :]
+        Pdmo3 = 0.25 * self.lpt_table[:, :, 11]
+
+        if Pgrad is not None:
+            Pdmk2 = 0.5*Pgrad * (self.ks**2)[None, :]
+        else:
+            Pdmk2 = 0.5*Pdmdm * (self.ks**2)[None, :]
 
         pgm += (b2[:, None] * Pdmd2 +
                 bs[:, None] * Pdms2 +
                 b3nl[:, None] * Pdmo3 +
-                bk2[:, None] * Pd1k2)
+                bk2[:, None] * Pdmk2)
 
         return pgm
 
@@ -200,8 +215,8 @@ class LPTCalculator(object):
 
 
 def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
-                 nonlin_pk_type='nonlinear',
-                 nonloc_pk_type='nonlinear',
+                 nonlin_pk_type='spt',
+                 nonloc_pk_type='spt',
                  extrap_order_lok=1, extrap_order_hik=2):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
@@ -278,7 +293,7 @@ def get_lpt_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
         elif nonloc_pk_type == 'spt':
             Pgrad = None
         elif nonloc_pk_type == 'lpt':
-            Pgrad = ptc.get_pmm()
+            Pgrad = None
         else:
             raise NotImplementedError("Non-local option %s "
                                       "not implemented yet" %
