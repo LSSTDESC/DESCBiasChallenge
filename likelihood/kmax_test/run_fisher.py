@@ -995,6 +995,8 @@ for p in info['params']:
     else:
         p_all[p] = info['params'][p]
 
+model = get_model(info)
+
 # Run error estimation fisher code
 # Method: first derivative
 F = fisher.Fisher_first_deri(model=model, parms=p_all, fp_name=list(p0.keys()),
