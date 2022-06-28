@@ -1029,15 +1029,15 @@ if args.sampler_type == 'minimizer':
 
     # Method: second derivative
     # Run error estimation fisher code
-    F = fisher.Fisher_second_deri(model, p_all, list(pf.keys()), 0.01)
-    cov, FM = F.get_cov()
-
-    p0vals = list(p0.values())
-    pfvals = list(pf.values())
-
-    # Save data to file
-    np.savez(info['output']+'.fisher_sd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov,
-             fisher=FM)
+    # F = fisher.Fisher_second_deri(model, p_all, list(pf.keys()), 0.01)
+    # cov, FM = F.get_cov()
+    #
+    # p0vals = list(p0.values())
+    # pfvals = list(pf.values())
+    #
+    # # Save data to file
+    # np.savez(info['output']+'.fisher_sd.npz', bf=pfvals, truth=p0vals, chi2_bf=pf_chi2, chi2_truth=p0_chi2, cov=cov,
+    #          fisher=FM)
 
 elif args.sampler_type == 'mcmc':
     from mpi4py import MPI
