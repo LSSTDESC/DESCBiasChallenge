@@ -1,0 +1,231 @@
+sampler:
+  minimize:
+    ignore_prior: True
+    max_evals: 10000
+
+params:
+  sigma8:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.8090212289405192
+      scale: 0.01
+    latex: \sigma_8
+    proposal: 0.001
+  Omega_c:
+    prior:
+      min: 0.05
+      max: 0.7
+    ref:
+      dist: norm
+      loc: 0.26447041034523616
+      scale: 0.01
+    latex: \Omega_c
+    proposal: 0.001
+  Omega_b:
+    prior:
+      min: 0.01
+      max: 0.2
+    ref:
+      dist: norm
+      loc: 0.049301692328524445
+      scale: 0.01
+    latex: \Omega_b
+    proposal: 0.001
+  h:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.6736
+      scale: 0.01
+    latex: h
+    proposal: 0.001
+  n_s:
+    prior:
+      min: 0.1
+      max: 1.2
+    ref:
+      dist: norm
+      loc: 0.9649
+      scale: 0.01
+    latex: n_s
+    proposal: 0.001
+  m_nu: 0.06
+  cllike_cl1_b1:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 2.
+      scale: 0.01
+    latex: blank
+    proposal: 0.001
+  # cllike_cl2_b1: 2.
+  # cllike_cl3_b1: 2.
+  # cllike_cl4_b1: 2.
+  # cllike_cl5_b1: 2.
+  # cllike_cl6_b1: 2.
+  cllike_cl1_b1p:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: blank
+    proposal: 0.001
+  # cllike_cl2_b1p: 0.
+  # cllike_cl3_b1p: 0.
+  # cllike_cl4_b1p: 0.
+  # cllike_cl5_b1p: 0.
+  # cllike_cl6_b1p: 0.
+  cllike_cl1_b2:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: blank
+    proposal: 0.001
+  # cllike_cl2_b2: 0.
+  # cllike_cl3_b2: 0.
+  # cllike_cl4_b2: 0.
+  # cllike_cl5_b2: 0.
+  # cllike_cl6_b2: 0.
+  cllike_cl1_bs:
+    prior:
+      min: -100.0
+      max: 100.0
+    ref:
+      dist: norm
+      loc: 0.
+      scale: 0.01
+    latex: blank
+    proposal: 0.001
+  # cllike_cl2_bs: 0.
+  # cllike_cl3_bs: 0.
+  # cllike_cl4_bs: 0.
+  # cllike_cl5_bs: 0.
+  # cllike_cl6_bs: 0.
+
+# CCL settings
+theory:
+  cl_like.CCL:
+    transfer_function: eisenstein_hu
+    matter_pk: halofit
+    baryons_pk: nobaryons
+
+# Likelihood settings # TESTING
+likelihood:
+  cl_like.ClLike:
+    # Input sacc file
+    input_file: ../../../data/fid_red_HOD.fits
+    # List all relevant bins. The clustering
+    # bins are clX, the shear bins are shX.
+    bins:
+      - name: cl1
+#      - name: cl2
+#      - name: cl3
+#      - name: cl4
+#      - name: cl5
+#      - name: cl6
+#      - name: sh1
+#      - name: sh2
+#      - name: sh3
+#      - name: sh4
+#      - name: sh5
+    # List all 2-points that should go into the
+    # data vector. For now we only include
+    # galaxy-galaxy auto-correlations, but all
+    # galaxy-shear and shear-shear correlations.
+    twopoints:
+      - bins: [cl1, cl1]
+#      - bins: [cl2, cl2]
+#      - bins: [cl3, cl3]
+#      - bins: [cl4, cl4]
+#      - bins: [cl5, cl5]
+#      - bins: [cl6, cl6]
+#      - bins: [cl1, sh1]
+#      - bins: [cl1, sh2]
+#      - bins: [cl1, sh3]
+#      - bins: [cl1, sh4]
+#      - bins: [cl1, sh5]
+#      - bins: [cl2, sh1]
+#      - bins: [cl2, sh2]
+#      - bins: [cl2, sh3]
+#      - bins: [cl2, sh4]
+#      - bins: [cl2, sh5]
+#      - bins: [cl3, sh1]
+#      - bins: [cl3, sh2]
+#      - bins: [cl3, sh3]
+#      - bins: [cl3, sh4]
+#      - bins: [cl3, sh5]
+#      - bins: [cl4, sh1]
+#      - bins: [cl4, sh2]
+#      - bins: [cl4, sh3]
+#      - bins: [cl4, sh4]
+#      - bins: [cl4, sh5]
+#      - bins: [cl5, sh1]
+#      - bins: [cl5, sh2]
+#      - bins: [cl5, sh3]
+#      - bins: [cl5, sh4]
+#      - bins: [cl5, sh5]
+#      - bins: [cl6, sh1]
+#      - bins: [cl6, sh2]
+#      - bins: [cl6, sh3]
+#      - bins: [cl6, sh4]
+#      - bins: [cl6, sh5]
+#      - bins: [sh1, sh1]
+#      - bins: [sh1, sh2]
+#      - bins: [sh1, sh3]
+#      - bins: [sh1, sh4]
+#      - bins: [sh1, sh5]
+#      - bins: [sh2, sh2]
+#      - bins: [sh2, sh3]
+#      - bins: [sh2, sh4]
+#      - bins: [sh2, sh5]
+#      - bins: [sh3, sh3]
+#      - bins: [sh3, sh4]
+#      - bins: [sh3, sh5]
+#      - bins: [sh4, sh4]
+#      - bins: [sh4, sh5]
+#      - bins: [sh5, sh5]
+
+    defaults:
+      # Scale cut for galaxy clustering
+      # (ignored for shear-shear)
+      kmax: 0.15
+      # These one will apply to all power
+      # spectra (unless the lmax corresponding
+      # to the chosen kmax is smaller).
+      lmin: 0
+#      lmax: 2000
+#      sh1:
+#        lmin: 30
+#      sh2:
+#        lmin: 30
+#      sh3:
+#        lmin: 30
+#      sh4:
+#        lmin: 30
+#      sh5:
+#        lmin: 30
+
+    # Prefix associated to all nuisance params
+    input_params_prefix: clk
+    ia_model: IANone
+    nz_model: NzNone
+    shape_model: ShapeNone
+    # Linear, EulerianPT, LagrangianPT
+    bz_model: LagrangianPT
+
+debug: True
+output: 'cobaya_out/red_HOD_bin=cl1_PT=EuPT_kmax=0p15'

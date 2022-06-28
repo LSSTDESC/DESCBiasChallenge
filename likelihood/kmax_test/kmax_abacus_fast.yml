@@ -3,11 +3,10 @@ sampler:
     # method: scipy
     ignore_prior: True
     max_evals: 100000000
-    best_of: 2
     override_bobyqa:
       # option: value
       # More stringent convergence criterion
-      rhoend: 0.00000001
+      rhoend: 0.00001
       user_params:
         slow.max_slow_iters: 1000
 

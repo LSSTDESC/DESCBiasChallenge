@@ -150,7 +150,8 @@ class EPTCalculator(object):
     def get_pgg(self, Pnl,
                 b11, b21, bs1, b12, b22, bs2,
                 sub_lowk, b3nl1=None, b3nl2=None,
-                bk21=None, bk22=None, Pgrad=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, bsnx=None,
+                Pgrad=None):
         """ Get the number counts auto-spectrum at the internal
         set of wavenumbers (given by this object's `ks` attribute)
         and a number of redshift values.
@@ -194,7 +195,7 @@ class EPTCalculator(object):
         """
         # Clarification:
         # We are expanding the galaxy overdensity as:
-        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2
+        #   d_g = b1 d + b2 d2^2/2 + bs s^2/2 + b3 psi/2
         # (see cell 10 in https://github.com/JoeMcEwen/FAST-PT/blob/
         # master/examples/fastpt_examples.ipynb).
         # The `dd_bias` array below contains the following power
@@ -207,6 +208,14 @@ class EPTCalculator(object):
         # So: the d^2 and s^2 are not divided by 2
         # Also, the spectra marked with (!) tend to a constant
         # as k-> 0, which we can suppress with a low-pass filter.
+
+        b1_list = [b11, b21, bs1, bk21, bsn1, b3nl1]
+        b2_list = [b12, b22, bs2, bk22, bsn2, b3nl2]
+
+        cross = True
+        if np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]):
+            cross = False
+
         Pd1d2 = self.g4[:, None] * self.dd_bias[2][None, :]
         Pd2d2 = self.g4[:, None] * (self.dd_bias[3]*self.wk_low)[None, :]
         Pd1s2 = self.g4[:, None] * self.dd_bias[4][None, :]
@@ -225,20 +234,35 @@ class EPTCalculator(object):
             bk21 = np.zeros_like(self.g4)
         if bk22 is None:
             bk22 = np.zeros_like(self.g4)
+        if bsn1 is None:
+            bsn1 = np.zeros_like(self.g4)
+        if bsn2 is None:
+            bsn2 = np.zeros_like(self.g4)
+        if bsnx is None:
+            bsnx = np.zeros_like(self.g4)
 
         s4 = 0.
         if sub_lowk:
             s4 = self.g4 * self.dd_bias[7]
             s4 = s4[:, None]
 
-        pgg = ((b11*b12)[:, None] * Pnl +
-               0.5*(b11*b22 + b12*b21)[:, None] * Pd1d2 +
+        if Pnl.shape[0] != self.ks.shape[0]:
+            pgg = (b11*b12)[:, None] * Pnl
+        else:
+            pgg = (b11*b12)[:, None] * (np.sqrt(self.g4[:, None])*Pnl + self.g4[:, None]*self.dd_bias[0][None, :])
+
+        pgg += (0.5*(b11*b22 + b12*b21)[:, None] * Pd1d2 +
                0.25*(b21*b22)[:, None] * (Pd2d2 - 2.*s4) +
                0.5*(b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
                0.25*(b21*bs2 + b22*bs1)[:, None] * (Pd2s2 - (4./3.)*s4) +
                0.25*(bs1*bs2)[:, None] * (Ps2s2 - (8./9.)*s4) +
                0.5*(b12*b3nl1+b11*b3nl2)[:, None] * Pd1d3 +
                0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2)
+
+        if not cross:
+            pgg += bsn1[:, None]
+        else:
+            pgg += bsnx[:, None]
 
         return pgg*self.exp_cutoff
 
@@ -284,7 +308,7 @@ class EPTCalculator(object):
         return pgi*self.exp_cutoff
 
     def get_pgm(self, Pnl, b1, b2, bs, b3nl=None,
-                bk2=None, Pgrad=None):
+                bk2=None, bsn=None, Pgrad=None):
         """ Get the number counts - matter cross-spectrum at the
         internal set of wavenumbers (given by this object's `ks`
         attribute) and a number of redshift values.
@@ -331,9 +355,15 @@ class EPTCalculator(object):
             b3nl = np.zeros_like(self.g4)
         if bk2 is None:
             bk2 = np.zeros_like(self.g4)
+        if bsn is None:
+            bsn = np.zeros_like(self.g4)
 
-        pgm = (b1[:, None] * Pnl +
-               0.5 * b2[:, None] * Pd1d2 +
+        if Pnl.shape[0] != self.ks.shape[0]:
+            pgm = b1[:, None] * Pnl
+        else:
+            pgm = b1[:, None] * (np.sqrt(self.g4[:, None])*Pnl + self.g4[:, None]*self.dd_bias[0][None, :])
+
+        pgm += (0.5 * b2[:, None] * Pd1d2 +
                0.5 * bs[:, None] * Pd1s2 +
                0.5 * b3nl[:, None] * Pd1d3 +
                0.5 * bk2[:, None] * Pd1k2)
@@ -451,8 +481,8 @@ class EPTCalculator(object):
         return pmm*self.exp_cutoff
 
 
-def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
-                 sub_lowk=False, nonlin_pk_type='nonlinear',
+def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
+                 sub_lowk=False, nonlin_pk_type='EPT',
                  nonloc_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2,
                  return_ia_bb=False, return_ia_ee_and_bb=False):
@@ -545,6 +575,8 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
         pklin = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
                           for a in ptc.a_s])
         Pnl = ptc.get_pmm(pklin)
+    elif nonlin_pk_type == 'EPT':
+        Pnl = ccl.linear_matter_power(cosmo, ptc.ks, 1.)
     else:
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))
@@ -570,19 +602,43 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
         b11 = tracer1.b1(z_arr)
         b21 = tracer1.b2(z_arr)
         bs1 = tracer1.bs(z_arr)
-        b31 = tracer1.b3nl(z_arr)
-        bk21 = tracer1.bk2(z_arr)
+        if hasattr(tracer1, 'b3nl'):
+            b31 = tracer1.b3nl(z_arr)
+        else:
+            b31 = None
+        if hasattr(tracer1, 'bk2'):
+            bk21 = tracer1.bk2(z_arr)
+        else:
+            bk21 = None
+        if hasattr(tracer1, 'sn'):
+            bsn1 = tracer1.sn(z_arr)
+        else:
+            bsn1 = None
         if (tracer2.type == 'NC'):
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            b32 = tracer2.b3nl(z_arr)
-            bk22 = tracer2.bk2(z_arr)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
+            if hasattr(tracer2, 'sn'):
+                bsn2 = tracer2.sn(z_arr)
+            else:
+                bsn2 = None
+
+            if bsnx is not None:
+                bsnx = bsnx*np.ones_like(z_arr)
 
             p_pt = ptc.get_pgg(Pnl,
                                b11, b21, bs1, b12, b22, bs2,
                                sub_lowk, b3nl1=b31, b3nl2=b32,
                                bk21=bk21, bk22=bk22,
+                               bsn1=bsn1, bsn2=bsn2, bsnx=bsnx,
                                Pgrad=Pgrad)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)
@@ -592,7 +648,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
                                b11, b21, bs1, c12, c22, cd2)
         elif (tracer2.type == 'M'):
             p_pt = ptc.get_pgm(Pnl,
-                               b11, b21, bs1, b3nl=b31, bk2=bk21,
+                               b11, b21, bs1, b3nl=b31, bk2=bk21, bsn=bsn1,
                                Pgrad=Pgrad)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
@@ -613,8 +669,14 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            b32 = tracer2.b3nl(z_arr)
-            bk22 = tracer2.bk2(z_arr)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
             p_pt = ptc.get_pgi(Pnl,
                                b12, b22, bs2, b3nl=b32, bk2=bk22,
                                Pgrad=Pgrad)
@@ -629,10 +691,21 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None,
             b12 = tracer2.b1(z_arr)
             b22 = tracer2.b2(z_arr)
             bs2 = tracer2.bs(z_arr)
-            b32 = tracer2.b3nl(z_arr)
-            bk22 = tracer2.bk2(z_arr)
+            if hasattr(tracer2, 'b3nl'):
+                b32 = tracer2.b3nl(z_arr)
+            else:
+                b32 = None
+            if hasattr(tracer2, 'bk2'):
+                bk22 = tracer2.bk2(z_arr)
+            else:
+                bk22 = None
+            if hasattr(tracer2, 'sn'):
+                bsn2 = tracer2.sn(z_arr)
+            else:
+                bsn2 = None
+
             p_pt = ptc.get_pgm(Pnl,
-                               b12, b22, bs2, b3nl=b32, bk2=bk22,
+                               b12, b22, bs2, b3nl=b32, bk2=bk22, bsn=bsn2,
                                Pgrad=Pgrad)
         elif (tracer2.type == 'IA'):
             c12 = tracer2.c1(z_arr)
