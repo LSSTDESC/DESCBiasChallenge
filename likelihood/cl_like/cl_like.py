@@ -397,7 +397,13 @@ class ClLike(Likelihood):
 
         if (self.bz_model == 'Linear') or (self.bz_model == 'BzNone'):
             if (q1 == 'galaxy_density') and (q2 == 'galaxy_density'):
-                return pkd['pk_mm']  # galaxy-galaxy
+                pk = pkd['pk_mm']
+                pref = self.input_params_prefix
+                bsn = pars.get(pref + '_bsn', None)
+                sn = bsn
+                if sn is not None:
+                    pk += sn
+                return pk  # galaxy-galaxy
             elif ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
                 return pkd['pk_mm']  # matter-matter
             else:

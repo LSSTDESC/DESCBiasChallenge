@@ -98,7 +98,7 @@ fit_params = args.fit_params
 name_like = args.name_like
 
 # Set model
-if bias_model == 'lin':
+if 'lin' in bias_model:
     model = 'Linear'
 elif 'EuPT' in bias_model:
     model = 'EulerianPT'
@@ -297,7 +297,7 @@ else:
 if model == 'BACCO' or model == 'anzu' or model == 'EulerianPT' or model == 'LagrangianPT':
     bpar = ['1', '1p', '2', '2p', 's', '3nl', 'k2', 'sn']
 elif model == 'Linear':
-    bpar = ['1','1p']
+    bpar = ['1', '1p', 'sn']
 elif model == 'HOD_evol':
     bpar = ['lMmin_0', 'lMmin_p',
             'siglM_0', 'siglM_p',
