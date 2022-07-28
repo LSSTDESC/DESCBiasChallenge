@@ -11,7 +11,7 @@ from .halo_mod_corr import HaloModCorrection
 from cobaya.likelihood import Likelihood
 from cobaya.log import LoggedError
 from anzu.emu_funcs import LPTEmulator
-import baccoemu_beta as baccoemu
+## import baccoemu_beta as baccoemu
 from pyccl.pk2d import Pk2D
 
 
@@ -456,15 +456,21 @@ class ClLike(Likelihood):
             else:
                 ptt1 = trs[clm['bin_1']]['PT_tracer']
                 ptt2 = trs[clm['bin_2']]['PT_tracer']
+                
+                pref2 = self.input_params_prefix
+                fnl = pars.get(pref2 + '_fnl', None)
 
                 if clm['bin_1'] != clm['bin_2']:
-                    pref = self.input_params_prefix + '_' + clm['bin_1']+'x'+clm['bin_2']
+                    pref = self.input_params_prefix + '_' + clm['bin_1']+'x'+clm['bin_2'] #get rid of + for fnl
+                    
                     bsnx = pars.get(pref + '_bsnx', None)
+                    
                 else:
                     bsnx = None
-
+                    
+            
                 pk_pt = get_anzu_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                       ptc=pkd['ptc'], bsnx=bsnx)
+                                       ptc=pkd['ptc'], bsnx=bsnx, fnl=fnl)
                 return pk_pt
         elif ('HOD_evol' in self.bz_model or 'HOD_bin' in self.bz_model):
             # Halo model calculation

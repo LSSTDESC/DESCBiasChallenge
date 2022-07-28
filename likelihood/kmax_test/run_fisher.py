@@ -53,6 +53,8 @@ parser.add_argument('--ref_bsn', dest='ref_bsn', nargs='+', help='bsn reference 
                     required=False)
 parser.add_argument('--ref_bsnx', dest='ref_bsnx', nargs='+', help='bsnx reference distribution (for initializtion).',
                     required=False)
+parser.add_argument('--ref_fnl', dest='ref_fnl', nargs='+', help='fnl reference distribution (for initialization)',
+                   required=False)
 parser.add_argument('--ref_HOD', dest='ref_HOD', nargs='+', help='HOD reference distribution (for initializtion).',
                     required=False)
 parser.add_argument('--ref_lMmin_0', dest='ref_lMmin_0', nargs='+', help='lMmin_0 reference distribution (for initializtion).',
@@ -167,15 +169,28 @@ if 'sigma8' in fit_params:
         mean = float(args.ref_sigma8)
     else:
         mean = 0.8090212289405192
-    info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2},
+    info['params']['sigma8'] = {'prior': {'min': 0.1, 'max': 1.2}, 
                                                     'ref': {'dist': 'norm', 'loc': mean, 'scale': 0.01},
-                                                    'latex': '\sigma_8', 'proposal': 0.001}
+                                                    'latex': '\sigma_8', 'proposal': 0.001} 
     if model == 'BACCO':
-        info['params']['sigma8']['prior'] = {'min': 0.73, 'max': 0.9}
+        info['params']['sigma8']['prior'] = {'min': 0.73, 'max': 0.9} 
 elif args.sigma8 is not None:
-    info['params']['sigma8'] = args.sigma8
+    info['params']['sigma8'] = args.sigma8 
 else:
     info['params']['sigma8'] = 0.8090212289405192
+    
+if 'fnl' in fit_params:
+    if args.ref_fnl is not None:
+        mean = float(args.ref_fnl[0]) ## only want the part that's a float. index the list and get the element we want
+    else:
+        mean = 10
+    info['params']['fnl'] = {'prior': {'min': -500., 'max': 500.}, 
+                                                    'ref': {'dist': 'norm', 'loc': mean, 'scale': 0.01},
+                                                    'latex': 'f_nl', 'proposal': 0.001}
+else:
+    info['params']['fnl'] = args.ref_fnl 
+    
+    
 if 'Omega_c' in fit_params:
     if args.ref_Omegac is not None:
         mean = float(args.ref_Omegac)
@@ -483,15 +498,20 @@ if args.ref_alpha_p is not None:
             ref_alpha_p[i] = None
 else:
     ref_alpha_p = [None for i in range(7)]
-if args.ref_bsnx is not None:
-    ref_bsnx = [0 for i in range(len(args.ref_bsnx))]
-    for i, ref in enumerate(args.ref_bsnx):
+    
+    
+if args.ref_fnl is not None:
+    ref_fnl = [0 for i in range(len(args.ref_fnl))]
+    for i, ref in enumerate(args.ref_fnl):
         if ref != 'None':
-            ref_bsnx[i] = float(ref)
+            ref_fnl[i] = float(ref)
         else:
-            ref_bsnx[i] = None
+            ref_fnl[i] = None
 else:
-    ref_bsnx = [None for i in range(15)]
+    ref_fnl = [None for i in range(1)]
+    
+    
+    
 if args.ref_alpha_HMCODE is not None:
     ref_alpha_HMCODE = float(args.ref_alpha_HMCODE)
 else:

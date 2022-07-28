@@ -101,8 +101,39 @@ class HEFTCalculator(object):
         self.lpt_table /= cosmo['h']**3
         self.ks = k_emu*cosmo['h']
 
+
+
+    def delta_b(self, cosmo, a, k):
+        """
+        inputs:
+            cosmo: Cosmological parameters.
+            a: scale factor
+            k: wave vector
+            
+        calculates correction parameter that needs to be added to b1 under nongaussian conditions
+        
+        """
+        
+        growth_factor = ccl.background.growth_factor(cosmo, a)
+        h = cosmo['h'] * 100
+        Om = cosmo['Omega_m']
+        constant = (h/(2.998 * (10 ** 8))) ** 2
+        delta_c = 1.686
+        t_k = ccl.power.linear_matter_power(cosmo, k, 1) / k**(cosmo['ns'])
+        t_kl = ccl.power.linear_matter_power(cosmo, 10**-4, 1) / 10**-4
+        t_k /= t_kl
+        
+        
+        b = 3 * delta_c * Om * constant / (k ** 2 * t_k * growth_factor)
+        
+        return b
+
+
+
+
+
     def get_pgg(self, b11, b21, bs1, b12, b22, bs2,
-                bk21=None, bk22=None, bsn1=None, bsn2=None, bsnx=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, bsnx=None, fnl=None):
         """ 
         Get P_gg between two tracer samples with sets of bias params starting from the heft component spectra
     
@@ -162,7 +193,7 @@ class HEFTCalculator(object):
         if np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]):
             cross = False
 
-        bL11 = b11 - 1
+        bL11 = b11 - 1 + self.delta_b(self.cosmo, self.ks, self.a_arr)
         bL12 = b12 - 1
 
         if bk21 is None:
@@ -207,7 +238,7 @@ class HEFTCalculator(object):
         return p_hh
 
     def get_pgg_debug(self, b11, b21, bs1, b12, b22, bs2,
-                bk21=None, bk22=None, bsn1=None, bsn2=None):
+                bk21=None, bk22=None, bsn1=None, bsn2=None, fnl=None):
         """
         Get P_gg between two tracer samples with sets of bias params starting from the heft component spectra
 
@@ -266,7 +297,7 @@ class HEFTCalculator(object):
         assert np.all([np.all(b1_list[i] == b2_list[i]) for i in range(len(b1_list))]), \
             'Two populations of tracers are not yet implemented for HEFT!'
 
-        bL11 = b11 - 1
+        bL11 = b11 - 1 + self.delta_b(self.cosmo, self.ks, self.a_arr)
         bL12 = b12 - 1
 
         if bk21 is None:
@@ -297,7 +328,7 @@ class HEFTCalculator(object):
 
         return p_hh, p_sn
 
-    def get_pgm(self, b1, b2, bs, bk2=None, bsn=None):
+    def get_pgm(self, b1, b2, bs, bk2=None, bsn=None, fnl=None):
         """ Get P_gm for a set of bias parameters from the heft component spectra
        
           Inputs: 
@@ -312,7 +343,7 @@ class HEFTCalculator(object):
         if bsn is None:
             bsn = np.zeros_like(self.a_arr)
 
-        bL1 = b1 - 1.
+        bL1 = b1 - 1. + self.delta_b(self.cosmo, self.ks, self.a_arr)
 
         # hm correlations only have one kind of <1,delta_i> correlation
         bterms_hm = [np.ones(self.nas),
@@ -332,7 +363,7 @@ class HEFTCalculator(object):
 
         return p_hm
 
-def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None):
+def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None, fnl=None):
     """Returns a :class:`~pyccl.pk2d.Pk2D` object containing
     the PT power spectrum for two quantities defined by
     two :class:`~pyccl.nl_pt.tracers.PTTracer` objects.
@@ -376,10 +407,10 @@ def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None):
             if bsnx is not None:
                 bsnx = bsnx*np.ones_like(z_arr)
 
-            p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, bsn1, bsn2, bsnx)
+            p_pt = ptc.get_pgg(b11, b21, bs1, b12, b22, bs2, bk21, bk22, bsn1, bsn2, bsnx, fnl = fnl)
 
         elif (tracer2.type == 'M'):
-            p_pt = ptc.get_pgm(b11, b21, bs1, bk21, bsn1)
+            p_pt = ptc.get_pgm(b11, b21, bs1, bk21, bsn1, fnl = fnl)
         else:
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
@@ -398,7 +429,7 @@ def get_anzu_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None):
             else:
                 bsn2 = None
             
-            p_pt = ptc.get_pgm(b12, b22, bs2, bk22, bsn2)
+            p_pt = ptc.get_pgm(b12, b22, bs2, bk22, bsn2, fnl = fnl)
         elif (tracer2.type == 'M'):
             raise NotImplementedError("Combination %s-%s not implemented yet" %
                                       (tracer1.type, tracer2.type))
