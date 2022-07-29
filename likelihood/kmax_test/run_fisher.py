@@ -184,11 +184,11 @@ if 'fnl' in fit_params:
         mean = float(args.ref_fnl[0]) ## only want the part that's a float. index the list and get the element we want
     else:
         mean = 10
-    info['params']['fnl'] = {'prior': {'min': -500., 'max': 500.}, 
+    info['params'][info['likelihood'][name_like]['input_params_prefix']+'_fnl'] = {'prior': {'min': -500., 'max': 500.},
                                                     'ref': {'dist': 'norm', 'loc': mean, 'scale': 0.01},
                                                     'latex': 'f_nl', 'proposal': 0.001}
 else:
-    info['params']['fnl'] = args.ref_fnl 
+    info['params'][info['likelihood'][name_like]['input_params_prefix']+'_fnl'] = args.ref_fnl
     
     
 if 'Omega_c' in fit_params:
