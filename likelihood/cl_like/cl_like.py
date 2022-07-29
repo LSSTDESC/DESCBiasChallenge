@@ -5,7 +5,7 @@ import pyccl as ccl
 from . import tracers as pt
 from .lpt import LPTCalculator, get_lpt_pk2d
 from .ept import EPTCalculator, get_ept_pk2d
-from .bacco import BACCOCalculator, get_bacco_pk2d
+## from .bacco import BACCOCalculator, get_bacco_pk2d
 from .heft import HEFTCalculator, get_anzu_pk2d
 from .halo_mod_corr import HaloModCorrection
 from cobaya.likelihood import Likelihood
@@ -48,8 +48,8 @@ class ClLike(Likelihood):
         # Initialize emu to train it once
         if self.bz_model == 'anzu':
             self.emu = LPTEmulator(kecleft=True, extrap=False)
-        if self.bz_model == 'BACCO':
-            self.emu = baccoemu.Lbias_expansion()
+        ##if self.bz_model == 'BACCO':
+            ##self.emu = baccoemu.Lbias_expansion()
 
     def _read_data(self):
         """
