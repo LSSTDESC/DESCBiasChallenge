@@ -5,6 +5,7 @@ from velocileptors.EPT.cleft_kexpanded_resummed_fftw import RKECLEFT
 from scipy.interpolate import interp1d
 
 
+
 class HEFTCalculator(object):
     """ Class implements observables in 'Hybrid EFT'
     using anzu ( github.com/kokron/anzu ). Stephen Chen's
@@ -119,7 +120,7 @@ class HEFTCalculator(object):
         Om = cosmo['Omega_m']
         constant = (h/(2.998 * (10 ** 8))) ** 2
         delta_c = 1.686
-        t_k = ccl.power.linear_matter_power(cosmo, k, 1) / k**(cosmo['ns'])
+        t_k = ccl.power.linear_matter_power(cosmo, k, 1) / k**(cosmo['n_s']) 
         t_kl = ccl.power.linear_matter_power(cosmo, 10**-4, 1) / 10**-4
         t_k /= t_kl
         

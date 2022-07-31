@@ -581,7 +581,7 @@ params:
       - *id002
       - !!binary |
         AAAAAADMpkA=
-  fnl:
+  cllike_fnl:
     latex: f_nl
     prior:
       max: 500.0
