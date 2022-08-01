@@ -1030,10 +1030,10 @@ np.savez(info['output']+'.fisher_fd.npz', truth=p0vals, cov=cov, fisher=FM)
 
 # Method: second derivative
 # Run error estimation fisher code
-F = fisher.Fisher_second_deri(model, p_all, list(p0.keys()), 0.01)
-cov, FM = F.get_cov()
+# F = fisher.Fisher_second_deri(model, p_all, list(p0.keys()), 0.01)
+# cov, FM = F.get_cov()
 
-p0vals = list(p0.values())
+# p0vals = list(p0.values())
 
 # Save data to file
-np.savez(info['output']+'.fisher_sd.npz', truth=p0vals, cov=cov, fisher=FM)
+# np.savez(info['output']+'.fisher_sd.npz', truth=p0vals, cov=cov, fisher=FM)

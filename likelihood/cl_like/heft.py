@@ -114,20 +114,24 @@ class HEFTCalculator(object):
         calculates correction parameter that needs to be added to b1 under nongaussian conditions
         
         """
-        
+        print('COSMO: ', cosmo)
+        print("K: ", k)
         growth_factor = ccl.background.growth_factor(cosmo, a)
         h = cosmo['h'] * 100
         Om = cosmo['Omega_m']
         constant = (h/(2.998 * (10 ** 8))) ** 2
-        delta_c = 1.686
-        t_k = ccl.power.linear_matter_power(cosmo, k, 1) / k**(cosmo['n_s']) 
-        t_kl = ccl.power.linear_matter_power(cosmo, 10**-4, 1) / 10**-4
+        density_c = 1.686
+        t_k = ccl.power.linear_matter_power(cosmo, k, 1) / (k**(cosmo['n_s'])) #need () around k**?
+        t_kl = ccl.power.linear_matter_power(cosmo, 10**-4, 1) / ((10**-4)**cosmo['n_s'])
         t_k /= t_kl
         
+        twoD = growth_factor[:, np.newaxis] * t_k #create 2D array from 2 1D arrays. len(a) by len(k)
         
-        b = 3 * delta_c * Om * constant / (k ** 2 * t_k * growth_factor)
+        denom = (k**2)*twoD
         
-        return b
+        b = 3 * density_c * Om * (constant / denom)
+        
+        return b 
 
 
 
@@ -195,7 +199,7 @@ class HEFTCalculator(object):
             cross = False
 
         bL11 = b11 - 1 + self.delta_b(self.cosmo, self.ks, self.a_arr)
-        bL12 = b12 - 1
+        bL12 = b12 - 1 + self.delta_b(self.cosmo, self.ks, self.a_arr)
 
         if bk21 is None:
             bk21 = np.zeros_like(self.a_arr)
@@ -219,9 +223,9 @@ class HEFTCalculator(object):
                      bL11+bL12, bL11*bL12,
                      0.5*(b21+b22), 0.5*(b21*bL12+b22*bL11), 0.25*b21*b22,
                      0.5*(bs1+bs2), 0.5*(bs1*bL12+bs2*bL11), 0.25*(bs1*b22+bs2*b21), 0.25*bs1*bs2,
-                     0.5*(bk21+bk22), 0.5*(bk21*bL12+bk22+bL11), 0.25*(bk21*b22+bk22*b21), 0.25*(bk21*bs2+bk22*bs1)]
+                     0.5*(bk21+bk22), 0.5*(bk21*bL12+bk22+bL11), 0.25*(bk21*b22+bk22*b21), 0.25*(bk21*bs2+bk22*bs1)] #14 entries
 
-        pkvec = np.zeros(shape=(self.nas, 14, len(self.ks)))
+        pkvec = np.zeros(shape=(self.nas, 14, len(self.ks))) #array of 0, nas x 14 x k_vector
         pkvec[:,:10] = self.lpt_table
         # IDs for the <nabla^2, X> ~ -k^2 <1, X> approximation.
         nabla_idx = [0, 1, 3, 6]
@@ -232,7 +236,7 @@ class HEFTCalculator(object):
         if not cross:
             p_hh = np.einsum('bz, zbk->zk', bterms_hh, pkvec) + np.einsum('z, zk->zk', bsn1,
                                                                           np.ones(shape=(self.nas, len(self.ks))))
-        else:
+        else: 
             p_hh = np.einsum('bz, zbk->zk', bterms_hh, pkvec) + np.einsum('z, zk->zk', bsnx,
                                                                           np.ones(shape=(self.nas, len(self.ks))))
 
