@@ -521,8 +521,18 @@ class ClLike(Likelihood):
                         bsnx = pars.get(pref + '_bsnx', None)
                         sn = bsnx
                     pref = self.input_params_prefix + '_hod_'
-                    alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
-                    k_supress = pars.get(pref + 'k_supress', None)
+                    if pref + 'alpha_HMCODE' in pars:
+                        alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
+                    elif pref + 'alpha_HMCODE_gg' in pars:
+                        alpha_HMCODE = pars.get(pref + 'alpha_HMCODE_gg', None)
+                    else:
+                        alpha_HMCODE = None
+                    if pref + 'k_supress' in pars:
+                        k_supress = pars.get(pref + 'k_supress', None)
+                    elif pref + 'k_supress_gg' in pars:
+                        k_supress = pars.get(pref + 'k_supress_gg', None)
+                    else:
+                        k_supress = None
                     if alpha_HMCODE is not None:
                         smooth_transition = lambda a: alpha_HMCODE_func(alpha_HMCODE, a)
                     else:
@@ -552,8 +562,18 @@ class ClLike(Likelihood):
                     pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_2']]['HOD_params']))
 
                     pref = self.input_params_prefix + '_hod_'
-                    alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
-                    k_supress = pars.get(pref + 'k_supress', None)
+                    if pref + 'alpha_HMCODE' in pars:
+                        alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
+                    elif pref + 'alpha_HMCODE_ggl' in pars:
+                        alpha_HMCODE = pars.get(pref + 'alpha_HMCODE_ggl', None)
+                    else:
+                        alpha_HMCODE = None
+                    if pref + 'k_supress' in pars:
+                        k_supress = pars.get(pref + 'k_supress', None)
+                    elif pref + 'k_supress_ggl' in pars:
+                        k_supress = pars.get(pref + 'k_supress_ggl', None)
+                    else:
+                        k_supress = None
                     if alpha_HMCODE is not None:
                         smooth_transition = lambda a: alpha_HMCODE_func(alpha_HMCODE, a)
                     else:
@@ -579,8 +599,18 @@ class ClLike(Likelihood):
                     pg = ccl.halos.HaloProfileHOD(cm, **(trs[clm['bin_1']]['HOD_params']))
 
                     pref = self.input_params_prefix + '_hod_'
-                    alpha_HMCODE = pars.get(pref + 'alpha_HMCODE', None)
-                    k_supress = pars.get(pref + 'k_supress', None)
+                    if pref + 'alpha_HMCODE' in pars:
+                        alpha_HMCODE = pars.get(pref+'alpha_HMCODE', None)
+                    elif pref + 'alpha_HMCODE_ggl' in pars:
+                        alpha_HMCODE = pars.get(pref + 'alpha_HMCODE_ggl', None)
+                    else:
+                        alpha_HMCODE = None
+                    if pref + 'k_supress' in pars:
+                        k_supress = pars.get(pref + 'k_supress', None)
+                    elif pref + 'k_supress_ggl' in pars:
+                        k_supress = pars.get(pref + 'k_supress_ggl', None)
+                    else:
+                        k_supress = None
                     if alpha_HMCODE is not None:
                         smooth_transition = lambda a: alpha_HMCODE_func(alpha_HMCODE, a)
                     else:

@@ -79,6 +79,14 @@ parser.add_argument('--ref_alpha_HMCODE', dest='ref_alpha_HMCODE', type=float, h
                     required=False)
 parser.add_argument('--ref_k_supress', dest='ref_k_supress', type=float, help='k_supress reference distribution (for initializtion).',
                     required=False)
+parser.add_argument('--ref_alpha_HMCODE_gg', dest='ref_alpha_HMCODE_gg', type=float, help='alpha_HMCODE_gg reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_k_supress_gg', dest='ref_k_supress_gg', type=float, help='k_supress_gg reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_alpha_HMCODE_ggl', dest='ref_alpha_HMCODE_ggl', type=float, help='alpha_HMCODE_ggl reference distribution (for initializtion).',
+                    required=False)
+parser.add_argument('--ref_k_supress_ggl', dest='ref_k_supress_ggl', type=float, help='k_supress_ggl reference distribution (for initializtion).',
+                    required=False)
 parser.add_argument('--name_like', dest='name_like', type=str, help='Name of likelihood.', required=False,
                     default='cl_like.ClLike')
 parser.add_argument('--sampler_type', dest='sampler_type', help='Type of sampler used.', default='minimizer',
@@ -148,7 +156,11 @@ DEFAULT_REF_HOD = {'lMmin_0': 12.95,
                    'alpha_0': 1.32,
                    'alpha_p': 0.,
                    'alpha_HMCODE': 0.7,
-                   'k_supress': 0.001
+                   'k_supress': 0.001,
+                   'alpha_HMCODE_gg': 0.7,
+                   'k_supress_gg': 0.001,
+                   'alpha_HMCODE_ggl': 0.7,
+                   'k_supress_ggl': 0.001
 }
 
 # Note: we need to hard-code the BACCO parameter bounds:
@@ -299,14 +311,42 @@ if model == 'BACCO' or model == 'anzu' or model == 'EulerianPT' or model == 'Lag
 elif model == 'Linear':
     bpar = ['1', '1p', 'sn']
 elif model == 'HOD_evol':
+    bpar_hod_trans = []
+    if 'k_supress' in fit_params or args.ref_k_supress is not None:
+        bpar_hod_trans.append('k_supress')
+    else:
+        if 'k_supress_gg' in fit_params or args.ref_k_supress_gg is not None:
+            bpar_hod_trans.append('k_supress_gg')
+        if 'k_supress_ggl' in fit_params or args.ref_k_supress_ggl is not None:
+            bpar_hod_trans.append('k_supress_ggl')
+    if 'alpha_HMCODE' in fit_params or args.ref_alpha_HMCODE is not None:
+        bpar_hod_trans.append('alpha_HMCODE')
+    else:
+        if 'alpha_HMCODE_gg' in fit_params or args.ref_alpha_HMCODE_gg is not None:
+            bpar_hod_trans.append('alpha_HMCODE_gg')
+        if 'alpha_HMCODE_ggl' in fit_params or args.ref_alpha_HMCODE_ggl is not None:
+            bpar_hod_trans.append('alpha_HMCODE_ggl')
     bpar = ['lMmin_0', 'lMmin_p',
             'siglM_0', 'siglM_p',
             'lM0_0', 'lM0_p',
             'lM1_0', 'lM1_p',
-            'alpha_0', 'alpha_p',
-            'alpha_HMCODE',
-            'k_supress']
+            'alpha_0', 'alpha_p'] + bpar_hod_trans
 elif model == 'HOD_bin':
+    bpar_hod_trans = []
+    if 'k_supress' in fit_params or args.ref_k_supress is not None:
+        bpar_hod_trans.append('k_supress')
+    else:
+        if 'k_supress_gg' in fit_params or args.ref_k_supress_gg is not None:
+            bpar_hod_trans.append('k_supress_gg')
+        if 'k_supress_ggl' in fit_params or args.ref_k_supress_ggl is not None:
+            bpar_hod_trans.append('k_supress_ggl')
+    if 'alpha_HMCODE' in fit_params or args.ref_alpha_HMCODE is not None:
+        bpar_hod_trans.append('alpha_HMCODE')
+    else:
+        if 'alpha_HMCODE_gg' in fit_params or args.ref_alpha_HMCODE_gg is not None:
+            bpar_hod_trans.append('alpha_HMCODE_gg')
+        if 'alpha_HMCODE_ggl' in fit_params or args.ref_alpha_HMCODE_ggl is not None:
+            bpar_hod_trans.append('alpha_HMCODE_ggl')
     bpar = ['lMmin_0', 'lMmin_p',
             'siglM_0', 'siglM_p',
             'lM0_0', 'lM0_p',
@@ -500,6 +540,22 @@ if args.ref_k_supress is not None:
     ref_k_supress = float(args.ref_k_supress)
 else:
     ref_k_supress = None
+if args.ref_alpha_HMCODE_gg is not None:
+    ref_alpha_HMCODE_gg = float(args.ref_alpha_HMCODE_gg)
+else:
+    ref_alpha_HMCODE_gg = None
+if args.ref_k_supress_gg is not None:
+    ref_k_supress_gg = float(args.ref_k_supress_gg)
+else:
+    ref_k_supress_gg = None
+if args.ref_alpha_HMCODE_ggl is not None:
+    ref_alpha_HMCODE_ggl = float(args.ref_alpha_HMCODE_ggl)
+else:
+    ref_alpha_HMCODE_ggl = None
+if args.ref_k_supress_ggl is not None:
+    ref_k_supress_ggl = float(args.ref_k_supress_ggl)
+else:
+    ref_k_supress_ggl = None
 
 if 'HOD' not in model:
     # Template for bias parameters in yaml file
@@ -671,7 +727,7 @@ else:
                 else:
                     mean = DEFAULT_REF_HOD[b]
                 info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
-                if b == 'alpha_HMCODE' or b == 'k_supress':
+                if 'alpha_HMCODE' in b or 'k_supress' in b:
                     info['params'][param_name]['prior'] = {'min': 1e-6,
                                                            'max': 100.}
             else:
@@ -831,22 +887,6 @@ else:
                         info['params'][param_name]['ref'] = {'dist': 'norm',
                                                              'loc': mean,
                                                              'scale': 0.01}
-                    elif b == 'alpha_HMCODE':
-                        if ref_alpha_HMCODE[i] is not None:
-                            mean = ref_alpha_HMCODE[i]
-                        else:
-                            mean = DEFAULT_REF_HOD[b]
-                        info['params'][param_name]['ref'] = {'dist': 'norm',
-                                                             'loc': mean,
-                                                             'scale': 0.01}
-                    elif b == 'k_supress':
-                        if ref_k_supress[i] is not None:
-                            mean = ref_k_supress[i]
-                        else:
-                            mean = DEFAULT_REF_HOD[b]
-                        info['params'][param_name]['ref'] = {'dist': 'norm',
-                                                             'loc': mean,
-                                                             'scale': 0.01}
                     elif b == 'sn':
                         if ref_bsn[i] is not None:
                             mean = ref_bsn[i]
@@ -949,7 +989,7 @@ else:
                         else:
                             raise NotImplementedError()
                     info['params'][param_name]['proposal'] = 0.1 * np.abs(mean)
-        for b in ['alpha_HMCODE', 'k_supress']:
+        for b in bpar_hod_trans:
             param_name = input_params_prefix + '_hod_' + b
             if param_name in fit_params:
                 info['params'][param_name] = cl_param.copy()
@@ -961,9 +1001,29 @@ else:
                         mean = ref_alpha_HMCODE
                     else:
                         mean = DEFAULT_REF_HOD[b]
+                elif b == 'alpha_HMCODE_gg':
+                    if ref_alpha_HMCODE_gg is not None:
+                        mean = ref_alpha_HMCODE_gg
+                    else:
+                        mean = DEFAULT_REF_HOD[b]
+                if b == 'alpha_HMCODE_ggl':
+                    if ref_alpha_HMCODE_ggl is not None:
+                        mean = ref_alpha_HMCODE_ggl
+                    else:
+                        mean = DEFAULT_REF_HOD[b]
                 if b == 'k_supress':
                     if ref_k_supress is not None:
                         mean = ref_k_supress
+                    else:
+                        mean = DEFAULT_REF_HOD[b]
+                elif b == 'k_supress_gg':
+                    if ref_k_supress_gg is not None:
+                        mean = ref_k_supress_gg
+                    else:
+                        mean = DEFAULT_REF_HOD[b]
+                if b == 'k_supress_ggl':
+                    if ref_k_supress_ggl is not None:
+                        mean = ref_k_supress_ggl
                     else:
                         mean = DEFAULT_REF_HOD[b]
                 info['params'][param_name]['ref'] = {'dist': 'norm', 'loc': mean, 'scale': 0.01}
