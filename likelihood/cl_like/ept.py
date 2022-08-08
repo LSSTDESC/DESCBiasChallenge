@@ -482,7 +482,7 @@ class EPTCalculator(object):
 
 
 def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
-                 sub_lowk=False, nonlin_pk_type='EPT',
+                 sub_lowk=False, nonlin_pk_type='nonlinear',
                  nonloc_pk_type='nonlinear',
                  extrap_order_lok=1, extrap_order_hik=2,
                  return_ia_bb=False, return_ia_ee_and_bb=False):

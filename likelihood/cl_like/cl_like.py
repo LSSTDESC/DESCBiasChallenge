@@ -42,7 +42,7 @@ class ClLike(Likelihood):
     # Nonlinear Pk type for PT, options: nonlinear, spt, linear
     nonlin_pk_type = 'nonlinear'
     # Nonlocal Pk type for PT (for bk2), options: nonlinear spt, linear
-    nonloc_pk_type = 'spt'
+    nonloc_pk_type = 'nonlinear'
 
     def initialize(self):
         # Read SACC file
