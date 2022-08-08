@@ -39,6 +39,10 @@ class ClLike(Likelihood):
     twopoints: list = []
     # Low-pass filter for PT
     k_pt_filter: float = 0.
+    # Nonlinear Pk type for PT, options: nonlinear, spt, linear
+    nonlin_pk_type = 'nonlinear'
+    # Nonlocal Pk type for PT (for bk2), options: nonlinear spt, linear
+    nonloc_pk_type = 'spt'
 
     def initialize(self):
         # Read SACC file
@@ -437,8 +441,8 @@ class ClLike(Likelihood):
                 else:
                     bsnx = None
 
-                pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'], bsnx=bsnx)
+                pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'], bsnx=bsnx,
+                                     nonlin_pk_type=self.nonlin_pk_type, nonloc_pk_type=self.nonloc_pk_type)
                 return pk_pt
         elif (self.bz_model == 'BACCO'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
