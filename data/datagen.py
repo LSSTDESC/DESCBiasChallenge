@@ -407,7 +407,6 @@ class DataGenerator(object):
         print("Cls")
         sl = self._get_cls()
         for i1, i2, icl, n1, n2, clt in self._get_indices(self.n_tot):
-            print(n1, n2)
             s.add_ell_cl(clt, n1, n2, ll['mean'], sl[i1, i2], window=wins)
 
         # Covariance
