@@ -1,6 +1,6 @@
 # ell, nl
 # nl = 1 / np.sum(1 / file_loaded[1: 8], axis=0)
-# where file loaded can be found here: https://github.com/toshiyan/cmblensplus/blob/master/example/data/kappa_noise_cmbs4.tar
+# where file_loaded can be found here: https://github.com/toshiyan/cmblensplus/blob/master/example/data/kappa_noise_cmbs4.tar
 # as described here: https://cmb-s4.uchicago.edu/wiki/index.php/Survey_Performance_Expectations#Lensing_reconstruction_noise_curve
 2.000000000000000000e+00 4.327729624531167460e-09
 3.000000000000000000e+00 3.747301213361561391e-09
