@@ -6,7 +6,8 @@ from numpy.linalg import multi_dot
 
 class Fisher_first_deri():
     
-    def __init__ (self,model,parms,fp_name,step_factor = 0.01,method = 'five-stencil',full_expresssion = False):
+    def __init__ (self,model,parms,fp_name,step_factor = 0.01,method = 'five-stencil',full_expresssion = False,
+                  name_like='cl_like.ClLike'):
         '''
         This Class implement first derivative expression fisher matrix calculation for error estimation
         Parameters:
@@ -30,11 +31,13 @@ class Fisher_first_deri():
             True -- With the extra term (usually expected to be averaged out) added to the default expression:
                 F_ij = -(d-t).T * C^{-1} * d^2cl/dpar_i dpar_j + dcl/dpar_i.T * C^{-1} * dcl/dpar_j 
         '''
+
+        self.name_like = name_like
         self.method = method
         self.step_factor = step_factor
         self.model = model
         self.full_expresssion = full_expresssion
-        self.ClLike = self.model.likelihood['cl_like.ClLike']
+        self.ClLike = self.model.likelihood[self.name_like]
         
         # Sampled parameter name
         self.parms_name = fp_name
@@ -254,7 +257,7 @@ class Fisher_first_deri():
     
 class Fisher_second_deri():
 
-    def __init__(self,model,pf,pf_name,h):
+    def __init__(self,model, pf, pf_name, h, name_like='cl_like.ClLike'):
         '''
         This class implement the 2nd derivative fisher matrix calculation originally written by Nathan Findlay.
         Parameters:
@@ -265,6 +268,8 @@ class Fisher_second_deri():
            Sampled parameters 
         h: step size factor
         '''
+
+        self.name_like = name_like
         self.model = model
         self.pf = pf
         self.h_fact = h
@@ -303,7 +308,7 @@ class Fisher_second_deri():
     def calc_Fisher(self):
 
         # typical variations of each parameter
-        pref = self.model.likelihood['cl_like.ClLike'].input_params_prefix
+        pref = self.model.likelihood[self.name_like].input_params_prefix
         
         # hard-coded typical variations of cosmology and bias parameters
         typ_var = {"sigma8": 0.1,"Omega_c": 0.5,"Omega_b": 0.2,"h": 0.5,"n_s": 0.2,"m_nu": 0.1,
