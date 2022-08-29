@@ -1,0 +1,56 @@
+sampler:
+  minimize:
+    ignore_prior: True
+    max_evals: 100000000
+    best_of: 2
+    override_bobyqa:
+      # option: value
+      # More stringent convergence criterion
+      rhoend: 0.00000001
+      user_params:
+        slow.max_slow_iters: 1000
+
+params:
+  m_nu: 0.0
+
+# CCL settings
+theory:
+  pk_like.CCL:
+    transfer_function: boltzmann_camb
+    matter_pk: halofit
+    baryons_pk: nobaryons
+
+# Likelihood settings # TESTING
+likelihood:
+  pk_like.PkLike:
+    # Input sacc file
+    input_file: choose_input_file
+    # List all relevant bins
+    bins: choose_bins
+    # List all 2-points that should go into the
+    # data vector
+    twopoints: choose_twopoints
+
+    defaults:
+      kmax: choose_kmax
+      kmin: 0.01
+
+    # Prefix associated to all nuisance params
+    input_params_prefix: pklike
+    # IADESY1, IAPerBin or IANone
+    ia_model: IANone
+    # NzShift or NzNone
+    nz_model: NzNone
+    # ShapeMultiplicative, ShapeNone
+    shape_model: ShapeNone
+    # Linear, EulerianPT or LagrangianPT
+    bz_model: choose_model
+    # TODO: Add these parameters if they become necessary
+#    # type of 1-loop matter power spectrum to use
+    nonlin_pk_type: spt
+#    # type of "non-local" matter power spectrum to use
+    nonloc_pk_type: spt
+
+debug: True
+output: output
+# stop_at_error: True
