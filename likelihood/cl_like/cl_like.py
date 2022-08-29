@@ -426,7 +426,8 @@ class ClLike(Likelihood):
                     bsnx = None
 
                 pk_pt = get_ept_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'], bsnx=bsnx, sub_lowk=False)
+                                     ptc=pkd['ptc'], bsnx=bsnx, sub_lowk=False,
+                                     nonlin_pk_type=self.nonlin_pk_type, nonloc_pk_type=self.nonloc_pk_type)
                 return pk_pt
         elif (self.bz_model == 'LagrangianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):

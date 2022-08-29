@@ -39,6 +39,10 @@ class PkLike(Likelihood):
     twopoints: list = []
     # Low-pass filter for PT
     k_pt_filter: float = 0.
+    # Nonlinear Pk type for PT, options: nonlinear, spt, linear
+    nonlin_pk_type = 'nonlinear'
+    # Nonlocal Pk type for PT (for bk2), options: nonlinear spt, linear
+    nonloc_pk_type = 'nonlinear'
 
     def initialize(self):
         # Read SACC file
@@ -331,15 +335,16 @@ class PkLike(Likelihood):
                 ptt1 = trs[pkm['bin_1']]['PT_tracer']
                 ptt2 = trs[pkm['bin_2']]['PT_tracer']
                 pk_pt = get_ept_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'], sub_lowk=False)
+                                     ptc=pkd['ptc'], sub_lowk=False,
+                                     nonlin_pk_type=self.nonlin_pk_type, nonloc_pk_type=self.nonloc_pk_type)
         elif (self.bz_model == 'LagrangianPT'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
                 pk_pt = pkd['pk_mm']  # matter-matter
             else:
                 ptt1 = trs[pkm['bin_1']]['PT_tracer']
                 ptt2 = trs[pkm['bin_2']]['PT_tracer']
-                pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2,
-                                     ptc=pkd['ptc'])
+                pk_pt = get_lpt_pk2d(cosmo, ptt1, tracer2=ptt2, ptc=pkd['ptc'],
+                                     nonlin_pk_type=self.nonlin_pk_type, nonloc_pk_type=self.nonloc_pk_type)
         elif (self.bz_model == 'BACCO'):
             if ((q1 != 'galaxy_density') and (q2 != 'galaxy_density')):
                 pk_pt = pkd['pk_mm']  # matter-matter
