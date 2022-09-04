@@ -1054,7 +1054,8 @@ print("params_dict = ", p0)
 if args.sampler_type == 'minimizer':
     updated_info, sampler = run(info)
     bf = sampler.products()['minimum']
-    np.save(info['output']+'.hessian.npy', sampler.products()['result_object'].hessian)
+    if updated_info['sampler']['minimize']['method'] != 'scipy':
+        np.save(info['output']+'.hessian.npy', sampler.products()['result_object'].hessian)
     pf = {k: bf[k] for k in p0.keys()}
     print("Final params: ")
     print(pf)
