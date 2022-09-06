@@ -222,9 +222,6 @@ class EPTCalculator(object):
         Pd2s2 = self.g4[:, None] * (self.dd_bias[5]*self.wk_low)[None, :]
         Ps2s2 = self.g4[:, None] * (self.dd_bias[6]*self.wk_low)[None, :]
         Pd1d3 = self.g4[:, None] * self.dd_bias[8][None, :]
-        if Pgrad is None:
-            Pgrad = Pnl
-        Pd1k2 = Pgrad * (self.ks**2)[None, :]
 
         if b3nl1 is None:
             b3nl1 = np.zeros_like(self.g4)
@@ -256,8 +253,22 @@ class EPTCalculator(object):
                0.5*(b11*bs2 + b12*bs1)[:, None] * Pd1s2 +
                0.25*(b21*bs2 + b22*bs1)[:, None] * (Pd2s2 - (4./3.)*s4) +
                0.25*(bs1*bs2)[:, None] * (Ps2s2 - (8./9.)*s4) +
-               0.5*(b12*b3nl1+b11*b3nl2)[:, None] * Pd1d3 +
-               0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2)
+               0.5*(b12*b3nl1+b11*b3nl2)[:, None] * Pd1d3)
+
+        if Pgrad is not None:
+            Pd1k2 = Pgrad * (self.ks**2)[None, :]
+            pgg += 0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2
+        else:
+            Pgrad = np.sqrt(self.g4[:, None])*Pnl + self.g4[:, None]*self.dd_bias[0][None, :]
+            Pd1k2 = Pgrad * (self.ks ** 2)[None, :]
+            Pd2k2 = Pd1d2 * (self.ks ** 2)[None, :]
+            Ps2k2 = Pd1s2 * (self.ks ** 2)[None, :]
+            Pk2k2 = Pgrad * (self.ks ** 4)[None, :]
+
+            pgg += (0.5*(b12*bk21+b11*bk22)[:, None] * Pd1k2 +
+                    0.25*(b22 * bk21 + b21 * bk22)[:, None] * Pd2k2 +
+                    0.25*(bs2 * bk21 + bs1 * bk22)[:, None] * Ps2k2 +
+                    0.25*(bk21 * bk22)[:, None] * Pk2k2)
 
         if not cross:
             pgg += bsn1[:, None]
@@ -580,7 +591,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
     else:
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))
-    Pgrad = None
+
     if (((tracer1.type == 'NC') or (tracer2.type == 'NC')) and
             (nonloc_pk_type != nonlin_pk_type)):
         if nonloc_pk_type == 'nonlinear':
@@ -593,6 +604,8 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
             pklin = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
                               for a in ptc.a_s])
             Pgrad = ptc.get_pmm(pklin)
+        elif nonlin_pk_type == 'EPT':
+            Pgrad = None
         else:
             raise NotImplementedError("Non-local option %s "
                                       "not implemented yet" %
