@@ -592,6 +592,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
         raise NotImplementedError("Nonlinear option %s not implemented yet" %
                                   (nonlin_pk_type))
 
+    Pgrad = None
     if (((tracer1.type == 'NC') or (tracer2.type == 'NC')) and
             (nonloc_pk_type != nonlin_pk_type)):
         if nonloc_pk_type == 'nonlinear':
@@ -604,7 +605,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
             pklin = np.array([ccl.linear_matter_power(cosmo, ptc.ks, a)
                               for a in ptc.a_s])
             Pgrad = ptc.get_pmm(pklin)
-        elif nonlin_pk_type == 'EPT':
+        elif nonloc_pk_type == 'EPT':
             Pgrad = None
         else:
             raise NotImplementedError("Non-local option %s "
