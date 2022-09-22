@@ -922,7 +922,10 @@ else:
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'lMmin_p':
-                        mean = DEFAULT_REF_HOD[b]
+                        if ref_lMmin_p[i] is not None:
+                            mean = ref_lMmin_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'siglM_0':
                         if ref_siglM_0[i] is not None:
@@ -930,7 +933,10 @@ else:
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'siglM_p':
-                        mean = DEFAULT_REF_HOD[b]
+                        if ref_siglM_p[i] is not None:
+                            mean = ref_siglM_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'lM0_0':
                         if ref_lM0_0[i] is not None:
@@ -938,7 +944,10 @@ else:
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'lM0_p':
-                        mean = DEFAULT_REF_HOD[b]
+                        if ref_lM0_p[i] is not None:
+                            mean = ref_lM0_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'lM1_0':
                         if ref_lM1_0[i] is not None:
@@ -946,7 +955,10 @@ else:
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'lM1_p':
-                        mean = DEFAULT_REF_HOD[b]
+                        if ref_lM1_p[i] is not None:
+                            mean = ref_lM1_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'alpha_0':
                         if ref_alpha_0[i] is not None:
@@ -954,7 +966,10 @@ else:
                         else:
                             mean = DEFAULT_REF_HOD[b]
                     elif b == 'alpha_p':
-                        mean = DEFAULT_REF_HOD[b]
+                        if ref_alpha_p[i] is not None:
+                            mean = ref_alpha_p[i]
+                        else:
+                            mean = DEFAULT_REF_HOD[b]
 
                     elif b == 'sn':
                         if ref_bsn[i] is not None:
