@@ -593,8 +593,7 @@ def get_ept_pk2d(cosmo, tracer1, tracer2=None, ptc=None, bsnx=None,
                                   (nonlin_pk_type))
 
     Pgrad = None
-    if (((tracer1.type == 'NC') or (tracer2.type == 'NC')) and
-            (nonloc_pk_type != nonlin_pk_type)):
+    if (tracer1.type == 'NC') or (tracer2.type == 'NC'):
         if nonloc_pk_type == 'nonlinear':
             Pgrad = np.array([ccl.nonlin_matter_power(cosmo, ptc.ks, a)
                               for a in ptc.a_s])
