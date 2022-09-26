@@ -1,6 +1,5 @@
 sampler:
   minimize:
-    # method: scipy
     ignore_prior: True
     max_evals: 100000000
     best_of: 2
@@ -16,14 +15,14 @@ params:
 
 # CCL settings
 theory:
-  cl_like.CCL:
+  pk_like.CCL:
     transfer_function: boltzmann_camb
     matter_pk: halofit
     baryons_pk: nobaryons
 
 # Likelihood settings # TESTING
 likelihood:
-  cl_like.ClLike:
+  pk_like.PkLike:
     # Input sacc file
     input_file: choose_input_file
     # List all relevant bins
@@ -34,21 +33,10 @@ likelihood:
 
     defaults:
       kmax: choose_kmax
-      lmin: 30
-      lmax: 2000
-      sh1:
-        lmin: 30
-      sh2:
-        lmin: 30
-      sh3:
-        lmin: 30
-      sh4:
-        lmin: 30
-      sh5:
-        lmin: 30
+      kmin: 0.001
 
     # Prefix associated to all nuisance params
-    input_params_prefix: cllike
+    input_params_prefix: pklike
     # IADESY1, IAPerBin or IANone
     ia_model: IANone
     # NzShift or NzNone

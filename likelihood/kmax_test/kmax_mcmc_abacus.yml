@@ -1,15 +1,11 @@
 sampler:
-  minimize:
-    # method: scipy
-    ignore_prior: True
-    max_evals: 100000000
-    best_of: 2
-    override_bobyqa:
-      # option: value
-      # More stringent convergence criterion
-      rhoend: 0.00000001
-      user_params:
-        slow.max_slow_iters: 1000
+  mcmc:
+    learn_proposal: True
+    burn_in: 10
+    #oversample_power: 1
+    #drag: True
+    #measure_speeds: False
+    max_samples: 100000000
 
 params:
   m_nu: 0.06
