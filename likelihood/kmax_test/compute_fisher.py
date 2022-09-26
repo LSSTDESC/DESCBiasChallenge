@@ -36,8 +36,9 @@ param_dict = dict(zip(keys, bestfit))
 # Run error estimation fisher code
 # Method: first derivative
 F = fisher.Fisher_first_deri(model=model, parms=param_dict, fp_name=list(param_dict.keys()),
-                                 step_factor=0.01, method='five-stencil', full_expresssion=False)
+                                 step_factor=0.01, method='five-stencil', full_expresssion=False,
+                                 cov_mode='spec_dec')
 cov, FM = F.get_cov()
 
 # Save data to file
-np.savez(path2output+'.fisher_fd_rerun.npz', cov=cov, fisher=FM)
+np.savez(path2output+'.fisher_fd_mode=SpecDec.npz', cov=cov, fisher=FM)

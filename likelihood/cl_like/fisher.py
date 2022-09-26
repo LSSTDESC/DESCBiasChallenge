@@ -7,7 +7,7 @@ from numpy.linalg import multi_dot
 class Fisher_first_deri():
     
     def __init__ (self,model,parms,fp_name,step_factor = 0.01,method = 'five-stencil',full_expresssion = False,
-                  name_like='cl_like.ClLike'):
+                  name_like='cl_like.ClLike', cov_mode='inv'):
         '''
         This Class implement first derivative expression fisher matrix calculation for error estimation
         Parameters:
@@ -38,6 +38,7 @@ class Fisher_first_deri():
         self.model = model
         self.full_expresssion = full_expresssion
         self.ClLike = self.model.likelihood[self.name_like]
+        self.cov_mode = cov_mode
         
         # Sampled parameter name
         self.parms_name = fp_name
@@ -212,7 +213,21 @@ class Fisher_first_deri():
             dcl_dparm = []
             for pars in self.parms_name:
                 dcl_dparm.append(self.n_point_stencil_deriv(par_name= pars,step_factor= self.step_factor))
-            F = np.einsum("il,lk,jk->ij", dcl_dparm, self.data_invc, dcl_dparm)
+            if self.cov_mode == 'inv':
+                print('Using normal matrix inversion to compute matrix inverse.')
+                F = np.einsum("il,lk,jk->ij", dcl_dparm, self.data_invc, dcl_dparm)
+            else:
+                print('Using spectral decomposition to compute matrix inverse.')
+                data_inv_temp = np.linalg.pinv(self.ClLike.cov, rcond=1E-15, hermitian=True)
+                ic_w, ic_v = np.linalg.eigh(data_inv_temp)
+                ic_v = ic_v.T
+                ic_w[ic_w < 0] = 0
+
+                re = []
+                for i in range(len(dcl_dparm)):
+                    re.append(np.dot(ic_v, dcl_dparm[i]))
+
+                F = np.einsum("il,lk,jk->ij", re, np.diag(ic_w), re)
             
             return(F)
         
