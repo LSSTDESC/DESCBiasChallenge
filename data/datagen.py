@@ -99,6 +99,7 @@ class DataGenerator(object):
         ncl = (nt*(nt+1)) // 2
         cov = np.zeros([ncl, nl, ncl, nl])
         nmodes = fsky*(2*ls+1)*dl
+        print(dl)
         for i1, i2, icl, ni1, ni2, clit in self._get_indices(nt):
             for j1, j2, jcl, nj1, nj2, cljt in self._get_indices(nt):
                 cli1j1 = cls[i1, j1]
@@ -708,24 +709,62 @@ cospar = {'Omega_c': 0.25,
 #     print(" ")
 # # Red (same HOD params)
 # config = {'ndens_sh': 27.,
-#           'ndens_cl': 4.,
+#           'ndens_cl': None,
 #           'dNdz_file': 'data/dNdz_shear_red.npz',
 #           'e_rms': 0.28,
 #           'theor_err': True,
 #           'theor_err_rel': 0.01,
 #           'cosmology': 'Abacus',
-#           'bias': {'model': 'Abacus',
+#           'bias': {'model': 'Abacus_unnorm',
 #                    'noise': True,
 #                    'galtype': 'red'},
-#           'sacc_name': 'abacus_red-sn_cov=sim-noise+theor-err_abacus.fits'}
+#           'sacc_name': 'abacus_red-sn_unnorm_cov=sim-noise+theor-err_abacus.fits'}
 # if not os.path.isfile(config['sacc_name']):
 #     d = DataGenerator(config)
 #     s = d.get_sacc_file()
 #     d.save_config()
 #     print(" ")
+
+# config = {'bias': {'galtype': 'h',
+#                     'massbin': 1,
+#                     'model': 'Abacus',
+#                     'noise': True,
+#                     },
+#         'dNdz_file': 'data/dNdz_shear_red.npz',
+#         'e_rms': 0.28,
+#         'ndens_cl': 4.0,
+#         'ndens_sh': 27.0,
+#         'sacc_name': 'abacus_halo-Mmin=12-Mmax=12p5-sn_cov=sim-noise+theor-err_bins=red_abacus.fits',
+#         'theor_err': True,
+#         'theor_err_rel': 0.01,
+#         'cosmology': 'Abacus'
+#         }
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
+
+# config = {'ndens_sh': 27.,
+#       'ndens_cl': None,
+#       'dNdz_file': 'data/dNdz_lens=source_2-bin-test.npz',
+#       'e_rms': 0.,
+#       'theor_err': False,
+#       'theor_err_rel': None,
+#       'cosmology': 'Abacus',
+#       'bias': {'model': 'Abacus',
+#                'noise': True,
+#                'galtype': 'all'},
+#           'sacc_name': 'abacus_red-sn_bins=2-bin-test.fits'}
+# if not os.path.isfile(config['sacc_name']):
+# d = DataGenerator(config)
+# s = d.get_sacc_file()
+# d.save_config()
+# print(" ")
+
 config = {'ndens_sh': 27.,
       'ndens_cl': None,
-      'dNdz_file': 'data/dNdz_shear_red.npz',
+      'dNdz_file': 'data/dNdz_shear_shear_lowz-cut.npz',
       'e_rms': 0.28,
       'theor_err': True,
       'theor_err_rel': 0.01,
@@ -733,7 +772,7 @@ config = {'ndens_sh': 27.,
       'bias': {'model': 'Abacus',
                'noise': True,
                'galtype': 'all'},
-          'sacc_name': 'abacus_HSC-sn_bins=red_cov=sim-noise+theor-err_abacus.fits'}
+          'sacc_name': 'abacus_HSC-sn_bins=shear-lowz-cut_cov=sim-noise+theor-err_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
