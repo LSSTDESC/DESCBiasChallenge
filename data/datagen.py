@@ -135,7 +135,10 @@ class DataGenerator(object):
                 return 'cl_ee'
         else:
             # Else = cmbk
-            return 'cl_00'
+            if (j < self.n_cl) or (j == self.n_tot - 1):
+                return 'cl_00'
+            else:
+                return 'cl_0e'
 
     def _get_indices(self, nt):
         """ Iterator through all bin pairs
