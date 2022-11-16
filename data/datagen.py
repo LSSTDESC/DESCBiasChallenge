@@ -128,11 +128,14 @@ class DataGenerator(object):
                 return 'cl_00'
             else:
                 return 'cl_0e'
-        else:
-            if (j < self.n_cl) or (i == self.n_tot - 1):
+        elif i < self.n_cl + self.n_sh:
+            if (j < self.n_cl) or (j == self.n_tot - 1):
                 return 'cl_0e'
             else:
                 return 'cl_ee'
+        else:
+            # Else = cmbk
+            return 'cl_00'
 
     def _get_indices(self, nt):
         """ Iterator through all bin pairs
@@ -159,7 +162,7 @@ class DataGenerator(object):
         for i in range(self.n_sh):
             nls[i+self.n_cl, i+self.n_cl, :] = sgamma**2/self.ndens_sh[i]
         # Then CMBk
-            nls[-1, -1, :] = self._get_cmbk_nl()[1]
+        nls[-1, -1, :] = self._get_cmbk_nl()[1]
         return nls
 
     def _get_shear_tracers(self):
