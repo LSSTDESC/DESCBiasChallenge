@@ -6,6 +6,7 @@ from bacco import BACCOCalculator, get_bacco_pk2d
 from heft import HEFTCalculator, get_anzu_pk2d
 import tracers as pt
 from scipy.integrate import simps
+from scipy.interpolate import interp1d
 import os
 
 
@@ -87,6 +88,23 @@ class DataGenerator(object):
         # Bias model
         self.bias_model = self.c['bias']['model']
         self.ll = None
+        # n_tot = n_cl + n_sh + cmbk
+        self.n_tot = self.n_cl + self.n_sh + 1
+        self.cmbk_nl, self.cmbk_nlb = None, None
+
+    def _get_cmbk_nl(self,):
+        if self.cmbk_nl is None:
+            fname = self.c['CMBk_noise']
+            ell, nl = np.loadtxt(fname, unpack=True)
+
+            ll = self._get_ell_sampling()
+            nl = interp1d(ell, nl, bounds_error=False,
+                          fill_value=(nl[0], nl[-1]))(ll['ls'])
+
+            self.cmbk_nl = nl
+            self.cmbk_nlb = np.dot(ll['bpws'], nl)
+
+        return self.cmbk_nl, self.cmbk_nlb
 
     def _get_covariance(self, cls, unwrap=True):
         """ Generates Gaussian covariance given power spectrum matrix
@@ -106,7 +124,7 @@ class DataGenerator(object):
                 cli1j2 = cls[i1, j2]
                 cli2j1 = cls[i2, j1]
                 cli2j2 = cls[i2, j2]
-                if 'sh' in nj1 and 'sh' in nj2:
+                if ('sh' in nj1 and 'sh' in nj2) or ('cmbk' in nj1 and 'cmbk' in nj2):
                     cov[icl, :, jcl, :] = np.diag((cli1j1 * cli2j2 +
                                                    cli1j2 * cli2j1) / nmodes)
                 else:
@@ -127,24 +145,32 @@ class DataGenerator(object):
         # Clustering first, then shear
         if i < self.n_cl:
             return f'cl{i+1}'
-        else:
+        elif i < self.n_cl + self.n_sh:
             j = i - self.n_cl
-            return f'sh{j+1}'
+            return f'sh{j + 1}'
+        else:
+            return 'cmbk'
 
     def _get_cl_type(self, i, j):
         """ Returns power spectrum type given
         tracer indices.
         """
         if i < self.n_cl:
-            if j < self.n_cl:
+            if (j < self.n_cl) or (j == self.n_tot - 1):
                 return 'cl_00'
             else:
                 return 'cl_0e'
+        elif i < self.n_cl + self.n_sh:
+                if (j < self.n_cl) or (j == self.n_tot - 1):
+                    return 'cl_0e'
+                else:
+                    return 'cl_ee'
         else:
-            if j < self.n_cl:
-                return 'cl_0e'
+            # Else = cmbk
+            if (j < self.n_cl) or (j == self.n_tot - 1):
+                return 'cl_00'
             else:
-                return 'cl_ee'
+                return 'cl_0e'
 
     def _get_indices(self, nt):
         """ Iterator through all bin pairs
@@ -162,8 +188,7 @@ class DataGenerator(object):
         """ Computes matrix of noise power spectra
         """
         ll = self._get_ell_sampling()
-        n_tot = self.n_cl + self.n_sh
-        nls = np.zeros([n_tot, n_tot, ll['n_bpw']])
+        nls = np.zeros([self.n_tot, self.n_tot, ll['n_bpw']])
         sgamma = self.c.get('e_rms', 0.28)
         # Clustering first
         if self.ndens_cl is not None:
@@ -174,6 +199,8 @@ class DataGenerator(object):
         for i in range(self.n_sh):
             print('Adding survey noise to shear cls.')
             nls[i+self.n_cl, i+self.n_cl, :] = sgamma**2/self.ndens_sh[i]
+        # Then CMBk
+        nls[-1, -1, :] = self._get_cmbk_nl()[1]
         return nls
 
     def _get_shear_tracers(self):
@@ -222,6 +249,11 @@ class DataGenerator(object):
             return nc_tracers
         else:
             return nc_tracers, pt_tracers
+
+    def _get_cmbk_tracer(self):
+        """ Generates the CMBk tracer
+        """
+        return [ccl.CMBLensingTracer(self.cosmo, 1100)]
 
     def get_b_effective(self, z):
         """ Returns the effective bias at a given redshift
@@ -389,6 +421,8 @@ class DataGenerator(object):
             t_cl = self._get_clustering_tracers()
             # Get shear tracers
             t_sh = self._get_shear_tracers()
+            # Get CMBk tracer
+            t_cmbk = self._get_cmbk_tracer()
         else:
             # Get clustering and PT tracers
             t_cl, pt_cl = self._get_clustering_tracers()
@@ -406,11 +440,10 @@ class DataGenerator(object):
 
         # Ell sampling
         ll = self._get_ell_sampling()
-        ts = t_cl + t_sh
-        n_tot = self.n_cl + self.n_sh
+        ts = t_cl + t_sh + t_cmbk
 
         # Loop over all tracer pairs
-        cls = np.zeros([n_tot, n_tot, ll['n_bpw']])
+        cls = np.zeros([self.n_tot, self.n_tot, ll['n_bpw']])
         for i1, t1 in enumerate(ts):
             for i2, t2 in enumerate(ts):
                 if i2 < i1:
@@ -502,6 +535,7 @@ class DataGenerator(object):
         import sacc
         s = sacc.Sacc()
 
+        ll = self._get_ell_sampling()
         # Tracers
         print("Tracers")
         for i, n in enumerate(self.nz_cl):
@@ -515,15 +549,19 @@ class DataGenerator(object):
                          quantity='galaxy_shear',
                          spin=2, z=self.z_sh, nz=n)
 
+        nl = self._get_cmbk_nl()[0]
+        s.add_tracer('Map', 'cmbk', quantity='cmb_convergence', spin=0,
+                     ell=ll['ls'], beam=np.ones_like(nl),
+                     beam_extra={'nl': nl})
+
         # Bandpower windows
         print("Windows")
-        ll = self._get_ell_sampling()
         wins = sacc.BandpowerWindow(ll['ls'], ll['bpws'].T)
 
         # Cls
         print("Cls")
         sl = self._get_cls()
-        for i1, i2, icl, n1, n2, clt in self._get_indices(self.n_cl+self.n_sh):
+        for i1, i2, icl, n1, n2, clt in self._get_indices(self.n_tot):
             s.add_ell_cl(clt, n1, n2, ll['mean'], sl[i1, i2], window=wins)
 
         # Covariance
@@ -762,22 +800,41 @@ cospar = {'Omega_c': 0.25,
 # d.save_config()
 # print(" ")
 
+# Red (same HOD params)
 config = {'ndens_sh': 27.,
-      'ndens_cl': None,
-      'dNdz_file': 'data/dNdz_shear_shear_lowz-cut.npz',
-      'e_rms': 0.28,
-      'theor_err': True,
-      'theor_err_rel': 0.01,
-      'cosmology': 'Abacus',
-      'bias': {'model': 'Abacus',
-               'noise': True,
-               'galtype': 'all'},
-          'sacc_name': 'abacus_HSC-sn_bins=shear-lowz-cut_cov=sim-noise+theor-err_abacus.fits'}
+          'ndens_cl': None,
+          'dNdz_file': 'data/dNdz_shear_red.npz',
+          'e_rms': 0.28,
+          'CMBk_noise': 'data/kappa_noise_cmbs4_deproj0.txt',
+          'theor_err': True,
+          'theor_err_rel': 0.01,
+          'cosmology': 'Abacus',
+          'bias': {'model': 'Abacus',
+                   'noise': True,
+                   'galtype': 'red'},
+          'sacc_name': 'abacus_red-sn+cmbk_cov=sim-noise+theor-err_abacus.fits'}
 if not os.path.isfile(config['sacc_name']):
     d = DataGenerator(config)
     s = d.get_sacc_file()
     d.save_config()
     print(" ")
+
+# config = {'ndens_sh': 27.,
+#       'ndens_cl': None,
+#       'dNdz_file': 'data/dNdz_shear_shear_lowz-cut.npz',
+#       'e_rms': 0.28,
+#       'theor_err': True,
+#       'theor_err_rel': 0.01,
+#       'cosmology': 'Abacus',
+#       'bias': {'model': 'Abacus',
+#                'noise': True,
+#                'galtype': 'all'},
+#           'sacc_name': 'abacus_HSC-sn_bins=shear-lowz-cut_cov=sim-noise+theor-err_abacus.fits'}
+# if not os.path.isfile(config['sacc_name']):
+#     d = DataGenerator(config)
+#     s = d.get_sacc_file()
+#     d.save_config()
+#     print(" ")
 # Red Y1 errors (same HOD params)
 # config = {'ndens_sh': 10.,
 #           'ndens_cl': 1.5,

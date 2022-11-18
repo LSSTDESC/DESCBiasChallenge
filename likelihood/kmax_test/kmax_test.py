@@ -27,6 +27,8 @@ parser.add_argument('--fit_params', dest='fit_params', nargs='+', help='Paramete
 parser.add_argument('--bins', dest='bins', nargs='+', help='Redshift bins to be fit.', required=True)
 parser.add_argument('--clust_cross', dest='clust_cross', help='Flag indicating if to include clustering cross-correlations.',
                     required=False, default=False)
+parser.add_argument('--cmbk', dest='cmbk', help='Flag indicating if to include CMB lensing cross-correlations.',
+                    required=False, default=False)
 parser.add_argument('--probes', dest='probes', nargs='+', help='Probes to be fit.', required=True)
 parser.add_argument('--sigma8', dest='sigma8', type=float, help='Fixed parameter value.', required=False)
 parser.add_argument('--Omega_c', dest='Omega_c', type=float, help='Fixed parameter value.', required=False)
@@ -272,6 +274,13 @@ else:
                                                       {'bins': ['cl3', 'cl4']}, {'bins': ['cl3', 'cl5']}, {'bins': ['cl3', 'cl6']},
                                                       {'bins': ['cl4', 'cl5']}, {'bins': ['cl4', 'cl6']},
                                                       {'bins': ['cl5', 'cl6']}]
+        if args.cmbk:
+            info['likelihood'][name_like]['twopoints'] += [{'bins': ['cl1', 'cmbk']}, {'bins': ['cl2', 'cmbk']}, {'bins': ['cl3', 'cmbk']},
+                                                      {'bins': ['cl4', 'cmbk']}, {'bins': ['cl5', 'cmbk']}, {'bins': ['cl6', 'cmbk']},
+                                                      {'bins': ['sh1', 'cmbk']}, {'bins': ['sh2', 'cmbk']}, {'bins': ['sh3', 'cmbk']},
+                                                      {'bins': ['sh4', 'cmbk']}, {'bins': ['sh5', 'cmbk']}]
+                                                      # {'bins': ['cmbk', 'cmbk']}]
+            info['likelihood'][name_like]['bins'] += [{'name': 'cmbk'}]
 
         n_bin = len(info['likelihood'][name_like]['bins'])
         bin_nos = [int(bin_dict['name'][-1]) - 1 for bin_dict in info['likelihood'][name_like]['bins'] if 'cl' in bin_dict['name']]

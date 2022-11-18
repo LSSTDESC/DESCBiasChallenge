@@ -88,10 +88,11 @@ class ClLike(Likelihood):
             if b['name'] not in s.tracers:
                 raise LoggedError(self.log, "Unknown tracer %s" % b['name'])
             t = s.tracers[b['name']]
-            zmean = np.average(t.z, weights=t.nz)
-            self.bin_properties[b['name']] = {'z_fid': t.z,
-                                              'nz_fid': t.nz,
-                                              'zmean_fid': zmean}
+            if t.quantity != 'cmb_convergence':
+                zmean = np.average(t.z, weights=t.nz)
+                self.bin_properties[b['name']] = {'z_fid': t.z,
+                                                  'nz_fid': t.nz,
+                                                  'zmean_fid': zmean}
             # Ensure all tracers have ell_min
             if b['name'] not in self.defaults:
                 self.defaults[b['name']] = {}
@@ -124,6 +125,9 @@ class ClLike(Likelihood):
             # Get the suffix for both tracers
             cl_name1 = get_suffix_for_tr(s.tracers[tn1])
             cl_name2 = get_suffix_for_tr(s.tracers[tn2])
+            if cl_name1 == 'e' and cl_name2 == '0':
+                cl_name1 = '0'
+                cl_name2 = 'e'
             ind = s.indices('cl_%s%s' % (cl_name1, cl_name2), (tn1, tn2),
                             ell__gt=lmin, ell__lt=lmax)
             indices += list(ind)
@@ -142,6 +146,9 @@ class ClLike(Likelihood):
             tn1, tn2 = cl['bins']
             cl_name1 = get_suffix_for_tr(s.tracers[tn1])
             cl_name2 = get_suffix_for_tr(s.tracers[tn2])
+            if cl_name1 == 'e' and cl_name2 == '0':
+                cl_name1 = '0'
+                cl_name2 = 'e'
             l, c_ell, cov, ind = s.get_ell_cl('cl_%s%s' % (cl_name1, cl_name2),
                                               tn1,
                                               tn2,
