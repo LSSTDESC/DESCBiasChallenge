@@ -168,7 +168,7 @@ class BACCOCalculator(object):
             Pd1n2 = 0.5 * self.bacco_table[:, 8, :]
             Pd2n2 = 0.25 * self.bacco_table[:, 11, :]
             Ps2n2 = 0.25 * self.bacco_table[:, 13, :]
-            Pn2n2 = 0.5 * self.bacco_table[:, 14, :]
+            Pn2n2 = 0.25 * self.bacco_table[:, 14, :]
 
         else:
             Pd1k2 = 0.5 * Pnl * (self.ks ** 2)[None, :]
