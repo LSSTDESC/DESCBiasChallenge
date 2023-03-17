@@ -380,7 +380,7 @@ class ClLike(Likelihood):
                 k_filter = self.k_pt_filter
             else:
                 k_filter = None
-            ptc = BACCOCalculator(bacco_emu=self.emu, log10k_min=np.log10(1e-2*cosmo['h']), log10k_max=np.log10(0.75*cosmo['h']),
+            ptc = BACCOCalculator(bacco_emu=self.emu, log10k_min=np.log10(1e-2*cosmo['h']), log10k_max=np.log10(0.749*cosmo['h']),
                                   nk_per_decade=20, h=cosmo['h'], k_filter=k_filter)
             cosmo.compute_nonlin_power()
             pkmm = cosmo.get_nonlin_power(name='delta_matter:delta_matter')
